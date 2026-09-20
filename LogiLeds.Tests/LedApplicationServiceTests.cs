@@ -83,6 +83,7 @@ public sealed class LedApplicationServiceTests
         public bool Initialize(nint windowHandle) => true;
         public void SetPreferredWheel(string? wheelId) { }
         public void Refresh() { }
+        public void RefreshNow() { }
         public bool SetLevel(int illuminatedGroups) { SetCalls++; LastLevel = illuminatedGroups; return true; }
         public void ClearLeds() => ClearCalls++;
         public Task TestLedsAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;

@@ -59,6 +59,11 @@ public sealed class LedApplicationService : IAsyncDisposable
     public async Task<LedProfileSettings> LoadSettingsAsync(CancellationToken cancellationToken = default)
     {
         _settings = await _settingsStore.LoadAsync(cancellationToken);
+        // These are product behavior, not profile choices. Normalize older
+        // settings so automatic animation and tray lifecycle cannot silently
+        // disappear after an upgrade.
+        if (!_settings.ReadyAnimation || !_settings.MinimizeToTray)
+            _settings = _settings with { ReadyAnimation = true, MinimizeToTray = true };
         await _redlineLearner.LoadAsync(cancellationToken);
         _wheelController.SetPreferredWheel(_settings.PreferredWheelId);
         return _settings;
@@ -78,6 +83,11 @@ public sealed class LedApplicationService : IAsyncDisposable
                 PublishSnapshot();
                 throw;
             }
+            // Re-open the LED interface and establish a known-off level at
+            // every start. This avoids requiring a second manual restart when
+            // the wheel was re-enumerated while the app was stopped.
+            _wheelController.RefreshNow();
+            _wheelController.ClearLeds();
             _runtimeError = null;
             _isRunning = true;
             _readyAnimationPlayed = false;
@@ -176,8 +186,7 @@ public sealed class LedApplicationService : IAsyncDisposable
                     var effectiveRedline = advanced is null ? _learnedRedlinePercent ?? _settings.RedlinePercent : _settings.RedlinePercent;
                     var preview = LedMath.CalculatePreview(activeFrame.CurrentEngineRpm, activeFrame.EngineMaxRpm,
                         _settings.FirstLedPercent, effectiveRedline, groups, advanced);
-                    var visible = !preview.IsFlashing || !_settings.BlinkAtRedline || (now.ToUnixTimeMilliseconds() / 62) % 2 == 0;
-                    _wheelController.SetLevel(visible ? preview.Count : 0);
+                    _wheelController.SetLevel(GetVisibleLedCount(preview, now));
                 }
             }
             else if (!_manualOutput && now - lastClear >= TimeSpan.FromMilliseconds(250))
@@ -194,7 +203,7 @@ public sealed class LedApplicationService : IAsyncDisposable
                 _ = RunReadyAnimationGuardedAsync(_animationCts);
             }
 
-            if (now - lastUi >= TimeSpan.FromMilliseconds(100)) { PublishSnapshot(); lastUi = now; }
+            if (now - lastUi >= TimeSpan.FromMilliseconds(50)) { PublishSnapshot(); lastUi = now; }
         }
     }
 
@@ -224,6 +233,10 @@ public sealed class LedApplicationService : IAsyncDisposable
     }
     private void OnReceiverError(string error) { _runtimeError = error; PublishSnapshot(); }
 
+    private int GetVisibleLedCount((int Count, bool IsFlashing) preview, DateTimeOffset now) =>
+        !preview.IsFlashing || !_settings.BlinkAtRedline || (now.ToUnixTimeMilliseconds() / 62) % 2 == 0
+            ? preview.Count : 0;
+
     private void PublishSnapshot(string? transientMessage = null)
     {
         ForzaTelemetryFrame? frame;
@@ -237,6 +250,7 @@ public sealed class LedApplicationService : IAsyncDisposable
         var effectiveRedline = advanced is null ? _learnedRedlinePercent ?? _settings.RedlinePercent : _settings.RedlinePercent;
         var preview = LedMath.CalculatePreview(fresh ? frame!.Value.CurrentEngineRpm : 0, fresh ? frame!.Value.EngineMaxRpm : 0,
             _settings.FirstLedPercent, effectiveRedline, groups, advanced);
+        var visibleCount = GetVisibleLedCount(preview, now);
         var state = GetState(frame, fresh);
         var message = transientMessage ?? _runtimeError ?? state switch
         {
@@ -250,7 +264,7 @@ public sealed class LedApplicationService : IAsyncDisposable
         };
         SnapshotChanged?.Invoke(this, new AppSnapshot(_isRunning, fresh, _wheelController.IsConnected,
             fresh && frame!.Value.IsRaceOn, fresh ? frame!.Value.CurrentEngineRpm : 0,
-            fresh ? frame!.Value.EngineMaxRpm : 0, preview.Count, preview.IsFlashing,
+            fresh ? frame!.Value.EngineMaxRpm : 0, visibleCount, preview.IsFlashing,
             _wheelController.WheelName, message, state, fresh ? frame!.Value.ProtocolVariant : "—", definition, _learnedRedlinePercent));
     }
 
@@ -266,6 +280,9 @@ public sealed class LedApplicationService : IAsyncDisposable
 
     public async ValueTask DisposeAsync()
     {
+        // Clear before waiting on UDP shutdown or the monitor task. HID
+        // cleanup must happen even if another subsystem is slow to stop.
+        try { _wheelController.ClearLeds(); } catch { }
         try { await StopAsync(); } catch { }
         _lifetimeCts.Cancel();
         if (_monitorTask is not null) try { await _monitorTask; } catch (OperationCanceledException) { }

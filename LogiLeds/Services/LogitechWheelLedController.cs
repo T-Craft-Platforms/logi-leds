@@ -119,6 +119,16 @@ public sealed class LogitechWheelLedController : IWheelLedController
         }
     }
 
+    public void RefreshNow()
+    {
+        lock (_gate)
+        {
+            _nextDiscoveryAt = DateTimeOffset.MinValue;
+            _nextPresenceCheckAt = DateTimeOffset.MinValue;
+        }
+        Refresh();
+    }
+
     public bool SetLevel(int illuminatedGroups)
     {
         lock (_gate)

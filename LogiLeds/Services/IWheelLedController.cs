@@ -14,6 +14,7 @@ public interface IWheelLedController : IDisposable
     bool Initialize(nint windowHandle);
     void SetPreferredWheel(string? wheelId);
     void Refresh();
+    void RefreshNow();
     bool SetLevel(int illuminatedGroups);
     void ClearLeds();
     Task TestLedsAsync(CancellationToken cancellationToken = default);

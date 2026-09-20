@@ -14,6 +14,7 @@ public sealed class MainViewModel : INotifyPropertyChanged, IAsyncDisposable
 {
     private readonly LedApplicationService _service;
     private readonly AsyncRelayCommand _startStopCommand;
+    private readonly AsyncRelayCommand _restartCommand;
     private readonly AsyncRelayCommand _saveCommand;
     private readonly AsyncRelayCommand _testCommand;
     private readonly AsyncRelayCommand _readyAnimationCommand;
@@ -43,6 +44,7 @@ public sealed class MainViewModel : INotifyPropertyChanged, IAsyncDisposable
         _service = service;
         _service.SnapshotChanged += OnSnapshotChanged;
         _startStopCommand = new AsyncRelayCommand(ToggleRunningAsync);
+        _restartCommand = new AsyncRelayCommand(RestartControlAsync);
         _saveCommand = new AsyncRelayCommand(SaveSettingsAsync);
         _testCommand = new AsyncRelayCommand(() => _service.TestLedsAsync(), () => _wheelConnected,
             ex => StatusMessage = $"LED test failed: {ex.Message}");
@@ -56,6 +58,7 @@ public sealed class MainViewModel : INotifyPropertyChanged, IAsyncDisposable
     public event PropertyChangedEventHandler? PropertyChanged;
     public event EventHandler? ExitRequested;
     public ICommand StartStopCommand => _startStopCommand;
+    public ICommand RestartCommand => _restartCommand;
     public ICommand SaveCommand => _saveCommand;
     public ICommand TestCommand => _testCommand;
     public ICommand ReadyAnimationCommand => _readyAnimationCommand;
@@ -125,6 +128,15 @@ public sealed class MainViewModel : INotifyPropertyChanged, IAsyncDisposable
     }
 
     private async Task ToggleRunningAsync() { if (_service.IsRunning) await _service.StopAsync(); else await StartServiceWithErrorHandlingAsync(); }
+    private async Task RestartControlAsync()
+    {
+        try
+        {
+            if (_service.IsRunning) await _service.StopAsync();
+            await _service.StartAsync();
+        }
+        catch (Exception ex) { StatusMessage = $"Could not restart: {ex.Message}"; }
+    }
     private async Task StartServiceWithErrorHandlingAsync() { try { await _service.StartAsync(); } catch (Exception ex) { StatusMessage = $"Could not start: {ex.Message}"; } }
 
     private async Task SaveSettingsAsync()
@@ -202,6 +214,7 @@ public sealed class MainViewModel : INotifyPropertyChanged, IAsyncDisposable
             OnPropertyChanged(nameof(WheelVerification));
         }
         if (snapshot.Wheel is not null) BuildLeds(snapshot.Wheel, snapshot.IlluminatedLedCount, snapshot.IsFlashing);
+        else foreach (var led in Leds) { led.IsLit = false; led.IsBlinking = false; }
         _testCommand.RaiseCanExecuteChanged(); _readyAnimationCommand.RaiseCanExecuteChanged();
     }
 
@@ -236,7 +249,10 @@ public sealed class MainViewModel : INotifyPropertyChanged, IAsyncDisposable
                 Leds.Add(new LedIndicatorViewModel(definition.Colors[i], group));
             }
         }
-        foreach (var led in Leds) { led.IsLit = led.Group <= litGroups; led.IsBlinking = flashing && led.IsLit && BlinkAtRedline; }
+        // The service already sends the exact visible group count for the
+        // current blink phase. Do not start a second UI-only storyboard: it
+        // can drift from the wheel and leave the preview flashing forever.
+        foreach (var led in Leds) { led.IsLit = led.Group <= litGroups; led.IsBlinking = false; }
     }
 
     private void NotifyRpm() { OnPropertyChanged(nameof(RpmDisplay)); OnPropertyChanged(nameof(MaximumRpmDisplay)); OnPropertyChanged(nameof(RpmPercentDisplay)); OnPropertyChanged(nameof(ShiftState)); }
