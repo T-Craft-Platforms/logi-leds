@@ -26,9 +26,9 @@ New installations listen on all IPv4 interfaces at UDP port `1024`, which suppor
 
 ## Profiles and app behavior
 
-- EZ mode defaults to a progressive 65–89% light range with a 90% redline, matching the early shift-light ramp used by Forza. It can learn a stable per-car shift point after three consistent full-throttle shift/limiter events.
+- Smart mode defaults to a progressive 65–89% light range with a 90% redline, matching the early shift-light ramp used by Forza. It can learn a stable per-car shift point after three consistent full-throttle shift/limiter events.
 - Advanced mode exposes one ordered activation threshold per controllable LED group plus a separate redline.
-- Whole-strip redline blinking, automatic control startup, ready animation, and minimize-to-tray are enabled by default. Closing the window exits by default; an optional close-to-tray setting remains available.
+- Whole-strip redline blinking, automatic control startup, ready animation, minimize-to-tray, and close-to-tray are enabled by default.
 - Light, dark, and Windows-following themes are available from Settings.
 - Per-wheel profiles are stored in `%LOCALAPPDATA%\LogiLeds\profiles`; learned car calibration is stored separately in `calibrations.json`.
 

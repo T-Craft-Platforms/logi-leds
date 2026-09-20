@@ -18,7 +18,7 @@ public sealed class SettingsAndLedMathTests
         Assert.AreEqual(90d, settings.RedlinePercent);
         Assert.IsTrue(settings.AutoStartControl);
         Assert.IsTrue(settings.MinimizeToTray);
-        Assert.IsFalse(settings.CloseToTray);
+        Assert.IsTrue(settings.CloseToTray);
         Assert.IsTrue(settings.BlinkAtRedline);
     }
 

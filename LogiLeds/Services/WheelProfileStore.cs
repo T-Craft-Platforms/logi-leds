@@ -27,7 +27,7 @@ public sealed class WheelProfileStore
             await using var stream = File.OpenRead(path);
             var profile = await JsonSerializer.DeserializeAsync<WheelProfile>(stream, JsonOptions, cancellationToken);
             // Profiles from the preview schema used provisional thresholds;
-            // use the migrated settings fallback so EZ mode follows Forza.
+            // use the migrated settings fallback so Smart mode follows Forza.
             return profile is not null && profile.SchemaVersion >= WheelProfile.CurrentSchemaVersion &&
                    profile.WheelId == wheel.Id && profile.TryValidate(wheel.ControlGroupCount, out _) ? profile : fallback;
         }

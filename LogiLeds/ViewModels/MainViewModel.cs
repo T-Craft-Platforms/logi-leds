@@ -66,7 +66,6 @@ public sealed class MainViewModel : INotifyPropertyChanged, IAsyncDisposable
     public ObservableCollection<ThresholdViewModel> Thresholds { get; } = [];
     public ObservableCollection<WheelOption> WheelOptions { get; } = [];
     public IReadOnlyList<AppTheme> Themes { get; } = Enum.GetValues<AppTheme>();
-    public IReadOnlyList<string> Games { get; } = ["Auto", "Forza Motorsport 7", "Forza Horizon 4", "Forza Horizon 5", "Forza Horizon 6", "Forza Motorsport (2023)"];
 
     public int SelectedTab { get => _selectedTab; set => SetField(ref _selectedTab, value); }
     public string BindAddress { get => _bindAddress; set => SetField(ref _bindAddress, value); }
@@ -95,10 +94,10 @@ public sealed class MainViewModel : INotifyPropertyChanged, IAsyncDisposable
     public bool IsTelemetryConnected { get => _telemetryConnected; private set => SetField(ref _telemetryConnected, value); }
     public bool IsFlashing { get => _isFlashing; private set { if (SetField(ref _isFlashing, value)) OnPropertyChanged(nameof(ShiftState)); } }
     public string StartStopText => IsRunning ? "Stop control" : "Start control";
-    public string RpmDisplay => MaximumRpm > 0 ? $"{CurrentRpm:N0}" : "—";
-    public string MaximumRpmDisplay => MaximumRpm > 0 ? $"/ {MaximumRpm:N0} RPM" : "Waiting for engine data";
+    public string RpmDisplay => MaximumRpm > 0 ? $"{CurrentRpm:N0}" : "WAITING";
+    public string MaximumRpmDisplay => MaximumRpm > 0 ? $"/ {MaximumRpm:N0} RPM" : "for telemetry data";
     public string RpmPercentDisplay => MaximumRpm > 0 ? $"{CurrentRpm / MaximumRpm:P0}" : "—";
-    public string ShiftState => IsFlashing ? "SHIFT NOW" : CurrentRpm > 0 ? "BUILDING REVS" : "STANDBY";
+    public string ShiftState => IsFlashing ? "SHIFT NOW" : MaximumRpm > 0 ? "LIVE RPM" : "WAITING FOR DATA";
     public string StateTitle => State switch { ReadinessState.Driving => "Driving", ReadinessState.Ready => "Ready", ReadinessState.SearchingForWheel => "Wheel not found", ReadinessState.WaitingForTelemetry => "Waiting for telemetry", ReadinessState.TelemetryStale => "Telemetry paused", ReadinessState.NeedsAttention => "Needs attention", _ => "Control paused" };
     public string StateDetail => StatusMessage;
     public string StateGlyph => State switch { ReadinessState.Driving => "●", ReadinessState.Ready => "✓", ReadinessState.NeedsAttention => "!", ReadinessState.SearchingForWheel => "○", _ => "◌" };
@@ -113,8 +112,10 @@ public sealed class MainViewModel : INotifyPropertyChanged, IAsyncDisposable
         BindAddress = settings.BindAddress; Port = settings.Port.ToString(CultureInfo.InvariantCulture);
         FirstLedPercent = settings.FirstLedPercent; RedlinePercent = settings.RedlinePercent;
         BlinkAtRedline = settings.BlinkAtRedline; AutoStartControl = settings.AutoStartControl;
-        MinimizeToTray = settings.MinimizeToTray; CloseToTray = settings.CloseToTray; ReadyAnimation = settings.ReadyAnimation;
-        ProfileMode = settings.ProfileMode; GameTitle = settings.GameTitle; Theme = settings.Theme;
+        // These are intentionally product defaults rather than user-facing
+        // switches: minimize-to-tray and the ready animation are always on.
+        MinimizeToTray = true; CloseToTray = settings.CloseToTray; ReadyAnimation = true;
+        ProfileMode = settings.ProfileMode; GameTitle = "Auto"; Theme = settings.Theme;
         WheelOptions.Add(new WheelOption(null, "Auto-detect (recommended)"));
         foreach (var wheel in _service.Wheels) WheelOptions.Add(new WheelOption(wheel.Id, wheel.DisplayName));
         SelectedWheel = WheelOptions.FirstOrDefault(x => x.Id == settings.PreferredWheelId) ?? WheelOptions[0];
@@ -132,9 +133,9 @@ public sealed class MainViewModel : INotifyPropertyChanged, IAsyncDisposable
         var settings = _service.Settings with
         {
             BindAddress = BindAddress.Trim(), Port = port, FirstLedPercent = FirstLedPercent, RedlinePercent = RedlinePercent,
-            BlinkAtRedline = BlinkAtRedline, AutoStartControl = AutoStartControl, MinimizeToTray = MinimizeToTray,
-            CloseToTray = CloseToTray, ReadyAnimation = ReadyAnimation, Theme = Theme, ProfileMode = ProfileMode,
-            GameTitle = GameTitle, PreferredWheelId = SelectedWheel?.Id, AdvancedThresholds = Thresholds.Select(x => x.Value).ToArray()
+            BlinkAtRedline = BlinkAtRedline, AutoStartControl = AutoStartControl, MinimizeToTray = true,
+            CloseToTray = CloseToTray, ReadyAnimation = true, Theme = Theme, ProfileMode = ProfileMode,
+            GameTitle = "Auto", PreferredWheelId = SelectedWheel?.Id, AdvancedThresholds = Thresholds.Select(x => x.Value).ToArray()
         };
         if (!settings.TryValidate(out var error)) { StatusMessage = error; return; }
         try
@@ -179,7 +180,7 @@ public sealed class MainViewModel : INotifyPropertyChanged, IAsyncDisposable
         var values = saved.Count == count ? saved.ToArray() : LedMath.BuildRecommendedThresholds(count);
         var colors = wheel?.Colors ?? ["#38D982", "#6EE65A", "#F0D84A", "#FFAA3B", "#FF5265"];
         Thresholds.Clear();
-        for (var i = 0; i < count; i++) Thresholds.Add(new ThresholdViewModel { Label = $"LED group {i + 1}", Color = (Media.Brush)new Media.BrushConverter().ConvertFromString(colors[Math.Min(i, colors.Length - 1)])!, Value = values[i] });
+        for (var i = 0; i < count; i++) Thresholds.Add(new ThresholdViewModel { Label = i == count - 1 ? "Red light" : $"LED group {i + 1}", Color = (Media.Brush)new Media.BrushConverter().ConvertFromString(colors[Math.Min(i, colors.Length - 1)])!, Value = values[i] });
     }
 
     private void OnSnapshotChanged(object? sender, AppSnapshot snapshot)

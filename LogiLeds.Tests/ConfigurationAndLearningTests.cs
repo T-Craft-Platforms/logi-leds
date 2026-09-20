@@ -48,12 +48,12 @@ public sealed class ConfigurationAndLearningTests
         Directory.CreateDirectory(Path.GetDirectoryName(path)!);
         await File.WriteAllTextAsync(path, "{\"SchemaVersion\":2,\"FirstLedPercent\":80,\"RedlinePercent\":97.5,\"CloseToTray\":true}");
         var settings = await new SettingsStore(path).LoadAsync();
-        Assert.AreEqual(3, settings.SchemaVersion);
+        Assert.AreEqual(4, settings.SchemaVersion);
         Assert.AreEqual(65d, settings.FirstLedPercent);
         Assert.AreEqual(90d, settings.RedlinePercent);
-        Assert.IsFalse(settings.CloseToTray);
+        Assert.IsTrue(settings.CloseToTray);
         var persisted = await File.ReadAllTextAsync(path);
-        StringAssert.Contains(persisted, "\"SchemaVersion\": 3");
+        StringAssert.Contains(persisted, "\"SchemaVersion\": 4");
         File.Delete(path);
     }
 

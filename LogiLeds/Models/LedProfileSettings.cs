@@ -7,7 +7,7 @@ public enum RpmProfileMode { Easy, Advanced }
 
 public sealed record LedProfileSettings
 {
-    public const int CurrentSchemaVersion = 3;
+    public const int CurrentSchemaVersion = 4;
     public const string DefaultBindAddress = "0.0.0.0";
     public const int DefaultPort = 1024;
     public const double DefaultFirstLedPercent = 65;
@@ -21,7 +21,7 @@ public sealed record LedProfileSettings
     public bool BlinkAtRedline { get; init; } = true;
     public bool AutoStartControl { get; init; } = true;
     public bool MinimizeToTray { get; init; } = true;
-    public bool CloseToTray { get; init; }
+    public bool CloseToTray { get; init; } = true;
     public bool ReadyAnimation { get; init; } = true;
     public AppTheme Theme { get; init; } = AppTheme.System;
     public RpmProfileMode ProfileMode { get; init; } = RpmProfileMode.Easy;

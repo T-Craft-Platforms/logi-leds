@@ -10,18 +10,18 @@
             <ItemsControl.ItemTemplate>
                 <DataTemplate>
                     <Grid Margin="0,0,0,12">
-                        <Grid.ColumnDefinitions><ColumnDefinition Width="150"/><ColumnDefinition Width="*"/><ColumnDefinition Width="76"/></Grid.ColumnDefinitions>
+                        <Grid.ColumnDefinitions><ColumnDefinition Width="150"/><ColumnDefinition Width="*"/><ColumnDefinition Width="82"/></Grid.ColumnDefinitions>
                         <StackPanel Orientation="Horizontal" VerticalAlignment="Center"><Ellipse Width="9" Height="9" Fill="{Binding Color}" Margin="0,0,10,0"/><TextBlock Text="{Binding Label}" FontWeight="SemiBold"/></StackPanel>
                         <Slider Grid.Column="1" Minimum="50" Maximum="99" TickFrequency="0.5" IsSnapToTickEnabled="True" Value="{Binding Value, Mode=TwoWay}" Margin="16,0"/>
-                        <Border Grid.Column="2" Background="{DynamicResource InputBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="8" Padding="10,7"><TextBlock Text="{Binding Value, StringFormat={}{0:0.0}%}" HorizontalAlignment="Center" FontWeight="SemiBold"/></Border>
+                        <TextBox Grid.Column="2" Text="{Binding Value, Mode=TwoWay, UpdateSourceTrigger=LostFocus, StringFormat={}{0:0.0}}" HorizontalContentAlignment="Center" Padding="7,5" MinHeight="32" ToolTip="Enter a percentage"/>
                     </Grid>
                 </DataTemplate>
             </ItemsControl.ItemTemplate>
         </ItemsControl>
-        <Grid Margin="0,8,0,0"><Grid.ColumnDefinitions><ColumnDefinition Width="150"/><ColumnDefinition/><ColumnDefinition Width="76"/></Grid.ColumnDefinitions>
+        <Grid Margin="0,8,0,0"><Grid.ColumnDefinitions><ColumnDefinition Width="150"/><ColumnDefinition/><ColumnDefinition Width="82"/></Grid.ColumnDefinitions>
             <StackPanel Orientation="Horizontal" VerticalAlignment="Center"><Ellipse Width="9" Height="9" Fill="{DynamicResource DangerBrush}" Margin="0,0,10,0"/><TextBlock Text="Redline / blink" FontWeight="SemiBold"/></StackPanel>
             <Slider Grid.Column="1" Minimum="60" Maximum="100" TickFrequency="0.5" IsSnapToTickEnabled="True" Value="{Binding RedlinePercent, Mode=TwoWay}" Margin="16,0"/>
-            <Border Grid.Column="2" Background="{DynamicResource InputBrush}" BorderBrush="{DynamicResource DangerBrush}" BorderThickness="1" CornerRadius="8" Padding="10,7"><TextBlock Text="{Binding RedlinePercent, StringFormat={}{0:0.0}%}" HorizontalAlignment="Center" FontWeight="SemiBold"/></Border>
+            <TextBox Grid.Column="2" Text="{Binding RedlinePercent, Mode=TwoWay, UpdateSourceTrigger=LostFocus, StringFormat={}{0:0.0}}" HorizontalContentAlignment="Center" Padding="7,5" MinHeight="32" BorderBrush="{DynamicResource DangerBrush}" ToolTip="Enter a percentage"/>
         </Grid>
     </StackPanel>
 </UserControl>

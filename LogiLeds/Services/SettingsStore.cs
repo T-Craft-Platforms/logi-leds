@@ -31,14 +31,16 @@ public sealed class SettingsStore
             {
                 // Version 2 was the first preview build. Move its provisional
                 // 80/95 defaults to the Forza-like 65/90 curve and make the
-                // close button a real exit; minimizing remains tray-enabled.
+                // Keep the tray-first lifecycle used by the polished desktop UI.
                 settings = settings with
                 {
                     SchemaVersion = LedProfileSettings.CurrentSchemaVersion,
                     FirstLedPercent = LedProfileSettings.DefaultFirstLedPercent,
                     RedlinePercent = LedProfileSettings.DefaultRedlinePercent,
                     AdvancedThresholds = LedMath.BuildRecommendedThresholds(5, LedProfileSettings.DefaultFirstLedPercent, LedProfileSettings.DefaultRedlinePercent - 1),
-                    CloseToTray = false
+                    CloseToTray = true,
+                    MinimizeToTray = true,
+                    ReadyAnimation = true
                 };
                 try { await SaveAsync(settings, cancellationToken); } catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { }
             }
