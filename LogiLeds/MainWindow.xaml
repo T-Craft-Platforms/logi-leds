@@ -1,0 +1,123 @@
+<Window x:Class="LogiLeds.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:shell="clr-namespace:System.Windows.Shell;assembly=PresentationFramework"
+        xmlns:controls="clr-namespace:LogiLeds.Controls"
+        xmlns:models="clr-namespace:LogiLeds.Models"
+        Title="LogiLeds" Width="1180" Height="760" MinWidth="900" MinHeight="620"
+        WindowStartupLocation="CenterScreen" WindowStyle="None" ResizeMode="CanResize" Background="{DynamicResource WindowBrush}">
+    <shell:WindowChrome.WindowChrome><shell:WindowChrome CaptionHeight="40" CornerRadius="0" GlassFrameThickness="0" ResizeBorderThickness="6" UseAeroCaptionButtons="False"/></shell:WindowChrome.WindowChrome>
+    <Border BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" Background="{DynamicResource WindowBrush}">
+        <Grid>
+            <Grid.RowDefinitions><RowDefinition Height="40"/><RowDefinition Height="*"/></Grid.RowDefinitions>
+            <Grid Grid.Row="0" Background="{DynamicResource SurfaceBrush}" MouseLeftButtonDown="TitleBar_OnMouseLeftButtonDown">
+                <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="16,0">
+                    <Border Width="20" Height="20" CornerRadius="6" Background="{DynamicResource AccentBrush}" Margin="0,0,10,0"><TextBlock Text="L" Foreground="White" FontWeight="Bold" FontSize="12" HorizontalAlignment="Center" VerticalAlignment="Center"/></Border>
+                    <TextBlock Text="LogiLeds" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                    <Border Width="1" Height="14" Background="{DynamicResource BorderBrush}" Margin="12,0"/>
+                    <TextBlock Text="Logitech wheel manager" Foreground="{DynamicResource MutedBrush}" FontSize="12" VerticalAlignment="Center"/>
+                </StackPanel>
+                <StackPanel Grid.Column="1" Orientation="Horizontal" shell:WindowChrome.IsHitTestVisibleInChrome="True">
+                    <Button Style="{StaticResource GhostButton}" Content="—" Width="46" Height="38" Padding="0" Click="MinimizeButton_OnClick" ToolTip="Minimize"/>
+                    <Button Style="{StaticResource GhostButton}" Content="□" Width="46" Height="38" Padding="0" Click="MaximizeButton_OnClick" ToolTip="Maximize or restore"/>
+                    <Button Style="{StaticResource GhostButton}" Content="×" Width="46" Height="38" Padding="0" Click="CloseButton_OnClick" ToolTip="Close"/>
+                </StackPanel>
+            </Grid>
+
+            <Grid Grid.Row="1">
+                <TabControl SelectedIndex="{Binding SelectedTab, Mode=TwoWay}" Margin="20,14,20,20">
+                    <TabItem Header="Dashboard">
+                        <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="4,20,12,4">
+                            <StackPanel>
+                                <Grid Margin="0,0,0,16">
+                                    <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                    <StackPanel><TextBlock Text="Dashboard" FontSize="30" FontWeight="Bold"/><TextBlock Text="Live engine and wheel status" Foreground="{DynamicResource MutedBrush}" Margin="0,4,0,0"/></StackPanel>
+                                    <Button Grid.Column="1" Content="{Binding StartStopText}" Command="{Binding StartStopCommand}" MinWidth="132" VerticalAlignment="Center"/>
+                                </Grid>
+                                <Grid Margin="0,0,0,16">
+                                    <Grid.ColumnDefinitions><ColumnDefinition Width="1.65*"/><ColumnDefinition Width="16"/><ColumnDefinition/></Grid.ColumnDefinitions>
+                                    <Border Style="{StaticResource CardStyle}">
+                                        <Grid><Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+                                            <Grid><Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                                <StackPanel><TextBlock Text="LIVE ENGINE SPEED" Style="{StaticResource EyebrowStyle}"/><StackPanel Orientation="Horizontal" Margin="0,8,0,0"><TextBlock Text="{Binding RpmDisplay}" FontSize="52" FontWeight="Bold"/><TextBlock Text="{Binding MaximumRpmDisplay}" Foreground="{DynamicResource MutedBrush}" FontSize="16" VerticalAlignment="Bottom" Margin="10,0,0,10"/></StackPanel></StackPanel>
+                                                <StackPanel Grid.Column="1" HorizontalAlignment="Right"><TextBlock Text="{Binding RpmPercentDisplay}" Foreground="{DynamicResource AccentBrush}" FontSize="26" FontWeight="Bold" HorizontalAlignment="Right"/><TextBlock Text="{Binding ShiftState}" Foreground="{DynamicResource MutedBrush}" FontWeight="SemiBold" Margin="0,5,0,0"/></StackPanel>
+                                            </Grid>
+                                            <ItemsControl Grid.Row="1" ItemsSource="{Binding Leds}" Margin="0,30,0,18">
+                                                <ItemsControl.ItemsPanel><ItemsPanelTemplate><UniformGrid Rows="1"/></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                                                <ItemsControl.ItemTemplate><DataTemplate><Border Height="30" Margin="4,0" CornerRadius="8" Background="{Binding Color}" Opacity="{Binding Opacity}"><Border.Effect><DropShadowEffect Color="{Binding Color.Color}" BlurRadius="14" ShadowDepth="0" Opacity="0.55"/></Border.Effect><Border.Style><Style TargetType="Border"><Style.Triggers><DataTrigger Binding="{Binding IsBlinking}" Value="True"><DataTrigger.EnterActions><BeginStoryboard><Storyboard RepeatBehavior="Forever" AutoReverse="True"><DoubleAnimation Storyboard.TargetProperty="Opacity" To="0.12" Duration="0:0:0.0625"/></Storyboard></BeginStoryboard></DataTrigger.EnterActions></DataTrigger></Style.Triggers></Style></Border.Style></Border></DataTemplate></ItemsControl.ItemTemplate>
+                                            </ItemsControl>
+                                            <Grid Grid.Row="2"><Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions><TextBlock Text="{Binding WheelName}" FontWeight="SemiBold"/><TextBlock Grid.Column="1" Text="{Binding WheelVerification}" Foreground="{DynamicResource MutedBrush}" FontSize="12"/></Grid>
+                                        </Grid>
+                                    </Border>
+                                    <Border Grid.Column="2" Style="{StaticResource CardStyle}">
+                                        <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="6"/><ColumnDefinition/></Grid.ColumnDefinitions>
+                                            <Border x:Name="StateBar" Background="{DynamicResource AccentBrush}" CornerRadius="3" Margin="0,0,20,0"><Border.Style><Style TargetType="Border"><Setter Property="Background" Value="{DynamicResource AccentBrush}"/><Style.Triggers><DataTrigger Binding="{Binding State}" Value="{x:Static models:ReadinessState.Driving}"><Setter Property="Background" Value="{DynamicResource SuccessBrush}"/></DataTrigger><DataTrigger Binding="{Binding State}" Value="{x:Static models:ReadinessState.NeedsAttention}"><Setter Property="Background" Value="{DynamicResource DangerBrush}"/></DataTrigger><DataTrigger Binding="{Binding State}" Value="{x:Static models:ReadinessState.SearchingForWheel}"><Setter Property="Background" Value="{DynamicResource WarningBrush}"/></DataTrigger></Style.Triggers></Style></Border.Style></Border>
+                                            <StackPanel Grid.Column="1"><TextBlock Text="RACE STATE" Style="{StaticResource EyebrowStyle}"/><TextBlock Text="{Binding StateGlyph}" Foreground="{DynamicResource AccentBrush}" FontSize="32" Margin="0,18,0,0"/><TextBlock Text="{Binding StateTitle}" FontSize="24" FontWeight="Bold" Margin="0,5,0,0"/><TextBlock Text="{Binding StateDetail}" Foreground="{DynamicResource MutedBrush}" Margin="0,8,0,22"/>
+                                                <Border Background="{DynamicResource ElevatedBrush}" CornerRadius="10" Padding="14"><StackPanel><TextBlock Text="TELEMETRY FORMAT" Style="{StaticResource EyebrowStyle}"/><TextBlock Text="{Binding TelemetryFormat}" Margin="0,6,0,0" FontWeight="SemiBold"/></StackPanel></Border>
+                                            </StackPanel>
+                                        </Grid>
+                                    </Border>
+                                </Grid>
+                                <Grid><Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="12"/><ColumnDefinition/><ColumnDefinition Width="12"/><ColumnDefinition/></Grid.ColumnDefinitions>
+                                    <Border Grid.Column="0" Style="{StaticResource CardStyle}" Padding="18"><StackPanel><TextBlock Text="WHEEL" Style="{StaticResource EyebrowStyle}"/><TextBlock Text="{Binding WheelName}" FontSize="17" FontWeight="SemiBold" Margin="0,7,0,0" TextTrimming="CharacterEllipsis"/></StackPanel></Border>
+                                    <Border Grid.Column="2" Style="{StaticResource CardStyle}" Padding="18"><StackPanel><TextBlock Text="TELEMETRY" Style="{StaticResource EyebrowStyle}"/><TextBlock Text="{Binding TelemetryFormat}" FontSize="17" FontWeight="SemiBold" Margin="0,7,0,0" TextTrimming="CharacterEllipsis"/></StackPanel></Border>
+                                    <Border Grid.Column="4" Style="{StaticResource CardStyle}" Padding="18"><Grid><Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions><StackPanel><TextBlock Text="LED CHECK" Style="{StaticResource EyebrowStyle}"/><TextBlock Text="Run a full sweep" FontSize="17" FontWeight="SemiBold" Margin="0,7,0,0"/></StackPanel><Button Grid.Column="1" Style="{StaticResource SecondaryButton}" Content="Test" Command="{Binding TestCommand}" Padding="14,7"/></Grid></Border>
+                                </Grid>
+                            </StackPanel>
+                        </ScrollViewer>
+                    </TabItem>
+
+                    <TabItem Header="RPM Profile">
+                        <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="4,20,12,4">
+                            <StackPanel>
+                                <Grid Margin="0,0,0,16"><Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions><StackPanel><TextBlock Text="RPM Profile" FontSize="30" FontWeight="Bold"/><TextBlock Text="Tune when each shift-light stage appears" Foreground="{DynamicResource MutedBrush}" Margin="0,4,0,0"/></StackPanel><StackPanel Grid.Column="1" Orientation="Horizontal"><Button Style="{StaticResource GhostButton}" Content="Reset" Command="{Binding ResetProfileCommand}" Margin="0,0,10,0"/><Button Content="Apply profile" Command="{Binding SaveCommand}"/></StackPanel></Grid>
+                                <Border Style="{StaticResource CardStyle}" Margin="0,0,0,16">
+                                    <StackPanel><Grid><Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions><StackPanel><TextBlock Text="LIVE PREVIEW" Style="{StaticResource EyebrowStyle}"/><TextBlock Text="{Binding WheelName}" FontSize="19" FontWeight="SemiBold" Margin="0,6,0,0"/></StackPanel><TextBlock Grid.Column="1" Text="{Binding ShiftState}" Foreground="{DynamicResource AccentBrush}" FontWeight="Bold" VerticalAlignment="Center"/></Grid>
+                                        <ItemsControl ItemsSource="{Binding Leds}" Margin="0,25,0,4"><ItemsControl.ItemsPanel><ItemsPanelTemplate><UniformGrid Rows="1"/></ItemsPanelTemplate></ItemsControl.ItemsPanel><ItemsControl.ItemTemplate><DataTemplate><Border Height="25" Margin="4,0" CornerRadius="7" Background="{Binding Color}" Opacity="{Binding Opacity}"/></DataTemplate></ItemsControl.ItemTemplate></ItemsControl>
+                                    </StackPanel>
+                                </Border>
+                                <Border Style="{StaticResource CardStyle}">
+                                    <StackPanel>
+                                        <Border Background="{DynamicResource ElevatedBrush}" CornerRadius="10" Padding="4" HorizontalAlignment="Left" Margin="0,0,0,24"><StackPanel Orientation="Horizontal"><RadioButton GroupName="ProfileMode" Style="{StaticResource SegmentStyle}" Content="EZ mode" IsChecked="{Binding IsEasyMode}"/><RadioButton GroupName="ProfileMode" Style="{StaticResource SegmentStyle}" Content="Advanced" IsChecked="{Binding IsAdvancedMode}"/></StackPanel></Border>
+                                        <Grid><Grid.Style><Style TargetType="Grid"><Setter Property="Visibility" Value="Collapsed"/><Style.Triggers><DataTrigger Binding="{Binding IsEasyMode}" Value="True"><Setter Property="Visibility" Value="Visible"/></DataTrigger></Style.Triggers></Style></Grid.Style>
+                                            <StackPanel><TextBlock Text="A balanced profile close to Forza’s own progression. Smart per-car learning can refine the shift point after consistent limiter events." Foreground="{DynamicResource MutedBrush}" Margin="0,0,0,20"/>
+                                                <Grid><Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="24"/><ColumnDefinition/></Grid.ColumnDefinitions>
+                                                    <StackPanel><Grid><TextBlock Text="First light" FontWeight="SemiBold"/><TextBlock Text="{Binding FirstLedPercent, StringFormat={}{0:0.0}%}" HorizontalAlignment="Right" Foreground="{DynamicResource AccentBrush}" FontWeight="Bold"/></Grid><Slider Minimum="50" Maximum="94" TickFrequency="0.5" IsSnapToTickEnabled="True" Value="{Binding FirstLedPercent}" Margin="0,8,0,0"/></StackPanel>
+                                                    <StackPanel Grid.Column="2"><Grid><TextBlock Text="Redline" FontWeight="SemiBold"/><TextBlock Text="{Binding RedlinePercent, StringFormat={}{0:0.0}%}" HorizontalAlignment="Right" Foreground="{DynamicResource DangerBrush}" FontWeight="Bold"/></Grid><Slider Minimum="75" Maximum="100" TickFrequency="0.5" IsSnapToTickEnabled="True" Value="{Binding RedlinePercent}" Margin="0,8,0,0"/></StackPanel>
+                                                </Grid>
+                                                <Grid Margin="0,18,0,0"><Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions><TextBlock Text="{Binding CalibrationStatus}" Foreground="{DynamicResource AccentBrush}" VerticalAlignment="Center"/><Button Grid.Column="1" Style="{StaticResource GhostButton}" Content="Reset learning" Command="{Binding ResetLearningCommand}" Padding="12,6"/></Grid>
+                                            </StackPanel>
+                                        </Grid>
+                                        <Grid><Grid.Style><Style TargetType="Grid"><Setter Property="Visibility" Value="Collapsed"/><Style.Triggers><DataTrigger Binding="{Binding IsAdvancedMode}" Value="True"><Setter Property="Visibility" Value="Visible"/></DataTrigger></Style.Triggers></Style></Grid.Style><controls:RpmRangeEditor/></Grid>
+                                        <Border Height="1" Background="{DynamicResource BorderBrush}" Margin="0,24,0,16"/>
+                                        <Grid><Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions><StackPanel><TextBlock Text="Blink at high RPM" FontWeight="SemiBold"/><TextBlock Text="Flash the complete strip at the redline threshold" Foreground="{DynamicResource MutedBrush}" FontSize="12" Margin="0,3,0,0"/></StackPanel><CheckBox Grid.Column="1" IsChecked="{Binding BlinkAtRedline}" VerticalAlignment="Center"/></Grid>
+                                    </StackPanel>
+                                </Border>
+                            </StackPanel>
+                        </ScrollViewer>
+                    </TabItem>
+
+                    <TabItem Header="Settings">
+                        <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="4,20,12,4">
+                            <StackPanel>
+                                <Grid Margin="0,0,0,16"><Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions><StackPanel><TextBlock Text="Settings" FontSize="30" FontWeight="Bold"/><TextBlock Text="Wheel discovery, telemetry, appearance and app behavior" Foreground="{DynamicResource MutedBrush}" Margin="0,4,0,0"/></StackPanel><Button Grid.Column="1" Content="Save settings" Command="{Binding SaveCommand}" VerticalAlignment="Center"/></Grid>
+                                <Grid><Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="16"/><ColumnDefinition/></Grid.ColumnDefinitions>
+                                    <StackPanel Grid.Column="0">
+                                        <Border Style="{StaticResource CardStyle}" Margin="0,0,0,16"><StackPanel><TextBlock Text="WHEEL" Style="{StaticResource EyebrowStyle}"/><TextBlock Text="Device selection" FontSize="19" FontWeight="SemiBold" Margin="0,7,0,16"/><ComboBox ItemsSource="{Binding WheelOptions}" SelectedItem="{Binding SelectedWheel}"/><TextBlock Text="{Binding WheelVerification}" Foreground="{DynamicResource MutedBrush}" FontSize="12" Margin="0,10,0,15"/><StackPanel Orientation="Horizontal"><Button Style="{StaticResource SecondaryButton}" Content="Test LEDs" Command="{Binding TestCommand}" Margin="0,0,10,0"/><Button Style="{StaticResource GhostButton}" Content="Ready animation" Command="{Binding ReadyAnimationCommand}"/></StackPanel></StackPanel></Border>
+                                        <Border Style="{StaticResource CardStyle}" Margin="0,0,0,16"><StackPanel><TextBlock Text="CONNECTION" Style="{StaticResource EyebrowStyle}"/><TextBlock Text="Forza Data Out" FontSize="19" FontWeight="SemiBold" Margin="0,7,0,16"/><TextBlock Text="Game label" Foreground="{DynamicResource MutedBrush}" FontSize="12" Margin="0,0,0,5"/><ComboBox ItemsSource="{Binding Games}" SelectedItem="{Binding GameTitle}" Margin="0,0,0,14"/><Grid><Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="12"/><ColumnDefinition Width="120"/></Grid.ColumnDefinitions><StackPanel><TextBlock Text="Bind address" Foreground="{DynamicResource MutedBrush}" FontSize="12" Margin="0,0,0,5"/><TextBox Text="{Binding BindAddress, UpdateSourceTrigger=PropertyChanged}"/></StackPanel><StackPanel Grid.Column="2"><TextBlock Text="UDP port" Foreground="{DynamicResource MutedBrush}" FontSize="12" Margin="0,0,0,5"/><TextBox Text="{Binding Port, UpdateSourceTrigger=PropertyChanged}"/></StackPanel></Grid><TextBlock Text="All interfaces (0.0.0.0) supports Xbox and remote PCs. Set Forza Data Out to this PC’s LAN address and the port above." Foreground="{DynamicResource MutedBrush}" FontSize="12" Margin="0,12,0,0"/></StackPanel></Border>
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="2">
+                                        <Border Style="{StaticResource CardStyle}" Margin="0,0,0,16"><StackPanel><TextBlock Text="APP BEHAVIOR" Style="{StaticResource EyebrowStyle}"/><TextBlock Text="Startup and tray" FontSize="19" FontWeight="SemiBold" Margin="0,7,0,14"/><CheckBox Content="Start LED control on launch" IsChecked="{Binding AutoStartControl}"/><CheckBox Content="Play ready animation" IsChecked="{Binding ReadyAnimation}"/><CheckBox Content="Minimize to notification area" IsChecked="{Binding MinimizeToTray}"/><CheckBox Content="Close to notification area" IsChecked="{Binding CloseToTray}"/></StackPanel></Border>
+                                        <Border Style="{StaticResource CardStyle}" Margin="0,0,0,16"><StackPanel><TextBlock Text="APPEARANCE" Style="{StaticResource EyebrowStyle}"/><TextBlock Text="Theme" FontSize="19" FontWeight="SemiBold" Margin="0,7,0,16"/><ComboBox ItemsSource="{Binding Themes}" SelectedItem="{Binding Theme}"/><TextBlock Text="System follows the Windows app theme. Motion is kept short and restrained." Foreground="{DynamicResource MutedBrush}" FontSize="12" Margin="0,10,0,0"/></StackPanel></Border>
+                                        <Border Style="{StaticResource CardStyle}"><StackPanel><TextBlock Text="APPLICATION" Style="{StaticResource EyebrowStyle}"/><TextBlock Text="LogiLeds" FontSize="19" FontWeight="SemiBold" Margin="0,7,0,4"/><TextBlock Text="Managed Logitech LED control • Forza telemetry" Foreground="{DynamicResource MutedBrush}" FontSize="12"/><TextBlock Text="{Binding DefinitionDiagnostics}" Foreground="{DynamicResource MutedBrush}" FontSize="12" Margin="0,8,0,18"/><Button Style="{StaticResource DangerButton}" Content="Exit LogiLeds" Command="{Binding ExitCommand}" HorizontalAlignment="Left"/></StackPanel></Border>
+                                    </StackPanel>
+                                </Grid>
+                            </StackPanel>
+                        </ScrollViewer>
+                    </TabItem>
+                </TabControl>
+            </Grid>
+        </Grid>
+    </Border>
+</Window>

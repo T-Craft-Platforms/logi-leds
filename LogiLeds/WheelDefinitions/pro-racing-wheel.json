@@ -1,0 +1,7 @@
+{
+  "schemaVersion": 1, "id": "logitech-pro-racing-wheel", "displayName": "Logitech PRO Racing Wheel",
+  "vendorId": 1133, "productIds": [49768,49778], "transport": "hidpp-level", "hidppFeatureIndex": 11,
+  "physicalLedCount": 10, "controlGroupCount": 10, "direction": "left-to-right",
+  "colors": ["#38D982","#38D982","#6EE65A","#A9E64E","#F0D84A","#FFC145","#FF9B3D","#FF704B","#FF5265","#FF5265"],
+  "defaultFirstPercent": 65, "defaultRedlinePercent": 90, "hardwareVerified": false
+}

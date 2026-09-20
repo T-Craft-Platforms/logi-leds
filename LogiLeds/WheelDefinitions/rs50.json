@@ -1,0 +1,7 @@
+{
+  "schemaVersion": 1, "id": "logitech-rs50", "displayName": "Logitech RS50 Base",
+  "vendorId": 1133, "productIds": [49782], "transport": "hidpp-level", "hidppFeatureIndex": 11,
+  "physicalLedCount": 10, "controlGroupCount": 10, "direction": "left-to-right",
+  "colors": ["#26D99A","#37E17E","#73E45E","#B3E350","#EEDD48","#FFC145","#FF9A3D","#FF704B","#FF5265","#FF3D62"],
+  "defaultFirstPercent": 65, "defaultRedlinePercent": 90, "hardwareVerified": false
+}
