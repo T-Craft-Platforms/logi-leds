@@ -2,8 +2,10 @@ using System.ComponentModel;
 using System.Drawing;
 using System.IO;
 using System.Windows;
+using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Interop;
+using FontAwesome.Sharp;
 using LogiLeds.ViewModels;
 using Forms = System.Windows.Forms;
 
@@ -19,6 +21,8 @@ public partial class MainWindow : Window
     public MainWindow(MainViewModel viewModel)
     {
         InitializeComponent();
+        StatusPopup.CustomPopupPlacementCallback = StatusPopup_OnCustomPopupPlacement;
+        UpdateMaximizeIcon();
         _viewModel = viewModel;
         DataContext = viewModel;
         _viewModel.ExitRequested += async (_, _) => await ExitAsync();
@@ -83,6 +87,7 @@ public partial class MainWindow : Window
 
     private void OnStateChanged(object? sender, EventArgs e)
     {
+        UpdateMaximizeIcon();
         if (_startupComplete && WindowState == WindowState.Minimized && _viewModel.MinimizeToTray) HideToTray();
     }
 
@@ -143,4 +148,12 @@ public partial class MainWindow : Window
     private void MinimizeButton_OnClick(object sender, RoutedEventArgs e) => WindowState = WindowState.Minimized;
     private void MaximizeButton_OnClick(object sender, RoutedEventArgs e) => WindowState = WindowState == WindowState.Maximized ? WindowState.Normal : WindowState.Maximized;
     private void CloseButton_OnClick(object sender, RoutedEventArgs e) => Close();
+
+    private static CustomPopupPlacement[] StatusPopup_OnCustomPopupPlacement(System.Windows.Size popupSize, System.Windows.Size targetSize, System.Windows.Point offset)
+    {
+        var centeredX = (targetSize.Width - popupSize.Width) / 2;
+        return [new CustomPopupPlacement(new System.Windows.Point(centeredX, targetSize.Height), PopupPrimaryAxis.Horizontal)];
+    }
+
+    private void UpdateMaximizeIcon() => MaximizeIcon.Icon = WindowState == WindowState.Maximized ? IconChar.Compress : IconChar.Expand;
 }

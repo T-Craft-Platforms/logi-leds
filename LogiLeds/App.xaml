@@ -13,6 +13,15 @@
                 <GradientStop Color="{DynamicResource AccentColor}" Offset="0.62" />
                 <GradientStop Color="#168DDB" Offset="1" />
             </LinearGradientBrush>
+            <ControlTemplate x:Key="WheelGlyphTemplate" TargetType="ContentControl">
+                <Viewbox Stretch="Uniform">
+                    <Grid Width="24" Height="24">
+                        <Ellipse Margin="2.5" Fill="Transparent" Stroke="{TemplateBinding Foreground}" StrokeThickness="2" />
+                        <Path Data="M 12,12 L 12,4 M 12,12 L 5.2,17 M 12,12 L 18.8,17" Fill="Transparent" Stroke="{TemplateBinding Foreground}" StrokeThickness="2" StrokeStartLineCap="Round" StrokeEndLineCap="Round" StrokeLineJoin="Round" />
+                        <Ellipse Width="5" Height="5" HorizontalAlignment="Center" VerticalAlignment="Center" Fill="{DynamicResource ElevatedBrush}" Stroke="{TemplateBinding Foreground}" StrokeThickness="1.5" />
+                    </Grid>
+                </Viewbox>
+            </ControlTemplate>
             <ControlTemplate x:Key="BrandMarkTemplate" TargetType="ContentControl">
                 <Viewbox Stretch="Uniform">
                     <Grid Width="100" Height="100">
