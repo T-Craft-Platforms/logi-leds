@@ -1,5 +1,6 @@
 using System.ComponentModel;
 using System.Drawing;
+using System.IO;
 using System.Windows;
 using System.Windows.Input;
 using System.Windows.Interop;
@@ -31,7 +32,8 @@ public partial class MainWindow : Window
         var menu = new Forms.ContextMenuStrip();
         menu.Items.Add(openItem); menu.Items.Add(_startStopMenuItem); menu.Items.Add(new Forms.ToolStripSeparator()); menu.Items.Add(exitItem);
         menu.Opening += (_, _) => _startStopMenuItem.Text = _viewModel.IsRunning ? "Stop control" : "Start control";
-        var icon = Environment.ProcessPath is { } path ? System.Drawing.Icon.ExtractAssociatedIcon(path) : null;
+        var iconPath = Path.Combine(AppContext.BaseDirectory, "Assets", "LogiLeds.ico");
+        var icon = File.Exists(iconPath) ? new System.Drawing.Icon(iconPath) : null;
         _trayIcon = new Forms.NotifyIcon { Icon = icon ?? SystemIcons.Application, Text = "LogiLeds", Visible = true, ContextMenuStrip = menu };
         _trayIcon.DoubleClick += (_, _) => RestoreWindow();
 

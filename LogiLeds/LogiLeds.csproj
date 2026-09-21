@@ -11,12 +11,16 @@
         <RuntimeIdentifier>win-x64</RuntimeIdentifier>
         <AssemblyName>LogiLeds</AssemblyName>
         <RootNamespace>LogiLeds</RootNamespace>
+        <ApplicationIcon>Assets\LogiLeds.ico</ApplicationIcon>
         <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
     </PropertyGroup>
 
     <ItemGroup>
         <PackageReference Include="HidSharp" Version="2.6.4" />
+        <PackageReference Include="FontAwesome.WPF" Version="4.7.0.9" />
         <Content Include="WheelDefinitions\*.json" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+        <Content Include="Assets\LogiLeds.ico" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+        <None Include="Assets\LogiLedsMark.svg" />
         <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleToAttribute">
             <_Parameter1>LogiLeds.Tests</_Parameter1>
         </AssemblyAttribute>

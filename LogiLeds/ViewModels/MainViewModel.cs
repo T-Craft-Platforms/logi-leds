@@ -87,20 +87,26 @@ public sealed class MainViewModel : INotifyPropertyChanged, IAsyncDisposable
     public WheelOption? SelectedWheel { get => _selectedWheel; set { if (SetField(ref _selectedWheel, value)) { ConfigurePreview(value?.Id); var wheel = _service.Wheels.FirstOrDefault(x => x.Id == value?.Id); if (wheel is not null) _ = LoadWheelProfileAsync(wheel, false); } } }
     public string GameTitle { get => _gameTitle; set => SetField(ref _gameTitle, value); }
     public string StatusMessage { get => _statusMessage; private set => SetField(ref _statusMessage, value); }
-    public ReadinessState State { get => _state; private set { if (SetField(ref _state, value)) { OnPropertyChanged(nameof(StateTitle)); OnPropertyChanged(nameof(StateDetail)); OnPropertyChanged(nameof(StateGlyph)); } } }
-    public string WheelName { get => _wheelName; private set => SetField(ref _wheelName, value); }
-    public string TelemetryFormat { get => _telemetryFormat; private set => SetField(ref _telemetryFormat, value); }
+    public ReadinessState State { get => _state; private set { if (SetField(ref _state, value)) { OnPropertyChanged(nameof(StateTitle)); OnPropertyChanged(nameof(StateDetail)); OnPropertyChanged(nameof(StateGlyph)); NotifyStatusProperties(); } } }
+    public string WheelName { get => _wheelName; private set { if (SetField(ref _wheelName, value)) OnPropertyChanged(nameof(WheelStatusText)); } }
+    public string TelemetryFormat { get => _telemetryFormat; private set { if (SetField(ref _telemetryFormat, value)) OnPropertyChanged(nameof(TelemetryStatusText)); } }
     public float CurrentRpm { get => _currentRpm; private set { if (SetField(ref _currentRpm, value)) NotifyRpm(); } }
     public float MaximumRpm { get => _maximumRpm; private set { if (SetField(ref _maximumRpm, value)) NotifyRpm(); } }
-    public bool IsRunning { get => _isRunning; private set { if (SetField(ref _isRunning, value)) OnPropertyChanged(nameof(StartStopText)); } }
-    public bool IsWheelConnected { get => _wheelConnected; private set => SetField(ref _wheelConnected, value); }
-    public bool IsTelemetryConnected { get => _telemetryConnected; private set => SetField(ref _telemetryConnected, value); }
+    public bool IsRunning { get => _isRunning; private set { if (SetField(ref _isRunning, value)) { OnPropertyChanged(nameof(StartStopText)); NotifyStatusProperties(); } } }
+    public bool IsWheelConnected { get => _wheelConnected; private set { if (SetField(ref _wheelConnected, value)) NotifyStatusProperties(); } }
+    public bool IsTelemetryConnected { get => _telemetryConnected; private set { if (SetField(ref _telemetryConnected, value)) NotifyStatusProperties(); } }
     public bool IsFlashing { get => _isFlashing; private set { if (SetField(ref _isFlashing, value)) OnPropertyChanged(nameof(ShiftState)); } }
     public string StartStopText => IsRunning ? "Stop control" : "Start control";
-    public string RpmDisplay => MaximumRpm > 0 ? $"{CurrentRpm:N0}" : "WAITING";
-    public string MaximumRpmDisplay => MaximumRpm > 0 ? $"/ {MaximumRpm:N0} RPM" : "for telemetry data";
+    public string RpmDisplay => MaximumRpm > 0 ? $"{CurrentRpm:N0}" : "—";
+    public string MaximumRpmDisplay => MaximumRpm > 0 ? $"/ {MaximumRpm:N0} RPM" : string.Empty;
     public string RpmPercentDisplay => MaximumRpm > 0 ? $"{CurrentRpm / MaximumRpm:P0}" : "—";
     public string ShiftState => IsFlashing ? "SHIFT NOW" : MaximumRpm > 0 ? "LIVE RPM" : "WAITING FOR DATA";
+    public string AppControlStatus => IsRunning ? "Connected" : "Disconnected";
+    public string WheelStatus => !IsWheelConnected ? "Disconnected" : !IsRunning ? "Standby" : "Connected";
+    public string TelemetryStatus => !IsRunning ? "Disconnected" : MaximumRpm > 0 && IsTelemetryConnected ? "Connected" : IsTelemetryConnected || State is ReadinessState.WaitingForTelemetry or ReadinessState.TelemetryStale or ReadinessState.Ready ? "Standby" : "Disconnected";
+    public string AppControlStatusText => !IsRunning ? "Control is stopped" : State == ReadinessState.Driving ? "RPM control is active" : "Control is ready";
+    public string WheelStatusText => IsWheelConnected ? $"{WheelName} connected" : "No wheel detected";
+    public string TelemetryStatusText => MaximumRpm > 0 && IsTelemetryConnected ? $"{TelemetryFormat} drive data active" : IsTelemetryConnected ? "Telemetry connected, no drive data" : State == ReadinessState.TelemetryStale ? "Telemetry paused" : State == ReadinessState.WaitingForTelemetry ? "Listening for telemetry" : "No telemetry signal";
     public string StateTitle => State switch { ReadinessState.Driving => "Driving", ReadinessState.Ready => "Ready", ReadinessState.SearchingForWheel => "Wheel not found", ReadinessState.WaitingForTelemetry => "Waiting for telemetry", ReadinessState.TelemetryStale => "Telemetry paused", ReadinessState.NeedsAttention => "Needs attention", _ => "Control paused" };
     public string StateDetail => StatusMessage;
     public string StateGlyph => State switch { ReadinessState.Driving => "●", ReadinessState.Ready => "✓", ReadinessState.NeedsAttention => "!", ReadinessState.SearchingForWheel => "○", _ => "◌" };
@@ -255,7 +261,12 @@ public sealed class MainViewModel : INotifyPropertyChanged, IAsyncDisposable
         foreach (var led in Leds) { led.IsLit = led.Group <= litGroups; led.IsBlinking = false; }
     }
 
-    private void NotifyRpm() { OnPropertyChanged(nameof(RpmDisplay)); OnPropertyChanged(nameof(MaximumRpmDisplay)); OnPropertyChanged(nameof(RpmPercentDisplay)); OnPropertyChanged(nameof(ShiftState)); }
+    private void NotifyRpm() { OnPropertyChanged(nameof(RpmDisplay)); OnPropertyChanged(nameof(MaximumRpmDisplay)); OnPropertyChanged(nameof(RpmPercentDisplay)); OnPropertyChanged(nameof(ShiftState)); OnPropertyChanged(nameof(TelemetryStatus)); OnPropertyChanged(nameof(TelemetryStatusText)); }
+    private void NotifyStatusProperties()
+    {
+        OnPropertyChanged(nameof(AppControlStatus)); OnPropertyChanged(nameof(WheelStatus)); OnPropertyChanged(nameof(TelemetryStatus));
+        OnPropertyChanged(nameof(AppControlStatusText)); OnPropertyChanged(nameof(WheelStatusText)); OnPropertyChanged(nameof(TelemetryStatusText));
+    }
     private bool SetField<T>(ref T field, T value, [CallerMemberName] string? name = null) { if (EqualityComparer<T>.Default.Equals(field, value)) return false; field = value; OnPropertyChanged(name); return true; }
     private void OnPropertyChanged([CallerMemberName] string? name = null) => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
     public async ValueTask DisposeAsync() { _service.SnapshotChanged -= OnSnapshotChanged; await _service.DisposeAsync(); }

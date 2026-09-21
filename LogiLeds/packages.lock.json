@@ -2,6 +2,12 @@
   "version": 1,
   "dependencies": {
     "net10.0-windows7.0": {
+      "FontAwesome.WPF": {
+        "type": "Direct",
+        "requested": "[4.7.0.9, )",
+        "resolved": "4.7.0.9",
+        "contentHash": "SXE080rnyWMm9Dt0BZzMxh89/o9teuSaqL1N+0O/XM/F/HU8JuZA4XaEKxjBigwZPHHU3/udTa0QMYCHkmH43Q=="
+      },
       "HidSharp": {
         "type": "Direct",
         "requested": "[2.6.4, )",

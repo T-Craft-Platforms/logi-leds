@@ -8,6 +8,21 @@
                 <ResourceDictionary Source="Themes/Dark.xaml" />
                 <ResourceDictionary Source="Themes/Controls.xaml" />
             </ResourceDictionary.MergedDictionaries>
+            <LinearGradientBrush x:Key="BrandWheelBrush" StartPoint="0,0" EndPoint="1,1">
+                <GradientStop Color="{DynamicResource AccentStrongColor}" Offset="0" />
+                <GradientStop Color="{DynamicResource AccentColor}" Offset="0.62" />
+                <GradientStop Color="#168DDB" Offset="1" />
+            </LinearGradientBrush>
+            <ControlTemplate x:Key="BrandMarkTemplate" TargetType="ContentControl">
+                <Viewbox Stretch="Uniform">
+                    <Grid Width="100" Height="100">
+                        <Border Background="#0B1422" CornerRadius="26" />
+                        <Ellipse Width="60" Height="60" HorizontalAlignment="Center" VerticalAlignment="Center" Fill="Transparent" Stroke="{StaticResource BrandWheelBrush}" StrokeThickness="9" />
+                        <Path Data="M 50,50 L 50,24 M 50,50 L 28,67 M 50,50 L 72,67" Fill="Transparent" Stroke="{StaticResource BrandWheelBrush}" StrokeThickness="6" StrokeStartLineCap="Round" StrokeEndLineCap="Round" StrokeLineJoin="Round" />
+                        <Ellipse Width="16" Height="16" HorizontalAlignment="Center" VerticalAlignment="Center" Fill="#0B1422" Stroke="#D7F8FF" StrokeThickness="3" />
+                    </Grid>
+                </Viewbox>
+            </ControlTemplate>
         </ResourceDictionary>
     </Application.Resources>
 </Application>
