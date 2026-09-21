@@ -70,13 +70,8 @@ public partial class MainWindow : Window
             await _viewModel.InitializeAsync(windowHandle);
             var settings = _viewModel.CurrentSettings;
             Width = settings.WindowWidth; Height = settings.WindowHeight;
-            if (settings.WindowLeft is double left && settings.WindowTop is double top &&
-                left + settings.WindowWidth > SystemParameters.VirtualScreenLeft &&
-                left < SystemParameters.VirtualScreenLeft + SystemParameters.VirtualScreenWidth &&
-                top + settings.WindowHeight > SystemParameters.VirtualScreenTop &&
-                top < SystemParameters.VirtualScreenTop + SystemParameters.VirtualScreenHeight)
-            { Left = left; Top = top; }
             if (settings.WindowMaximized) WindowState = WindowState.Maximized;
+            else CenterWindowOnScreen();
         }
         catch (Exception ex)
         {
@@ -206,6 +201,13 @@ public partial class MainWindow : Window
         WindowChrome.ResizeBorderThickness = maximized ? new Thickness(0) : new Thickness(4);
         WindowFrame.Margin = maximized ? new Thickness(4) : new Thickness(0);
         WindowFrame.CornerRadius = new CornerRadius(0);
+    }
+
+    private void CenterWindowOnScreen()
+    {
+        var workArea = SystemParameters.WorkArea;
+        Left = workArea.Left + Math.Max(0, (workArea.Width - Width) / 2);
+        Top = workArea.Top + Math.Max(0, (workArea.Height - Height) / 2);
     }
 
     private void UpdateMaximizeIcon() => MaximizeIcon.Icon = WindowState == WindowState.Maximized ? IconChar.Compress : IconChar.Expand;
