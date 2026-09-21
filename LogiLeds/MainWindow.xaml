@@ -1,98 +1,525 @@
-<Window x:Class="LogiLeds.MainWindow"
-        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:shell="clr-namespace:System.Windows.Shell;assembly=PresentationFramework"
-        xmlns:fa="clr-namespace:FontAwesome.WPF;assembly=FontAwesome.WPF"
-        xmlns:controls="clr-namespace:LogiLeds.Controls"
-        Title="LogiLeds" Icon="Assets/LogiLeds.ico" Width="1180" Height="760" MinWidth="900" MinHeight="620"
-        WindowStartupLocation="CenterScreen" WindowStyle="None" ResizeMode="CanResize" Background="{DynamicResource WindowBrush}">
-    <shell:WindowChrome.WindowChrome><shell:WindowChrome CaptionHeight="44" CornerRadius="10" GlassFrameThickness="0" ResizeBorderThickness="6" UseAeroCaptionButtons="False"/></shell:WindowChrome.WindowChrome>
-    <Border CornerRadius="10" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" Background="{DynamicResource WindowBrush}" ClipToBounds="True">
+<Window
+    x:Class="LogiLeds.MainWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:controls="clr-namespace:LogiLeds.Controls"
+    xmlns:fa="clr-namespace:FontAwesome.WPF;assembly=FontAwesome.WPF"
+    xmlns:shell="clr-namespace:System.Windows.Shell;assembly=PresentationFramework"
+    Title="LogiLeds"
+    Width="1180"
+    Height="760"
+    MinWidth="900"
+    MinHeight="620"
+    Background="{DynamicResource WindowBrush}"
+    Icon="Assets/LogiLeds.ico"
+    ResizeMode="CanResize"
+    WindowStartupLocation="CenterScreen"
+    WindowStyle="None">
+    <shell:WindowChrome.WindowChrome>
+        <shell:WindowChrome
+            CaptionHeight="44"
+            CornerRadius="10"
+            GlassFrameThickness="0"
+            ResizeBorderThickness="6"
+            UseAeroCaptionButtons="False" />
+    </shell:WindowChrome.WindowChrome>
+    <Border
+        Background="{DynamicResource WindowBrush}"
+        BorderBrush="{DynamicResource BorderBrush}"
+        BorderThickness="1"
+        ClipToBounds="True"
+        CornerRadius="10">
         <Grid>
-            <Grid.RowDefinitions><RowDefinition Height="44"/><RowDefinition Height="*"/></Grid.RowDefinitions>
-            <Grid Grid.Row="0" Background="{DynamicResource SurfaceBrush}" MouseLeftButtonDown="TitleBar_OnMouseLeftButtonDown">
-                <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
-                <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="14,0">
-                    <ContentControl Template="{StaticResource BrandMarkTemplate}" Width="24" Height="24" Margin="0,0,10,0" />
-                    <TextBlock Text="LogiLeds" FontWeight="SemiBold" VerticalAlignment="Center"/>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="44" />
+                <RowDefinition Height="*" />
+            </Grid.RowDefinitions>
+            <Grid
+                Grid.Row="0"
+                Background="{DynamicResource SurfaceBrush}"
+                MouseLeftButtonDown="TitleBar_OnMouseLeftButtonDown">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <StackPanel
+                    Margin="14,0"
+                    VerticalAlignment="Center"
+                    Orientation="Horizontal">
+                    <ContentControl
+                        Width="24"
+                        Height="24"
+                        Margin="0,0,10,0"
+                        Template="{StaticResource BrandMarkTemplate}" />
+                    <TextBlock
+                        VerticalAlignment="Center"
+                        FontWeight="SemiBold"
+                        Text="LogiLeds" />
                 </StackPanel>
-                <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center" shell:WindowChrome.IsHitTestVisibleInChrome="True">
-                    <ToggleButton x:Name="StatusButton" Style="{StaticResource StatusButtonStyle}" ToolTip="Show connection status">
+                <StackPanel
+                    Grid.Column="1"
+                    VerticalAlignment="Center"
+                    shell:WindowChrome.IsHitTestVisibleInChrome="True"
+                    Orientation="Horizontal">
+                    <ToggleButton
+                        x:Name="StatusButton"
+                        Style="{StaticResource StatusButtonStyle}"
+                        ToolTip="Show connection status">
                         <StackPanel Orientation="Horizontal">
-                            <fa:ImageAwesome Icon="PowerOff" Style="{StaticResource AppStatusIconStyle}" ToolTip="App control" />
-                            <fa:ImageAwesome Icon="Gamepad" Style="{StaticResource WheelStatusIconStyle}" ToolTip="Wheel connection" />
-                            <fa:ImageAwesome Icon="Wifi" Style="{StaticResource TelemetryStatusIconStyle}" ToolTip="Telemetry connection" />
+                            <fa:ImageAwesome
+                                Icon="PowerOff"
+                                Style="{StaticResource AppStatusIconStyle}"
+                                ToolTip="App control" />
+                            <fa:ImageAwesome
+                                Icon="Gamepad"
+                                Style="{StaticResource WheelStatusIconStyle}"
+                                ToolTip="Wheel connection" />
+                            <fa:ImageAwesome
+                                Icon="Wifi"
+                                Style="{StaticResource TelemetryStatusIconStyle}"
+                                ToolTip="Telemetry connection" />
                         </StackPanel>
                     </ToggleButton>
-                    <Popup IsOpen="{Binding IsChecked, ElementName=StatusButton, Mode=TwoWay}" Placement="Bottom" PlacementTarget="{Binding ElementName=StatusButton}" AllowsTransparency="True" StaysOpen="False" PopupAnimation="Fade">
-                        <Border Width="310" Margin="0,8,0,0" Padding="14" Background="{DynamicResource SurfaceBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="12">
+                    <Popup
+                        AllowsTransparency="True"
+                        IsOpen="{Binding IsChecked, ElementName=StatusButton, Mode=TwoWay}"
+                        Placement="Bottom"
+                        PlacementTarget="{Binding ElementName=StatusButton}"
+                        PopupAnimation="Fade"
+                        StaysOpen="False">
+                        <Border
+                            Width="310"
+                            Margin="0,8,0,0"
+                            Padding="14"
+                            Background="{DynamicResource SurfaceBrush}"
+                            BorderBrush="{DynamicResource BorderBrush}"
+                            BorderThickness="1"
+                            CornerRadius="12">
                             <StackPanel>
-                                <TextBlock Text="SYSTEM STATUS" Style="{StaticResource EyebrowStyle}" Margin="0,0,0,8" />
-                                <Grid Margin="0,5,0,0"><Grid.ColumnDefinitions><ColumnDefinition Width="28"/><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions><fa:ImageAwesome Grid.Column="0" Icon="PowerOff" Style="{StaticResource AppStatusIconStyle}"/><StackPanel Grid.Column="1"><TextBlock Text="App control" FontWeight="SemiBold"/><TextBlock Text="{Binding AppControlStatusText}" Foreground="{DynamicResource MutedBrush}" FontSize="12" Margin="0,2,0,0"/></StackPanel><TextBlock Grid.Column="2" Text="{Binding AppControlStatus}" Foreground="{DynamicResource MutedBrush}" FontSize="12" VerticalAlignment="Center"/></Grid>
-                                <Grid Margin="0,12,0,0"><Grid.ColumnDefinitions><ColumnDefinition Width="28"/><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions><fa:ImageAwesome Grid.Column="0" Icon="Gamepad" Style="{StaticResource WheelStatusIconStyle}"/><StackPanel Grid.Column="1"><TextBlock Text="Wheel connection" FontWeight="SemiBold"/><TextBlock Text="{Binding WheelStatusText}" Foreground="{DynamicResource MutedBrush}" FontSize="12" Margin="0,2,0,0"/></StackPanel><TextBlock Grid.Column="2" Text="{Binding WheelStatus}" Foreground="{DynamicResource MutedBrush}" FontSize="12" VerticalAlignment="Center"/></Grid>
-                                <Grid Margin="0,12,0,0"><Grid.ColumnDefinitions><ColumnDefinition Width="28"/><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions><fa:ImageAwesome Grid.Column="0" Icon="Wifi" Style="{StaticResource TelemetryStatusIconStyle}"/><StackPanel Grid.Column="1"><TextBlock Text="Telemetry connection" FontWeight="SemiBold"/><TextBlock Text="{Binding TelemetryStatusText}" Foreground="{DynamicResource MutedBrush}" FontSize="12" Margin="0,2,0,0"/></StackPanel><TextBlock Grid.Column="2" Text="{Binding TelemetryStatus}" Foreground="{DynamicResource MutedBrush}" FontSize="12" VerticalAlignment="Center"/></Grid>
+                                <TextBlock
+                                    Margin="0,0,0,8"
+                                    Style="{StaticResource EyebrowStyle}"
+                                    Text="SYSTEM STATUS" />
+                                <Grid Margin="0,5,0,0">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="28" />
+                                        <ColumnDefinition />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <fa:ImageAwesome
+                                        Grid.Column="0"
+                                        Icon="PowerOff"
+                                        Style="{StaticResource AppStatusIconStyle}" />
+                                    <StackPanel Grid.Column="1">
+                                        <TextBlock FontWeight="SemiBold" Text="App control" />
+                                        <TextBlock
+                                            Margin="0,2,0,0"
+                                            FontSize="12"
+                                            Foreground="{DynamicResource MutedBrush}"
+                                            Text="{Binding AppControlStatusText}" />
+                                    </StackPanel>
+                                    <TextBlock
+                                        Grid.Column="2"
+                                        VerticalAlignment="Center"
+                                        FontSize="12"
+                                        Foreground="{DynamicResource MutedBrush}"
+                                        Text="{Binding AppControlStatus}" />
+                                </Grid>
+                                <Grid Margin="0,12,0,0">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="28" />
+                                        <ColumnDefinition />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <fa:ImageAwesome
+                                        Grid.Column="0"
+                                        Icon="Gamepad"
+                                        Style="{StaticResource WheelStatusIconStyle}" />
+                                    <StackPanel Grid.Column="1">
+                                        <TextBlock FontWeight="SemiBold" Text="Wheel connection" />
+                                        <TextBlock
+                                            Margin="0,2,0,0"
+                                            FontSize="12"
+                                            Foreground="{DynamicResource MutedBrush}"
+                                            Text="{Binding WheelStatusText}" />
+                                    </StackPanel>
+                                    <TextBlock
+                                        Grid.Column="2"
+                                        VerticalAlignment="Center"
+                                        FontSize="12"
+                                        Foreground="{DynamicResource MutedBrush}"
+                                        Text="{Binding WheelStatus}" />
+                                </Grid>
+                                <Grid Margin="0,12,0,0">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="28" />
+                                        <ColumnDefinition />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <fa:ImageAwesome
+                                        Grid.Column="0"
+                                        Icon="Wifi"
+                                        Style="{StaticResource TelemetryStatusIconStyle}" />
+                                    <StackPanel Grid.Column="1">
+                                        <TextBlock FontWeight="SemiBold" Text="Telemetry connection" />
+                                        <TextBlock
+                                            Margin="0,2,0,0"
+                                            FontSize="12"
+                                            Foreground="{DynamicResource MutedBrush}"
+                                            Text="{Binding TelemetryStatusText}" />
+                                    </StackPanel>
+                                    <TextBlock
+                                        Grid.Column="2"
+                                        VerticalAlignment="Center"
+                                        FontSize="12"
+                                        Foreground="{DynamicResource MutedBrush}"
+                                        Text="{Binding TelemetryStatus}" />
+                                </Grid>
                             </StackPanel>
                         </Border>
                     </Popup>
-                    <Button Style="{StaticResource WindowButtonStyle}" Click="MinimizeButton_OnClick" ToolTip="Minimize"><fa:ImageAwesome Icon="Minus" Width="12" Height="12" /></Button>
-                    <Button Style="{StaticResource WindowButtonStyle}" Click="MaximizeButton_OnClick" ToolTip="Maximize or restore"><fa:ImageAwesome Icon="Expand" Width="12" Height="12" /></Button>
-                    <Button Style="{StaticResource WindowButtonStyle}" Click="CloseButton_OnClick" ToolTip="Close"><fa:ImageAwesome Icon="Times" Width="12" Height="12" /></Button>
+                    <Button
+                        Click="MinimizeButton_OnClick"
+                        Style="{StaticResource WindowButtonStyle}"
+                        ToolTip="Minimize">
+                        <fa:ImageAwesome
+                            Width="12"
+                            Height="12"
+                            Icon="Minus" />
+                    </Button>
+                    <Button
+                        Click="MaximizeButton_OnClick"
+                        Style="{StaticResource WindowButtonStyle}"
+                        ToolTip="Maximize or restore">
+                        <fa:ImageAwesome
+                            Width="12"
+                            Height="12"
+                            Icon="Expand" />
+                    </Button>
+                    <Button
+                        Click="CloseButton_OnClick"
+                        Style="{StaticResource WindowButtonStyle}"
+                        ToolTip="Close">
+                        <fa:ImageAwesome
+                            Width="12"
+                            Height="12"
+                            Icon="Times" />
+                    </Button>
                 </StackPanel>
             </Grid>
 
             <Grid Grid.Row="1">
-                <TabControl SelectedIndex="{Binding SelectedTab, Mode=TwoWay}" Margin="20,14,20,20" Cursor="Arrow">
+                <TabControl
+                    Margin="20,14,20,20"
+                    Cursor="Arrow"
+                    SelectedIndex="{Binding SelectedTab, Mode=TwoWay}">
                     <TabItem Header="Dashboard">
-                        <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="4,20,12,4">
+                        <ScrollViewer Padding="4,20,12,4" VerticalScrollBarVisibility="Auto">
                             <StackPanel>
                                 <Grid Margin="0,0,0,16">
-                                    <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
-                                    <TextBlock Text="Dashboard" FontSize="30" FontWeight="Bold" VerticalAlignment="Center"/>
-                                    <Button Grid.Column="1" Style="{StaticResource DashboardControlButtonStyle}" Command="{Binding RestartCommand}" VerticalAlignment="Center" Padding="16,8" MinHeight="36"/>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock
+                                        VerticalAlignment="Center"
+                                        FontSize="30"
+                                        FontWeight="Bold"
+                                        Text="Dashboard" />
+                                    <Button
+                                        Grid.Column="1"
+                                        MinHeight="36"
+                                        Padding="16,8"
+                                        VerticalAlignment="Center"
+                                        Command="{Binding RestartCommand}"
+                                        Style="{StaticResource DashboardControlButtonStyle}" />
                                 </Grid>
                                 <Grid Margin="0,0,0,16">
-                                    <Grid.ColumnDefinitions><ColumnDefinition/></Grid.ColumnDefinitions>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition />
+                                    </Grid.ColumnDefinitions>
                                     <Border Style="{StaticResource CardStyle}">
-                                        <Grid><Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
-                                            <Grid><Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
-                                                <StackPanel Orientation="Horizontal"><TextBlock Text="{Binding RpmDisplay}" FontSize="52" FontWeight="Bold"/><TextBlock Text="{Binding MaximumRpmDisplay}" Foreground="{DynamicResource MutedBrush}" FontSize="16" VerticalAlignment="Bottom" Margin="10,0,0,10"/></StackPanel>
-                                                <TextBlock Grid.Column="1" Text="{Binding RpmPercentDisplay}" Foreground="{DynamicResource AccentBrush}" FontSize="26" FontWeight="Bold" HorizontalAlignment="Right"/>
+                                        <Grid>
+                                            <Grid.RowDefinitions>
+                                                <RowDefinition Height="Auto" />
+                                                <RowDefinition Height="Auto" />
+                                            </Grid.RowDefinitions>
+                                            <Grid>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition />
+                                                    <ColumnDefinition Width="Auto" />
+                                                </Grid.ColumnDefinitions>
+                                                <StackPanel Orientation="Horizontal">
+                                                    <TextBlock
+                                                        FontSize="52"
+                                                        FontWeight="Bold"
+                                                        Text="{Binding RpmDisplay}" />
+                                                    <TextBlock
+                                                        Margin="10,0,0,10"
+                                                        VerticalAlignment="Bottom"
+                                                        FontSize="16"
+                                                        Foreground="{DynamicResource MutedBrush}"
+                                                        Text="{Binding MaximumRpmDisplay}" />
+                                                </StackPanel>
+                                                <TextBlock
+                                                    Grid.Column="1"
+                                                    HorizontalAlignment="Right"
+                                                    FontSize="26"
+                                                    FontWeight="Bold"
+                                                    Foreground="{DynamicResource AccentBrush}"
+                                                    Text="{Binding RpmPercentDisplay}" />
                                             </Grid>
-                                            <ItemsControl Grid.Row="1" ItemsSource="{Binding Leds}" Margin="0,30,0,18">
-                                                <ItemsControl.ItemsPanel><ItemsPanelTemplate><UniformGrid Rows="1"/></ItemsPanelTemplate></ItemsControl.ItemsPanel>
-                                                <ItemsControl.ItemTemplate><DataTemplate><Border Height="30" Margin="4,0" CornerRadius="8" Background="{Binding Color}" Opacity="{Binding Opacity}"><Border.Effect><DropShadowEffect Color="{Binding Color.Color}" BlurRadius="14" ShadowDepth="0" Opacity="0.55"/></Border.Effect></Border></DataTemplate></ItemsControl.ItemTemplate>
+                                            <ItemsControl
+                                                Grid.Row="1"
+                                                Margin="0,30,0,18"
+                                                ItemsSource="{Binding Leds}">
+                                                <ItemsControl.ItemsPanel>
+                                                    <ItemsPanelTemplate>
+                                                        <UniformGrid Rows="1" />
+                                                    </ItemsPanelTemplate>
+                                                </ItemsControl.ItemsPanel>
+                                                <ItemsControl.ItemTemplate>
+                                                    <DataTemplate>
+                                                        <Border
+                                                            Height="30"
+                                                            Margin="4,0"
+                                                            Background="{Binding Color}"
+                                                            CornerRadius="8"
+                                                            Opacity="{Binding Opacity}">
+                                                            <Border.Effect>
+                                                                <DropShadowEffect
+                                                                    BlurRadius="14"
+                                                                    Opacity="0.55"
+                                                                    ShadowDepth="0"
+                                                                    Color="{Binding Color.Color}" />
+                                                            </Border.Effect>
+                                                        </Border>
+                                                    </DataTemplate>
+                                                </ItemsControl.ItemTemplate>
                                             </ItemsControl>
                                         </Grid>
                                     </Border>
                                 </Grid>
-                                <Grid><Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="12"/><ColumnDefinition/><ColumnDefinition Width="12"/><ColumnDefinition/></Grid.ColumnDefinitions>
-                                    <Border Grid.Column="0" Style="{StaticResource CardStyle}" Padding="18"><StackPanel><TextBlock Text="WHEEL" Style="{StaticResource EyebrowStyle}"/><TextBlock Text="{Binding WheelName}" FontSize="17" FontWeight="SemiBold" Margin="0,7,0,0" TextTrimming="CharacterEllipsis"/></StackPanel></Border>
-                                    <Border Grid.Column="2" Style="{StaticResource CardStyle}" Padding="18"><StackPanel><TextBlock Text="TELEMETRY" Style="{StaticResource EyebrowStyle}"/><TextBlock Text="{Binding TelemetryFormat}" FontSize="17" FontWeight="SemiBold" Margin="0,7,0,0" TextTrimming="CharacterEllipsis"/></StackPanel></Border>
-                                    <Border Grid.Column="4" Style="{StaticResource CardStyle}" Padding="18"><Grid><Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions><StackPanel><TextBlock Text="LED CHECK" Style="{StaticResource EyebrowStyle}"/><TextBlock Text="Run a full sweep" FontSize="17" FontWeight="SemiBold" Margin="0,7,0,0"/></StackPanel><Button Grid.Column="1" Style="{StaticResource SecondaryButton}" Content="Test" Command="{Binding TestCommand}" Padding="14,7"/></Grid></Border>
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition />
+                                        <ColumnDefinition Width="12" />
+                                        <ColumnDefinition />
+                                        <ColumnDefinition Width="12" />
+                                        <ColumnDefinition />
+                                    </Grid.ColumnDefinitions>
+                                    <Border
+                                        Grid.Column="0"
+                                        Padding="18"
+                                        Style="{StaticResource CardStyle}">
+                                        <StackPanel>
+                                            <TextBlock Style="{StaticResource EyebrowStyle}" Text="WHEEL" />
+                                            <TextBlock
+                                                Margin="0,7,0,0"
+                                                FontSize="17"
+                                                FontWeight="SemiBold"
+                                                Text="{Binding WheelName}"
+                                                TextTrimming="CharacterEllipsis" />
+                                        </StackPanel>
+                                    </Border>
+                                    <Border
+                                        Grid.Column="2"
+                                        Padding="18"
+                                        Style="{StaticResource CardStyle}">
+                                        <StackPanel>
+                                            <TextBlock Style="{StaticResource EyebrowStyle}" Text="TELEMETRY" />
+                                            <TextBlock
+                                                Margin="0,7,0,0"
+                                                FontSize="17"
+                                                FontWeight="SemiBold"
+                                                Text="{Binding TelemetryFormat}"
+                                                TextTrimming="CharacterEllipsis" />
+                                        </StackPanel>
+                                    </Border>
+                                    <Border
+                                        Grid.Column="4"
+                                        Padding="18"
+                                        Style="{StaticResource CardStyle}">
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition />
+                                                <ColumnDefinition Width="Auto" />
+                                            </Grid.ColumnDefinitions>
+                                            <StackPanel>
+                                                <TextBlock Style="{StaticResource EyebrowStyle}" Text="LED CHECK" />
+                                                <TextBlock
+                                                    Margin="0,7,0,0"
+                                                    FontSize="17"
+                                                    FontWeight="SemiBold"
+                                                    Text="Run a full sweep" />
+                                            </StackPanel>
+                                            <Button
+                                                Grid.Column="1"
+                                                Padding="14,7"
+                                                Command="{Binding TestCommand}"
+                                                Content="Test"
+                                                Style="{StaticResource SecondaryButton}" />
+                                        </Grid>
+                                    </Border>
                                 </Grid>
                             </StackPanel>
                         </ScrollViewer>
                     </TabItem>
 
                     <TabItem Header="RPM Profile">
-                        <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="4,20,12,4">
+                        <ScrollViewer Padding="4,20,12,4" VerticalScrollBarVisibility="Auto">
                             <StackPanel>
-                                <Grid Margin="0,0,0,16"><Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions><TextBlock Text="RPM Profile" FontSize="30" FontWeight="Bold"/><StackPanel Grid.Column="1" Orientation="Horizontal"><Button Style="{StaticResource GhostButton}" Content="Reset" Command="{Binding ResetProfileCommand}" Padding="12,6" MinHeight="32" Margin="0,0,8,0"/><Button Content="Apply profile" Command="{Binding SaveCommand}" Padding="14,7" MinHeight="34"/></StackPanel></Grid>
+                                <Grid Margin="0,0,0,16">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock
+                                        FontSize="30"
+                                        FontWeight="Bold"
+                                        Text="RPM Profile" />
+                                    <StackPanel Grid.Column="1" Orientation="Horizontal">
+                                        <Button
+                                            MinHeight="32"
+                                            Margin="0,0,8,0"
+                                            Padding="12,6"
+                                            Command="{Binding ResetProfileCommand}"
+                                            Content="Reset"
+                                            Style="{StaticResource GhostButton}" />
+                                        <Button
+                                            MinHeight="34"
+                                            Padding="14,7"
+                                            Command="{Binding SaveCommand}"
+                                            Content="Apply profile" />
+                                    </StackPanel>
+                                </Grid>
                                 <Border Style="{StaticResource CardStyle}">
                                     <StackPanel>
-                                        <Border Background="{DynamicResource ElevatedBrush}" CornerRadius="10" Padding="4" HorizontalAlignment="Left" Margin="0,0,0,24"><StackPanel Orientation="Horizontal"><RadioButton GroupName="ProfileMode" Style="{StaticResource SegmentStyle}" Content="Smart mode" IsChecked="{Binding IsEasyMode}"/><RadioButton GroupName="ProfileMode" Style="{StaticResource SegmentStyle}" Content="Advanced" IsChecked="{Binding IsAdvancedMode}"/></StackPanel></Border>
-                                        <Grid><Grid.Style><Style TargetType="Grid"><Setter Property="Visibility" Value="Collapsed"/><Style.Triggers><DataTrigger Binding="{Binding IsEasyMode}" Value="True"><Setter Property="Visibility" Value="Visible"/></DataTrigger></Style.Triggers></Style></Grid.Style>
+                                        <Border
+                                            Margin="0,0,0,24"
+                                            Padding="4"
+                                            HorizontalAlignment="Left"
+                                            Background="{DynamicResource ElevatedBrush}"
+                                            CornerRadius="10">
+                                            <StackPanel Orientation="Horizontal">
+                                                <RadioButton
+                                                    Content="Smart mode"
+                                                    GroupName="ProfileMode"
+                                                    IsChecked="{Binding IsEasyMode}"
+                                                    Style="{StaticResource SegmentStyle}" />
+                                                <RadioButton
+                                                    Content="Advanced"
+                                                    GroupName="ProfileMode"
+                                                    IsChecked="{Binding IsAdvancedMode}"
+                                                    Style="{StaticResource SegmentStyle}" />
+                                            </StackPanel>
+                                        </Border>
+                                        <Grid>
+                                            <Grid.Style>
+                                                <Style TargetType="Grid">
+                                                    <Setter Property="Visibility" Value="Collapsed" />
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding IsEasyMode}" Value="True">
+                                                            <Setter Property="Visibility" Value="Visible" />
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </Grid.Style>
                                             <StackPanel>
-                                                <Grid><Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="24"/><ColumnDefinition/></Grid.ColumnDefinitions>
-                                                    <StackPanel><Grid><TextBlock Text="First light" FontWeight="SemiBold"/><TextBlock Text="{Binding FirstLedPercent, StringFormat={}{0:0.0}%}" HorizontalAlignment="Right" Foreground="{DynamicResource AccentBrush}" FontWeight="Bold"/></Grid><Slider Minimum="50" Maximum="94" TickFrequency="0.5" IsSnapToTickEnabled="True" Value="{Binding FirstLedPercent}" Margin="0,8,0,0"/></StackPanel>
-                                                    <StackPanel Grid.Column="2"><Grid><TextBlock Text="Redline" FontWeight="SemiBold"/><TextBlock Text="{Binding RedlinePercent, StringFormat={}{0:0.0}%}" HorizontalAlignment="Right" Foreground="{DynamicResource DangerBrush}" FontWeight="Bold"/></Grid><Slider Minimum="75" Maximum="100" TickFrequency="0.5" IsSnapToTickEnabled="True" Value="{Binding RedlinePercent}" Margin="0,8,0,0"/></StackPanel>
+                                                <Grid>
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition />
+                                                        <ColumnDefinition Width="24" />
+                                                        <ColumnDefinition />
+                                                    </Grid.ColumnDefinitions>
+                                                    <StackPanel>
+                                                        <Grid>
+                                                            <TextBlock FontWeight="SemiBold" Text="First light" />
+                                                            <TextBlock
+                                                                HorizontalAlignment="Right"
+                                                                FontWeight="Bold"
+                                                                Foreground="{DynamicResource AccentBrush}"
+                                                                Text="{Binding FirstLedPercent, StringFormat={}{0:0.0}%}" />
+                                                        </Grid>
+                                                        <Slider
+                                                            Margin="0,8,0,0"
+                                                            IsSnapToTickEnabled="True"
+                                                            Maximum="94"
+                                                            Minimum="50"
+                                                            TickFrequency="0.5"
+                                                            Value="{Binding FirstLedPercent}" />
+                                                    </StackPanel>
+                                                    <StackPanel Grid.Column="2">
+                                                        <Grid>
+                                                            <TextBlock FontWeight="SemiBold" Text="Redline" />
+                                                            <TextBlock
+                                                                HorizontalAlignment="Right"
+                                                                FontWeight="Bold"
+                                                                Foreground="{DynamicResource DangerBrush}"
+                                                                Text="{Binding RedlinePercent, StringFormat={}{0:0.0}%}" />
+                                                        </Grid>
+                                                        <Slider
+                                                            Margin="0,8,0,0"
+                                                            IsSnapToTickEnabled="True"
+                                                            Maximum="100"
+                                                            Minimum="75"
+                                                            TickFrequency="0.5"
+                                                            Value="{Binding RedlinePercent}" />
+                                                    </StackPanel>
                                                 </Grid>
-                                                <Grid Margin="0,18,0,0"><Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions><TextBlock Text="{Binding CalibrationStatus}" Foreground="{DynamicResource AccentBrush}" VerticalAlignment="Center"/><Button Grid.Column="1" Style="{StaticResource GhostButton}" Content="Reset learning" Command="{Binding ResetLearningCommand}" Padding="12,6"/></Grid>
+                                                <Grid Margin="0,18,0,0">
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition />
+                                                        <ColumnDefinition Width="Auto" />
+                                                    </Grid.ColumnDefinitions>
+                                                    <TextBlock
+                                                        VerticalAlignment="Center"
+                                                        Foreground="{DynamicResource AccentBrush}"
+                                                        Text="{Binding CalibrationStatus}" />
+                                                    <Button
+                                                        Grid.Column="1"
+                                                        Padding="12,6"
+                                                        Command="{Binding ResetLearningCommand}"
+                                                        Content="Reset learning"
+                                                        Style="{StaticResource GhostButton}" />
+                                                </Grid>
                                             </StackPanel>
                                         </Grid>
-                                        <Grid><Grid.Style><Style TargetType="Grid"><Setter Property="Visibility" Value="Collapsed"/><Style.Triggers><DataTrigger Binding="{Binding IsAdvancedMode}" Value="True"><Setter Property="Visibility" Value="Visible"/></DataTrigger></Style.Triggers></Style></Grid.Style><controls:RpmRangeEditor/></Grid>
-                                        <Border Height="1" Background="{DynamicResource BorderBrush}" Margin="0,24,0,16"/>
-                                        <Grid><Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions><StackPanel><TextBlock Text="Blink at high RPM" FontWeight="SemiBold"/><TextBlock Text="Flash the complete strip at the redline threshold" Foreground="{DynamicResource MutedBrush}" FontSize="12" Margin="0,3,0,0"/></StackPanel><CheckBox Grid.Column="1" IsChecked="{Binding BlinkAtRedline}" VerticalAlignment="Center"/></Grid>
+                                        <Grid>
+                                            <Grid.Style>
+                                                <Style TargetType="Grid">
+                                                    <Setter Property="Visibility" Value="Collapsed" />
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding IsAdvancedMode}" Value="True">
+                                                            <Setter Property="Visibility" Value="Visible" />
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </Grid.Style>
+                                            <controls:RpmRangeEditor />
+                                        </Grid>
+                                        <Border
+                                            Height="1"
+                                            Margin="0,24,0,16"
+                                            Background="{DynamicResource BorderBrush}" />
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition />
+                                                <ColumnDefinition Width="Auto" />
+                                            </Grid.ColumnDefinitions>
+                                            <StackPanel>
+                                                <TextBlock FontWeight="SemiBold" Text="Blink at high RPM" />
+                                                <TextBlock
+                                                    Margin="0,3,0,0"
+                                                    FontSize="12"
+                                                    Foreground="{DynamicResource MutedBrush}"
+                                                    Text="Flash the complete strip at the redline threshold" />
+                                            </StackPanel>
+                                            <CheckBox
+                                                Grid.Column="1"
+                                                VerticalAlignment="Center"
+                                                IsChecked="{Binding BlinkAtRedline}" />
+                                        </Grid>
                                     </StackPanel>
                                 </Border>
                             </StackPanel>
@@ -100,18 +527,155 @@
                     </TabItem>
 
                     <TabItem Header="Settings">
-                        <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="4,20,12,4">
+                        <ScrollViewer Padding="4,20,12,4" VerticalScrollBarVisibility="Auto">
                             <StackPanel>
-                                <Grid Margin="0,0,0,16"><Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions><TextBlock Text="Settings" FontSize="30" FontWeight="Bold" VerticalAlignment="Center"/><Button Grid.Column="1" Content="Save settings" Command="{Binding SaveCommand}" VerticalAlignment="Center"/></Grid>
-                                <Grid><Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="16"/><ColumnDefinition/></Grid.ColumnDefinitions>
+                                <Grid Margin="0,0,0,16">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock
+                                        VerticalAlignment="Center"
+                                        FontSize="30"
+                                        FontWeight="Bold"
+                                        Text="Settings" />
+                                    <Button
+                                        Grid.Column="1"
+                                        VerticalAlignment="Center"
+                                        Command="{Binding SaveCommand}"
+                                        Content="Save settings" />
+                                </Grid>
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition />
+                                        <ColumnDefinition Width="16" />
+                                        <ColumnDefinition />
+                                    </Grid.ColumnDefinitions>
                                     <StackPanel Grid.Column="0">
-                                        <Border Style="{StaticResource CardStyle}" Margin="0,0,0,16"><StackPanel><TextBlock Text="WHEEL" Style="{StaticResource EyebrowStyle}"/><TextBlock Text="Device selection" FontSize="19" FontWeight="SemiBold" Margin="0,7,0,16"/><ComboBox ItemsSource="{Binding WheelOptions}" SelectedItem="{Binding SelectedWheel}"/><TextBlock Text="{Binding WheelVerification}" Foreground="{DynamicResource MutedBrush}" FontSize="12" Margin="0,10,0,15"/><Button Style="{StaticResource SecondaryButton}" Content="Test LEDs" Command="{Binding TestCommand}" HorizontalAlignment="Left"/></StackPanel></Border>
-                                        <Border Style="{StaticResource CardStyle}" Margin="0,0,0,16"><StackPanel><TextBlock Text="CONNECTION" Style="{StaticResource EyebrowStyle}"/><TextBlock Text="Forza Data Out" FontSize="19" FontWeight="SemiBold" Margin="0,7,0,16"/><Grid><Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="12"/><ColumnDefinition Width="120"/></Grid.ColumnDefinitions><StackPanel><TextBlock Text="Bind address" Foreground="{DynamicResource MutedBrush}" FontSize="12" Margin="0,0,0,5"/><TextBox Text="{Binding BindAddress, UpdateSourceTrigger=PropertyChanged}"/></StackPanel><StackPanel Grid.Column="2"><TextBlock Text="UDP port" Foreground="{DynamicResource MutedBrush}" FontSize="12" Margin="0,0,0,5"/><TextBox Text="{Binding Port, UpdateSourceTrigger=PropertyChanged}"/></StackPanel></Grid><TextBlock Text="All interfaces (0.0.0.0) supports Xbox and remote PCs. Set Forza Data Out to this PC’s LAN address and the port above." Foreground="{DynamicResource MutedBrush}" FontSize="12" Margin="0,12,0,0"/></StackPanel></Border>
+                                        <Border Margin="0,0,0,16" Style="{StaticResource CardStyle}">
+                                            <StackPanel>
+                                                <TextBlock Style="{StaticResource EyebrowStyle}" Text="WHEEL" />
+                                                <TextBlock
+                                                    Margin="0,7,0,16"
+                                                    FontSize="19"
+                                                    FontWeight="SemiBold"
+                                                    Text="Device selection" />
+                                                <ComboBox ItemsSource="{Binding WheelOptions}" SelectedItem="{Binding SelectedWheel}" />
+                                                <TextBlock
+                                                    Margin="0,10,0,15"
+                                                    FontSize="12"
+                                                    Foreground="{DynamicResource MutedBrush}"
+                                                    Text="{Binding WheelVerification}" />
+                                                <Button
+                                                    HorizontalAlignment="Left"
+                                                    Command="{Binding TestCommand}"
+                                                    Content="Test LEDs"
+                                                    Style="{StaticResource SecondaryButton}" />
+                                            </StackPanel>
+                                        </Border>
+                                        <Border Margin="0,0,0,16" Style="{StaticResource CardStyle}">
+                                            <StackPanel>
+                                                <TextBlock Style="{StaticResource EyebrowStyle}" Text="CONNECTION" />
+                                                <TextBlock
+                                                    Margin="0,7,0,16"
+                                                    FontSize="19"
+                                                    FontWeight="SemiBold"
+                                                    Text="Forza Data Out" />
+                                                <Grid>
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition />
+                                                        <ColumnDefinition Width="12" />
+                                                        <ColumnDefinition Width="120" />
+                                                    </Grid.ColumnDefinitions>
+                                                    <StackPanel>
+                                                        <TextBlock
+                                                            Margin="0,0,0,5"
+                                                            FontSize="12"
+                                                            Foreground="{DynamicResource MutedBrush}"
+                                                            Text="Bind address" />
+                                                        <TextBox Text="{Binding BindAddress, UpdateSourceTrigger=PropertyChanged}" />
+                                                    </StackPanel>
+                                                    <StackPanel Grid.Column="2">
+                                                        <TextBlock
+                                                            Margin="0,0,0,5"
+                                                            FontSize="12"
+                                                            Foreground="{DynamicResource MutedBrush}"
+                                                            Text="UDP port" />
+                                                        <TextBox Text="{Binding Port, UpdateSourceTrigger=PropertyChanged}" />
+                                                    </StackPanel>
+                                                </Grid>
+                                                <TextBlock
+                                                    Margin="0,12,0,0"
+                                                    FontSize="12"
+                                                    Foreground="{DynamicResource MutedBrush}"
+                                                    Text="All interfaces (0.0.0.0) supports Xbox and remote PCs. Set Forza Data Out to this PC’s LAN address and the port above." />
+                                            </StackPanel>
+                                        </Border>
                                     </StackPanel>
                                     <StackPanel Grid.Column="2">
-                                        <Border Style="{StaticResource CardStyle}" Margin="0,0,0,16"><StackPanel><TextBlock Text="APP BEHAVIOR" Style="{StaticResource EyebrowStyle}"/><TextBlock Text="Startup and tray" FontSize="19" FontWeight="SemiBold" Margin="0,7,0,14"/><CheckBox Content="Start LED control on launch" IsChecked="{Binding AutoStartControl}"/><CheckBox Content="Close to notification area" IsChecked="{Binding CloseToTray}"/><Button Style="{StaticResource StartStopButtonStyle}" Content="{Binding StartStopText}" Command="{Binding StartStopCommand}" HorizontalAlignment="Left" Margin="0,10,0,0"/><TextBlock Text="Minimizing and the startup animation are always handled for a smooth desktop experience." Foreground="{DynamicResource MutedBrush}" FontSize="12" Margin="0,8,0,0"/></StackPanel></Border>
-                                        <Border Style="{StaticResource CardStyle}" Margin="0,0,0,16"><StackPanel><TextBlock Text="APPEARANCE" Style="{StaticResource EyebrowStyle}"/><TextBlock Text="Theme" FontSize="19" FontWeight="SemiBold" Margin="0,7,0,16"/><ComboBox ItemsSource="{Binding Themes}" SelectedItem="{Binding Theme}"/><TextBlock Text="System follows the Windows app theme. Motion is kept short and restrained." Foreground="{DynamicResource MutedBrush}" FontSize="12" Margin="0,10,0,0"/></StackPanel></Border>
-                                        <Border Style="{StaticResource CardStyle}"><StackPanel><TextBlock Text="APPLICATION" Style="{StaticResource EyebrowStyle}"/><TextBlock Text="LogiLeds" FontSize="19" FontWeight="SemiBold" Margin="0,7,0,4"/><TextBlock Text="Managed Logitech LED control • Forza telemetry" Foreground="{DynamicResource MutedBrush}" FontSize="12"/><TextBlock Text="{Binding DefinitionDiagnostics}" Foreground="{DynamicResource MutedBrush}" FontSize="12" Margin="0,8,0,18"/><Button Style="{StaticResource DangerButton}" Content="Exit LogiLeds" Command="{Binding ExitCommand}" HorizontalAlignment="Left"/></StackPanel></Border>
+                                        <Border Margin="0,0,0,16" Style="{StaticResource CardStyle}">
+                                            <StackPanel>
+                                                <TextBlock Style="{StaticResource EyebrowStyle}" Text="APP BEHAVIOR" />
+                                                <TextBlock
+                                                    Margin="0,7,0,14"
+                                                    FontSize="19"
+                                                    FontWeight="SemiBold"
+                                                    Text="Startup and tray" />
+                                                <CheckBox Content="Start LED control on launch" IsChecked="{Binding AutoStartControl}" />
+                                                <CheckBox Content="Close to notification area" IsChecked="{Binding CloseToTray}" />
+                                                <Button
+                                                    Margin="0,10,0,0"
+                                                    HorizontalAlignment="Left"
+                                                    Command="{Binding StartStopCommand}"
+                                                    Content="{Binding StartStopText}"
+                                                    Style="{StaticResource StartStopButtonStyle}" />
+                                                <TextBlock
+                                                    Margin="0,8,0,0"
+                                                    FontSize="12"
+                                                    Foreground="{DynamicResource MutedBrush}"
+                                                    Text="Minimizing and the startup animation are always handled for a smooth desktop experience." />
+                                            </StackPanel>
+                                        </Border>
+                                        <Border Margin="0,0,0,16" Style="{StaticResource CardStyle}">
+                                            <StackPanel>
+                                                <TextBlock Style="{StaticResource EyebrowStyle}" Text="APPEARANCE" />
+                                                <TextBlock
+                                                    Margin="0,7,0,16"
+                                                    FontSize="19"
+                                                    FontWeight="SemiBold"
+                                                    Text="Theme" />
+                                                <ComboBox ItemsSource="{Binding Themes}" SelectedItem="{Binding Theme}" />
+                                                <TextBlock
+                                                    Margin="0,10,0,0"
+                                                    FontSize="12"
+                                                    Foreground="{DynamicResource MutedBrush}"
+                                                    Text="System follows the Windows app theme. Motion is kept short and restrained." />
+                                            </StackPanel>
+                                        </Border>
+                                        <Border Style="{StaticResource CardStyle}">
+                                            <StackPanel>
+                                                <TextBlock Style="{StaticResource EyebrowStyle}" Text="APPLICATION" />
+                                                <TextBlock
+                                                    Margin="0,7,0,4"
+                                                    FontSize="19"
+                                                    FontWeight="SemiBold"
+                                                    Text="LogiLeds" />
+                                                <TextBlock
+                                                    FontSize="12"
+                                                    Foreground="{DynamicResource MutedBrush}"
+                                                    Text="Managed Logitech LED control • Forza telemetry" />
+                                                <TextBlock
+                                                    Margin="0,8,0,18"
+                                                    FontSize="12"
+                                                    Foreground="{DynamicResource MutedBrush}"
+                                                    Text="{Binding DefinitionDiagnostics}" />
+                                                <Button
+                                                    HorizontalAlignment="Left"
+                                                    Command="{Binding ExitCommand}"
+                                                    Content="Exit LogiLeds"
+                                                    Style="{StaticResource DangerButton}" />
+                                            </StackPanel>
+                                        </Border>
                                     </StackPanel>
                                 </Grid>
                             </StackPanel>
