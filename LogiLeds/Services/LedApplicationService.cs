@@ -24,6 +24,7 @@ public sealed class LedApplicationService : IAsyncDisposable
     private bool _readyAnimationPlayed;
     private CancellationTokenSource? _animationCts;
     private string? _runtimeError;
+    private string? _previewWheelId;
     private double? _learnedRedlinePercent;
 
     public LedApplicationService(ITelemetryReceiver telemetryReceiver, IWheelLedController wheelController,
@@ -45,6 +46,12 @@ public sealed class LedApplicationService : IAsyncDisposable
     public LedProfileSettings Settings => _settings;
     public IReadOnlyList<WheelDefinition> Wheels => _wheelController.AvailableDefinitions;
     public IReadOnlyList<string> WheelDefinitionDiagnostics => _wheelController.DefinitionDiagnostics;
+
+    public void SetPreviewWheel(string? wheelId)
+    {
+        _previewWheelId = wheelId;
+        PublishSnapshot();
+    }
 
     public void InitializeWindow(nint windowHandle)
     {
@@ -179,7 +186,7 @@ public sealed class LedApplicationService : IAsyncDisposable
                 CancelAnimation();
                 if (!_manualOutput)
                 {
-                    var definition = _wheelController.CurrentDefinition;
+                    var definition = _wheelController.CurrentDefinition ?? GetPreviewDefinition();
                     var groups = definition?.ControlGroupCount ?? 5;
                     var advanced = _settings.ProfileMode == RpmProfileMode.Advanced && _settings.AdvancedThresholds.Length == groups
                         ? _settings.AdvancedThresholds : null;
@@ -243,8 +250,9 @@ public sealed class LedApplicationService : IAsyncDisposable
         lock (_frameLock) frame = _latestFrame;
         var now = _timeProvider.GetUtcNow();
         var fresh = _isRunning && frame.HasValue && now - frame.Value.ReceivedAt <= TelemetryTimeout;
-        var definition = _wheelController.CurrentDefinition;
-        var groups = definition?.ControlGroupCount ?? 5;
+        var connectedDefinition = _wheelController.CurrentDefinition;
+        var previewDefinition = connectedDefinition ?? GetPreviewDefinition();
+        var groups = previewDefinition?.ControlGroupCount ?? 5;
         var advanced = _settings.ProfileMode == RpmProfileMode.Advanced && _settings.AdvancedThresholds.Length == groups
             ? _settings.AdvancedThresholds : null;
         var effectiveRedline = advanced is null ? _learnedRedlinePercent ?? _settings.RedlinePercent : _settings.RedlinePercent;
@@ -265,8 +273,14 @@ public sealed class LedApplicationService : IAsyncDisposable
         SnapshotChanged?.Invoke(this, new AppSnapshot(_isRunning, fresh, _wheelController.IsConnected,
             fresh && frame!.Value.IsRaceOn, fresh ? frame!.Value.CurrentEngineRpm : 0,
             fresh ? frame!.Value.EngineMaxRpm : 0, visibleCount, preview.IsFlashing,
-            _wheelController.WheelName, message, state, fresh ? frame!.Value.ProtocolVariant : "—", definition, _learnedRedlinePercent));
+            _wheelController.WheelName, message, state, fresh ? frame!.Value.ProtocolVariant : "—", connectedDefinition,
+            _learnedRedlinePercent, previewDefinition));
     }
+
+    private WheelDefinition? GetPreviewDefinition() =>
+        _wheelController.AvailableDefinitions.FirstOrDefault(x => string.Equals(x.Id, _previewWheelId, StringComparison.OrdinalIgnoreCase))
+        ?? _wheelController.AvailableDefinitions.FirstOrDefault(x => string.Equals(x.Id, _settings.PreferredWheelId, StringComparison.OrdinalIgnoreCase))
+        ?? _wheelController.AvailableDefinitions.FirstOrDefault();
 
     private ReadinessState GetState(ForzaTelemetryFrame? frame, bool fresh)
     {

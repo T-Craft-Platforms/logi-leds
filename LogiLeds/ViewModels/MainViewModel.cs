@@ -187,8 +187,7 @@ public sealed class MainViewModel : INotifyPropertyChanged, IAsyncDisposable
 
     private void ConfigurePreview(string? id)
     {
-        var definition = _service.Wheels.FirstOrDefault(x => x.Id == id) ?? _activeDefinition ?? _service.Wheels.FirstOrDefault();
-        if (definition is not null) BuildLeds(definition, 0, false);
+        _service.SetPreviewWheel(id);
     }
 
     private void ConfigureThresholds(WheelDefinition? definition, IReadOnlyList<double> saved)
@@ -219,7 +218,7 @@ public sealed class MainViewModel : INotifyPropertyChanged, IAsyncDisposable
             _ = LoadWheelProfileAsync(snapshot.Wheel, true);
             OnPropertyChanged(nameof(WheelVerification));
         }
-        if (snapshot.Wheel is not null) BuildLeds(snapshot.Wheel, snapshot.IlluminatedLedCount, snapshot.IsFlashing);
+        if (snapshot.PreviewWheel is not null) BuildLeds(snapshot.PreviewWheel, snapshot.IlluminatedLedCount, snapshot.IsFlashing);
         else foreach (var led in Leds) { led.IsLit = false; led.IsBlinking = false; }
         _testCommand.RaiseCanExecuteChanged(); _readyAnimationCommand.RaiseCanExecuteChanged();
     }

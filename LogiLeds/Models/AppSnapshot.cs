@@ -16,4 +16,5 @@ public sealed record AppSnapshot(
     ReadinessState State = ReadinessState.ControlPaused,
     string TelemetryFormat = "—",
     WheelDefinition? Wheel = null,
-    double? LearnedRedlinePercent = null);
+    double? LearnedRedlinePercent = null,
+    WheelDefinition? PreviewWheel = null);

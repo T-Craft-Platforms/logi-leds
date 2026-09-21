@@ -2,6 +2,7 @@ using System.ComponentModel;
 using System.Drawing;
 using System.IO;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Interop;
@@ -22,6 +23,7 @@ public partial class MainWindow : Window
     {
         InitializeComponent();
         StatusPopup.CustomPopupPlacementCallback = StatusPopup_OnCustomPopupPlacement;
+        UpdateWindowChromeMetrics();
         UpdateMaximizeIcon();
         _viewModel = viewModel;
         DataContext = viewModel;
@@ -87,6 +89,7 @@ public partial class MainWindow : Window
 
     private void OnStateChanged(object? sender, EventArgs e)
     {
+        UpdateWindowChromeMetrics();
         UpdateMaximizeIcon();
         if (_startupComplete && WindowState == WindowState.Minimized && _viewModel.MinimizeToTray) HideToTray();
     }
@@ -141,8 +144,38 @@ public partial class MainWindow : Window
 
     private void TitleBar_OnMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
     {
+        if (IsInteractiveTitleBarSource(e.OriginalSource as DependencyObject)) return;
+
         if (e.ClickCount == 2) WindowState = WindowState == WindowState.Maximized ? WindowState.Normal : WindowState.Maximized;
-        else DragMove();
+        else
+        {
+            if (WindowState == WindowState.Maximized)
+            {
+                var pointer = e.GetPosition(this);
+                var screenPointer = PointToScreen(pointer);
+                var restoreWidth = RestoreBounds.Width;
+                var horizontalRatio = ActualWidth <= 0 ? 0.5 : Math.Clamp(pointer.X / ActualWidth, 0.05, 0.95);
+                WindowState = WindowState.Normal;
+                Left = screenPointer.X - restoreWidth * horizontalRatio;
+                Top = screenPointer.Y - pointer.Y;
+            }
+
+            DragMove();
+        }
+    }
+
+    private void TitleBar_OnMouseRightButtonUp(object sender, MouseButtonEventArgs e) =>
+        SystemCommands.ShowSystemMenu(this, PointToScreen(e.GetPosition(this)));
+
+    private static bool IsInteractiveTitleBarSource(DependencyObject? source)
+    {
+        while (source is not null)
+        {
+            if (source is System.Windows.Controls.Primitives.ButtonBase or TabItem) return true;
+            source = System.Windows.Media.VisualTreeHelper.GetParent(source);
+        }
+
+        return false;
     }
 
     private void MinimizeButton_OnClick(object sender, RoutedEventArgs e) => WindowState = WindowState.Minimized;
@@ -153,6 +186,15 @@ public partial class MainWindow : Window
     {
         var centeredX = (targetSize.Width - popupSize.Width) / 2;
         return [new CustomPopupPlacement(new System.Windows.Point(centeredX, targetSize.Height), PopupPrimaryAxis.Horizontal)];
+    }
+
+    private void UpdateWindowChromeMetrics()
+    {
+        var maximized = WindowState == WindowState.Maximized;
+        WindowChrome.CornerRadius = maximized ? new CornerRadius(0) : new CornerRadius(8);
+        WindowChrome.ResizeBorderThickness = maximized ? new Thickness(0) : new Thickness(4);
+        WindowFrame.Margin = maximized ? new Thickness(4) : new Thickness(0);
+        WindowFrame.CornerRadius = new CornerRadius(0);
     }
 
     private void UpdateMaximizeIcon() => MaximizeIcon.Icon = WindowState == WindowState.Maximized ? IconChar.Compress : IconChar.Expand;

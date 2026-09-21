@@ -39,6 +39,26 @@ public sealed class LedApplicationServiceTests
         await WaitUntilAsync(() => wheel.ClearCalls > 0, TimeSpan.FromSeconds(2));
     }
 
+    [TestMethod]
+    public async Task Snapshot_UsesSelectedPreviewWheel_WhenNoPhysicalWheelIsConnected()
+    {
+        var receiver = new FakeTelemetryReceiver();
+        var wheel = new FakeWheelController(isConnected: false);
+        await using var service = CreateService(receiver, wheel);
+        AppSnapshot? snapshot = null;
+        service.SnapshotChanged += (_, current) => snapshot = current;
+
+        await service.LoadSettingsAsync();
+        service.InitializeWindow((nint)1);
+        service.SetPreviewWheel("fake");
+        await service.StartAsync();
+        receiver.Emit(new ForzaTelemetryFrame(true, 10, 10_000, 900, 8_500, DateTimeOffset.UtcNow));
+
+        await WaitUntilAsync(() => snapshot?.PreviewWheel?.Id == "fake" && snapshot.IlluminatedLedCount > 0);
+        Assert.IsFalse(snapshot!.IsWheelConnected);
+        Assert.AreEqual("fake", snapshot.PreviewWheel!.Id);
+    }
+
     private static LedApplicationService CreateService(FakeTelemetryReceiver receiver, FakeWheelController wheel)
     {
         var path = Path.Combine(Path.GetTempPath(), "LogiLeds.Tests", Guid.NewGuid() + ".json");
@@ -71,10 +91,11 @@ public sealed class LedApplicationServiceTests
             Id = "fake", DisplayName = "Fake G29", ProductIds = [1], PhysicalLedCount = 10, ControlGroupCount = 5,
             Colors = Enumerable.Repeat("#FF0000", 10).ToArray()
         };
-        public bool IsConnected { get; private set; } = true;
+        public FakeWheelController(bool isConnected = true) => IsConnected = isConnected;
+        public bool IsConnected { get; private set; }
         public string WheelName => Definition.DisplayName;
         public string StatusMessage => "Wheel ready";
-        public WheelDefinition? CurrentDefinition => Definition;
+        public WheelDefinition? CurrentDefinition => IsConnected ? Definition : null;
         public IReadOnlyList<WheelDefinition> AvailableDefinitions => [Definition];
         public IReadOnlyList<string> DefinitionDiagnostics => [];
         public int SetCalls { get; private set; }

@@ -13,36 +13,36 @@
     Background="{DynamicResource WindowBrush}"
     Icon="Assets/LogiLeds.ico"
     ResizeMode="CanResize"
-    WindowStartupLocation="CenterScreen"
-    WindowStyle="None">
+    WindowStartupLocation="CenterScreen">
     <shell:WindowChrome.WindowChrome>
         <shell:WindowChrome
-            CaptionHeight="44"
-            CornerRadius="10"
+            x:Name="WindowChrome"
+            CaptionHeight="0"
+            CornerRadius="8"
             GlassFrameThickness="0"
-            ResizeBorderThickness="6"
-            UseAeroCaptionButtons="False" />
+            ResizeBorderThickness="4" />
     </shell:WindowChrome.WindowChrome>
     <Border
+        x:Name="WindowFrame"
         Background="{DynamicResource WindowBrush}"
-        BorderBrush="{DynamicResource BorderBrush}"
-        BorderThickness="1"
-        ClipToBounds="True"
-        CornerRadius="10">
+        CornerRadius="0">
         <Grid>
             <Grid.RowDefinitions>
-                <RowDefinition Height="44" />
+                <RowDefinition Height="54" />
                 <RowDefinition Height="*" />
             </Grid.RowDefinitions>
             <Grid
                 Grid.Row="0"
                 Background="{DynamicResource SurfaceBrush}"
-                MouseLeftButtonDown="TitleBar_OnMouseLeftButtonDown">
+                MouseLeftButtonDown="TitleBar_OnMouseLeftButtonDown"
+                MouseRightButtonUp="TitleBar_OnMouseRightButtonUp">
                 <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
                     <ColumnDefinition />
                     <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
                 <StackPanel
+                    Grid.Column="0"
                     Margin="16,0"
                     VerticalAlignment="Center"
                     Orientation="Horizontal">
@@ -56,8 +56,21 @@
                         FontWeight="SemiBold"
                         Text="LogiLeds" />
                 </StackPanel>
-                <StackPanel
+                <TabControl
+                    x:Name="TopNavigation"
                     Grid.Column="1"
+                    Height="54"
+                    HorizontalAlignment="Center"
+                    Cursor="Arrow"
+                    ItemContainerStyle="{StaticResource TopNavigationItemStyle}"
+                    SelectedIndex="{Binding SelectedTab, Mode=TwoWay}"
+                    Style="{StaticResource TopNavigationStyle}">
+                    <TabItem Header="Dashboard" Style="{StaticResource TopNavigationItemStyle}" />
+                    <TabItem Header="RPM Profile" Style="{StaticResource TopNavigationItemStyle}" />
+                    <TabItem Header="Settings" Style="{StaticResource TopNavigationItemStyle}" />
+                </TabControl>
+                <StackPanel
+                    Grid.Column="2"
                     Margin="0,0,8,0"
                     VerticalAlignment="Center"
                     shell:WindowChrome.IsHitTestVisibleInChrome="True"
@@ -68,18 +81,25 @@
                         Style="{StaticResource StatusButtonStyle}"
                         ToolTip="Show connection status">
                         <StackPanel Orientation="Horizontal">
-                            <fa:IconImage
-                                Icon="PowerOff"
-                                Style="{StaticResource AppStatusIconStyle}"
-                                ToolTip="App control" />
+                            <Viewbox Width="16" Height="16" Margin="3,0" Stretch="Uniform">
+                                <fa:IconImage
+                                    Icon="PowerOff"
+                                    Style="{StaticResource AppStatusIconStyle}"
+                                    ToolTip="App control" />
+                            </Viewbox>
                             <ContentControl
+                                Width="16"
+                                Height="16"
+                                Margin="3,0"
                                 Template="{StaticResource WheelGlyphTemplate}"
                                 Style="{StaticResource WheelStatusIconStyle}"
                                 ToolTip="Wheel connection" />
-                            <fa:IconImage
-                                Icon="Cloud"
-                                Style="{StaticResource TelemetryStatusIconStyle}"
-                                ToolTip="Telemetry connection" />
+                            <Viewbox Width="16" Height="16" Margin="3,0" Stretch="Uniform">
+                                <fa:IconImage
+                                    Icon="Cloud"
+                                    Style="{StaticResource TelemetryStatusIconStyle}"
+                                    ToolTip="Telemetry connection" />
+                            </Viewbox>
                         </StackPanel>
                     </ToggleButton>
                     <Popup
@@ -219,7 +239,8 @@
                 <TabControl
                     Margin="20,14,20,20"
                     Cursor="Arrow"
-                    SelectedIndex="{Binding SelectedTab, Mode=TwoWay}">
+                    SelectedIndex="{Binding SelectedTab, Mode=TwoWay}"
+                    Style="{StaticResource ContentTabControlStyle}">
                     <TabItem Header="Dashboard">
                         <ScrollViewer Padding="4,20,12,4" VerticalScrollBarVisibility="Auto">
                             <StackPanel>
