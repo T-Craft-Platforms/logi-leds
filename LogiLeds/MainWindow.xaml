@@ -18,7 +18,7 @@
         <shell:WindowChrome
             x:Name="WindowChrome"
             CaptionHeight="0"
-            CornerRadius="8"
+            CornerRadius="0"
             GlassFrameThickness="0"
             ResizeBorderThickness="4" />
     </shell:WindowChrome.WindowChrome>

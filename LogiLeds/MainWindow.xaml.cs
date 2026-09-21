@@ -1,6 +1,7 @@
 using System.ComponentModel;
 using System.Drawing;
 using System.IO;
+using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
@@ -14,6 +15,12 @@ namespace LogiLeds;
 
 public partial class MainWindow : Window
 {
+    private const int DwmWindowCornerPreferenceAttribute = 33;
+    private const int DwmDoNotRound = 1;
+
+    [DllImport("dwmapi.dll")]
+    private static extern int DwmSetWindowAttribute(nint windowHandle, int attribute, ref int value, int valueSize);
+
     private readonly MainViewModel _viewModel;
     private readonly Forms.NotifyIcon _trayIcon;
     private readonly Forms.ToolStripMenuItem _startStopMenuItem;
@@ -53,10 +60,14 @@ public partial class MainWindow : Window
     {
         try
         {
+            var windowHandle = new WindowInteropHelper(this).Handle;
+            var cornerPreference = DwmDoNotRound;
+            _ = DwmSetWindowAttribute(windowHandle, DwmWindowCornerPreferenceAttribute, ref cornerPreference, sizeof(int));
+
             // Never inherit a minimized shell launch state. Tray minimization
             // is only meaningful after the window has completed initialization.
             WindowState = WindowState.Normal;
-            await _viewModel.InitializeAsync(new WindowInteropHelper(this).Handle);
+            await _viewModel.InitializeAsync(windowHandle);
             var settings = _viewModel.CurrentSettings;
             Width = settings.WindowWidth; Height = settings.WindowHeight;
             if (settings.WindowLeft is double left && settings.WindowTop is double top &&
@@ -191,7 +202,7 @@ public partial class MainWindow : Window
     private void UpdateWindowChromeMetrics()
     {
         var maximized = WindowState == WindowState.Maximized;
-        WindowChrome.CornerRadius = maximized ? new CornerRadius(0) : new CornerRadius(8);
+        WindowChrome.CornerRadius = new CornerRadius(0);
         WindowChrome.ResizeBorderThickness = maximized ? new Thickness(0) : new Thickness(4);
         WindowFrame.Margin = maximized ? new Thickness(4) : new Thickness(0);
         WindowFrame.CornerRadius = new CornerRadius(0);
