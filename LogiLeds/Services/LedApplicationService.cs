@@ -359,9 +359,11 @@ public sealed class LedApplicationService : IAsyncDisposable
             _latestFrame = frame;
         }
 
-        if (Settings.ProfileMode == RpmProfileMode.Easy)
+        if (Settings.LearnPerCarShift && Settings.ProfileMode == RpmProfileMode.Easy)
             _learnedRedlinePercent = _redlineLearner.Observe(frame, Settings.GameTitle) ??
                                      _redlineLearner.Get(frame, Settings.GameTitle);
+        else if (!Settings.LearnPerCarShift)
+            _learnedRedlinePercent = null;
     }
 
     private void OnReceiverError(string error)

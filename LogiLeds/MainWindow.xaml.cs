@@ -3,18 +3,10 @@ using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Controls.Primitives;
-using System.Windows.Input;
 using System.Windows.Interop;
-using System.Windows.Media;
-using FontAwesome.Sharp;
 using LogiLeds.ViewModels;
 using Application = System.Windows.Application;
-using ButtonBase = System.Windows.Controls.Primitives.ButtonBase;
 using Icon = System.Drawing.Icon;
-using Point = System.Windows.Point;
-using Size = System.Windows.Size;
 
 namespace LogiLeds;
 
@@ -24,22 +16,19 @@ public partial class MainWindow : Window
     private const int DwmDoNotRound = 1;
     private readonly ToolStripMenuItem _startStopMenuItem;
     private readonly NotifyIcon _trayIcon;
-
     private readonly MainViewModel _viewModel;
     private bool _allowClose, _shownTrayHint, _exiting, _trayDisposed, _startupComplete;
 
     public MainWindow(MainViewModel viewModel)
     {
         InitializeComponent();
-        StatusPopup.CustomPopupPlacementCallback = StatusPopup_OnCustomPopupPlacement;
         UpdateWindowChromeMetrics();
-        UpdateMaximizeIcon();
         _viewModel = viewModel;
         DataContext = viewModel;
         _viewModel.ExitRequested += async (_, _) => await ExitAsync();
 
         _startStopMenuItem = new ToolStripMenuItem("Stop control");
-        _startStopMenuItem.Click += (_, _) => _viewModel.StartStopCommand.Execute(null);
+        _startStopMenuItem.Click += (_, _) => _viewModel.Settings.StartStopCommand.Execute(null);
         var openItem = new ToolStripMenuItem("Open LogiLeds");
         openItem.Click += (_, _) => RestoreWindow();
         var exitItem = new ToolStripMenuItem("Exit LogiLeds");
@@ -53,7 +42,9 @@ public partial class MainWindow : Window
         var iconPath = Path.Combine(AppContext.BaseDirectory, "Assets", "LogiLeds.ico");
         var icon = File.Exists(iconPath) ? new Icon(iconPath) : null;
         _trayIcon = new NotifyIcon
-            { Icon = icon ?? SystemIcons.Application, Text = "LogiLeds", Visible = true, ContextMenuStrip = menu };
+        {
+            Icon = icon ?? SystemIcons.Application, Text = "LogiLeds", Visible = true, ContextMenuStrip = menu
+        };
         _trayIcon.DoubleClick += (_, _) => RestoreWindow();
 
         SourceInitialized += OnSourceInitialized;
@@ -73,9 +64,6 @@ public partial class MainWindow : Window
             var cornerPreference = DwmDoNotRound;
             _ = DwmSetWindowAttribute(windowHandle, DwmWindowCornerPreferenceAttribute, ref cornerPreference,
                 sizeof(int));
-
-            // Never inherit a minimized shell launch state. Tray minimization
-            // is only meaningful after the window has completed initialization.
             WindowState = WindowState.Normal;
             await _viewModel.InitializeAsync(windowHandle);
             var settings = _viewModel.CurrentSettings;
@@ -105,22 +93,14 @@ public partial class MainWindow : Window
             return;
         }
 
-        if (_viewModel.CloseToTray)
-        {
-            e.Cancel = true;
-            HideToTray();
-        }
-        else
-        {
-            e.Cancel = true;
-            _ = ExitAsync();
-        }
+        e.Cancel = true;
+        if (_viewModel.CloseToTray) HideToTray();
+        else _ = ExitAsync();
     }
 
     private void OnStateChanged(object? sender, EventArgs e)
     {
         UpdateWindowChromeMetrics();
-        UpdateMaximizeIcon();
         if (_startupComplete && WindowState == WindowState.Minimized && _viewModel.MinimizeToTray) HideToTray();
     }
 
@@ -150,8 +130,6 @@ public partial class MainWindow : Window
         var bounds = WindowState == WindowState.Maximized ? RestoreBounds : new Rect(Left, Top, Width, Height);
         try
         {
-            // Shutdown must never leave a hidden process holding the mutex if
-            // a device driver or settings provider is slow to return.
             var save = _viewModel.SaveWindowPlacementAsync(bounds.Width, bounds.Height, bounds.Left, bounds.Top,
                 WindowState == WindowState.Maximized);
             await Task.WhenAny(save, Task.Delay(TimeSpan.FromSeconds(2)));
@@ -187,69 +165,6 @@ public partial class MainWindow : Window
         }
     }
 
-    private void TitleBar_OnMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
-    {
-        if (IsInteractiveTitleBarSource(e.OriginalSource as DependencyObject)) return;
-
-        if (e.ClickCount == 2)
-        {
-            WindowState = WindowState == WindowState.Maximized ? WindowState.Normal : WindowState.Maximized;
-        }
-        else
-        {
-            if (WindowState == WindowState.Maximized)
-            {
-                var pointer = e.GetPosition(this);
-                var screenPointer = PointToScreen(pointer);
-                var restoreWidth = RestoreBounds.Width;
-                var horizontalRatio = ActualWidth <= 0 ? 0.5 : Math.Clamp(pointer.X / ActualWidth, 0.05, 0.95);
-                WindowState = WindowState.Normal;
-                Left = screenPointer.X - restoreWidth * horizontalRatio;
-                Top = screenPointer.Y - pointer.Y;
-            }
-
-            DragMove();
-        }
-    }
-
-    private void TitleBar_OnMouseRightButtonUp(object sender, MouseButtonEventArgs e)
-    {
-        SystemCommands.ShowSystemMenu(this, PointToScreen(e.GetPosition(this)));
-    }
-
-    private static bool IsInteractiveTitleBarSource(DependencyObject? source)
-    {
-        while (source is not null)
-        {
-            if (source is ButtonBase or TabItem) return true;
-            source = VisualTreeHelper.GetParent(source);
-        }
-
-        return false;
-    }
-
-    private void MinimizeButton_OnClick(object sender, RoutedEventArgs e)
-    {
-        WindowState = WindowState.Minimized;
-    }
-
-    private void MaximizeButton_OnClick(object sender, RoutedEventArgs e)
-    {
-        WindowState = WindowState == WindowState.Maximized ? WindowState.Normal : WindowState.Maximized;
-    }
-
-    private void CloseButton_OnClick(object sender, RoutedEventArgs e)
-    {
-        Close();
-    }
-
-    private static CustomPopupPlacement[] StatusPopup_OnCustomPopupPlacement(Size popupSize, Size targetSize,
-        Point offset)
-    {
-        var centeredX = (targetSize.Width - popupSize.Width) / 2;
-        return [new CustomPopupPlacement(new Point(centeredX, targetSize.Height), PopupPrimaryAxis.Horizontal)];
-    }
-
     private void UpdateWindowChromeMetrics()
     {
         var maximized = WindowState == WindowState.Maximized;
@@ -264,10 +179,5 @@ public partial class MainWindow : Window
         var workArea = SystemParameters.WorkArea;
         Left = workArea.Left + Math.Max(0, (workArea.Width - Width) / 2);
         Top = workArea.Top + Math.Max(0, (workArea.Height - Height) / 2);
-    }
-
-    private void UpdateMaximizeIcon()
-    {
-        MaximizeIcon.Icon = WindowState == WindowState.Maximized ? IconChar.Compress : IconChar.Expand;
     }
 }

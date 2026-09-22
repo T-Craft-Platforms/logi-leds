@@ -1,220 +1,68 @@
-using System.Collections.ObjectModel;
-using System.ComponentModel;
 using System.Globalization;
-using System.Runtime.CompilerServices;
 using System.Windows.Input;
 using LogiLeds.Commands;
 using LogiLeds.Models;
 using LogiLeds.Services;
 using Application = System.Windows.Application;
-using Media = System.Windows.Media;
 
 namespace LogiLeds.ViewModels;
 
-public sealed class MainViewModel : INotifyPropertyChanged, IAsyncDisposable
+/// <summary>Window-level state and composition root for the three page viewmodels.</summary>
+public sealed class MainViewModel : ObservableObject, IAsyncDisposable
 {
-    private readonly AsyncRelayCommand _readyAnimationCommand;
-    private readonly AsyncRelayCommand _resetLearningCommand;
-    private readonly AsyncRelayCommand _restartCommand;
-    private readonly AsyncRelayCommand _saveCommand;
+    private readonly SettingsDraft _draft = new();
     private readonly LedApplicationService _service;
-    private readonly AsyncRelayCommand _startStopCommand;
-    private readonly AsyncRelayCommand _testCommand;
     private WheelDefinition? _activeDefinition;
-    private string _bindAddress = LedProfileSettings.DefaultBindAddress;
-
-    private bool _blinkAtRedline = true,
-        _autoStart = true,
-        _minimizeToTray = true,
-        _closeToTray = true,
-        _readyAnimation = true;
-
-    private float _currentRpm, _maximumRpm;
-    private string _currentVehicle = "No vehicle data";
-    private double _firstLedPercent = LedProfileSettings.DefaultFirstLedPercent;
-    private string _gameTitle = "Auto";
-    private bool _isRunning, _wheelConnected, _telemetryConnected, _isFlashing;
-    private double? _learnedRedlinePercent;
-    private string? _loadedProfileWheelId;
-    private string _port = LedProfileSettings.DefaultPort.ToString(CultureInfo.InvariantCulture);
-    private RpmProfileMode _profileMode;
-    private double _redlinePercent = LedProfileSettings.DefaultRedlinePercent;
+    private bool _isRunning, _isWheelConnected, _isTelemetryConnected;
+    private float _maximumRpm;
     private int _selectedTab;
-    private WheelOption? _selectedWheel;
     private ReadinessState _state;
-    private string _statusMessage = "Starting LogiLeds";
-    private string _telemetryFormat = "—";
-    private AppTheme _theme = AppTheme.System;
-    private string _wheelName = "No Logitech wheel";
+    private string _statusMessage = "Starting LogiLeds", _wheelName = "No Logitech wheel", _telemetryFormat = "—";
 
     public MainViewModel(LedApplicationService service)
     {
         _service = service;
-        _service.SnapshotChanged += OnSnapshotChanged;
-        _startStopCommand = new AsyncRelayCommand(ToggleRunningAsync);
-        _restartCommand = new AsyncRelayCommand(RestartControlAsync);
-        _saveCommand = new AsyncRelayCommand(SaveSettingsAsync);
-        _testCommand = new AsyncRelayCommand(() => _service.TestLedsAsync(), () => _wheelConnected,
-            ex => StatusMessage = $"LED test failed: {ex.Message}");
-        _readyAnimationCommand = new AsyncRelayCommand(() => _service.PlayReadyAnimationAsync(), () => _wheelConnected,
-            ex => StatusMessage = $"Ready animation failed: {ex.Message}");
-        _resetLearningCommand = new AsyncRelayCommand(() => _service.ResetLearningAsync());
+        Dashboard = new DashboardViewModel(service, SetStatusMessage);
+        RpmProfile = new RpmProfileViewModel(service, _draft, SetStatusMessage, SaveSettingsAsync);
+        Settings = new SettingsViewModel(service, _draft, SetStatusMessage, SaveSettingsAsync);
+        _draft.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(SettingsDraft.CloseToTray)) OnPropertyChanged(nameof(CloseToTray));
+        };
         ExitCommand = new RelayCommand(() => ExitRequested?.Invoke(this, EventArgs.Empty));
-        ResetProfileCommand = new RelayCommand(ResetProfile);
+        _service.SnapshotChanged += OnSnapshotChanged;
     }
 
-    public ICommand StartStopCommand => _startStopCommand;
-    public ICommand RestartCommand => _restartCommand;
-    public ICommand SaveCommand => _saveCommand;
-    public ICommand TestCommand => _testCommand;
-    public ICommand ReadyAnimationCommand => _readyAnimationCommand;
-    public ICommand ResetLearningCommand => _resetLearningCommand;
+    public DashboardViewModel Dashboard { get; }
+    public RpmProfileViewModel RpmProfile { get; }
+    public SettingsViewModel Settings { get; }
     public ICommand ExitCommand { get; }
-    public ICommand ResetProfileCommand { get; }
-    public ObservableCollection<LedIndicatorViewModel> Leds { get; } = [];
-    public ObservableCollection<ThresholdViewModel> Thresholds { get; } = [];
-    public ObservableCollection<WheelOption> WheelOptions { get; } = [];
-    public IReadOnlyList<AppTheme> Themes { get; } = Enum.GetValues<AppTheme>();
+    public bool MinimizeToTray => true;
+    public bool CloseToTray => _draft.CloseToTray;
+    public bool IsRunning => _isRunning;
+    public LedProfileSettings CurrentSettings => _service.Settings;
 
     public int SelectedTab
     {
         get => _selectedTab;
-        set => SetField(ref _selectedTab, value);
-    }
-
-    public string BindAddress
-    {
-        get => _bindAddress;
-        set => SetField(ref _bindAddress, value);
-    }
-
-    public string Port
-    {
-        get => _port;
-        set => SetField(ref _port, value);
-    }
-
-    public double FirstLedPercent
-    {
-        get => _firstLedPercent;
-        set => SetField(ref _firstLedPercent, Math.Round(value, 1));
-    }
-
-    public double RedlinePercent
-    {
-        get => _redlinePercent;
-        set => SetField(ref _redlinePercent, Math.Round(value, 1));
-    }
-
-    public bool BlinkAtRedline
-    {
-        get => _blinkAtRedline;
-        set => SetField(ref _blinkAtRedline, value);
-    }
-
-    public bool AutoStartControl
-    {
-        get => _autoStart;
-        set => SetField(ref _autoStart, value);
-    }
-
-    public bool MinimizeToTray
-    {
-        get => _minimizeToTray;
-        set => SetField(ref _minimizeToTray, value);
-    }
-
-    public bool CloseToTray
-    {
-        get => _closeToTray;
-        set => SetField(ref _closeToTray, value);
-    }
-
-    public bool ReadyAnimation
-    {
-        get => _readyAnimation;
-        set => SetField(ref _readyAnimation, value);
-    }
-
-    public AppTheme Theme
-    {
-        get => _theme;
         set
         {
-            if (SetField(ref _theme, value)) ThemeService.Apply(value);
+            if (!SetField(ref _selectedTab, value)) return;
+            OnPropertyChanged(nameof(SelectedPage));
         }
     }
 
-    public RpmProfileMode ProfileMode
+    public object SelectedPage => SelectedTab switch
     {
-        get => _profileMode;
-        set
-        {
-            if (SetField(ref _profileMode, value))
-            {
-                OnPropertyChanged(nameof(IsEasyMode));
-                OnPropertyChanged(nameof(IsAdvancedMode));
-            }
-        }
-    }
-
-    public bool IsEasyMode
-    {
-        get => ProfileMode == RpmProfileMode.Easy;
-        set
-        {
-            if (value) ProfileMode = RpmProfileMode.Easy;
-        }
-    }
-
-    public bool IsAdvancedMode
-    {
-        get => ProfileMode == RpmProfileMode.Advanced;
-        set
-        {
-            if (value) ProfileMode = RpmProfileMode.Advanced;
-        }
-    }
-
-    public WheelOption? SelectedWheel
-    {
-        get => _selectedWheel;
-        set
-        {
-            if (SetField(ref _selectedWheel, value))
-            {
-                ConfigurePreview(value?.Id);
-                var wheel = _service.Wheels.FirstOrDefault(x => x.Id == value?.Id);
-                if (wheel is not null) _ = LoadWheelProfileAsync(wheel, false);
-            }
-        }
-    }
-
-    public string GameTitle
-    {
-        get => _gameTitle;
-        set => SetField(ref _gameTitle, value);
-    }
+        1 => RpmProfile,
+        2 => Settings,
+        _ => Dashboard
+    };
 
     public string StatusMessage
     {
         get => _statusMessage;
         private set => SetField(ref _statusMessage, value);
-    }
-
-    public ReadinessState State
-    {
-        get => _state;
-        private set
-        {
-            if (SetField(ref _state, value))
-            {
-                OnPropertyChanged(nameof(StateTitle));
-                OnPropertyChanged(nameof(StateDetail));
-                OnPropertyChanged(nameof(StateGlyph));
-                NotifyStatusProperties();
-            }
-        }
     }
 
     public string WheelName
@@ -235,92 +83,35 @@ public sealed class MainViewModel : INotifyPropertyChanged, IAsyncDisposable
         }
     }
 
-    public string CurrentVehicle
+    public ReadinessState State
     {
-        get => _currentVehicle;
-        private set => SetField(ref _currentVehicle, value);
-    }
-
-    public float CurrentRpm
-    {
-        get => _currentRpm;
+        get => _state;
         private set
         {
-            if (SetField(ref _currentRpm, value)) NotifyRpm();
+            if (SetField(ref _state, value)) NotifyStatusProperties();
         }
     }
 
-    public float MaximumRpm
-    {
-        get => _maximumRpm;
-        private set
-        {
-            if (SetField(ref _maximumRpm, value)) NotifyRpm();
-        }
-    }
-
-    public bool IsRunning
-    {
-        get => _isRunning;
-        private set
-        {
-            if (SetField(ref _isRunning, value))
-            {
-                OnPropertyChanged(nameof(StartStopText));
-                NotifyStatusProperties();
-            }
-        }
-    }
-
-    public bool IsWheelConnected
-    {
-        get => _wheelConnected;
-        private set
-        {
-            if (SetField(ref _wheelConnected, value)) NotifyStatusProperties();
-        }
-    }
-
-    public bool IsTelemetryConnected
-    {
-        get => _telemetryConnected;
-        private set
-        {
-            if (SetField(ref _telemetryConnected, value)) NotifyStatusProperties();
-        }
-    }
-
-    public bool IsFlashing
-    {
-        get => _isFlashing;
-        private set
-        {
-            if (SetField(ref _isFlashing, value)) OnPropertyChanged(nameof(ShiftState));
-        }
-    }
-
-    public string StartStopText => IsRunning ? "Stop control" : "Start control";
-    public string RpmDisplay => MaximumRpm > 0 ? $"{CurrentRpm:N0}" : "—";
-    public string MaximumRpmDisplay => MaximumRpm > 0 ? $"/ {MaximumRpm:N0} RPM" : string.Empty;
-    public string RpmPercentDisplay => MaximumRpm > 0 ? $"{CurrentRpm / MaximumRpm:P0}" : "—";
-    public string ShiftState => IsFlashing ? "SHIFT NOW" : MaximumRpm > 0 ? "LIVE RPM" : "WAITING FOR DATA";
     public string AppControlStatus => IsRunning ? "Connected" : "Disconnected";
-    public string WheelStatus => !IsWheelConnected ? "Disconnected" : !IsRunning ? "Standby" : "Connected";
+    public string WheelStatus => !_isWheelConnected ? "Disconnected" : !IsRunning ? "Standby" : "Connected";
 
-    public string TelemetryStatus => !IsRunning ? "Disconnected" :
-        MaximumRpm > 0 && IsTelemetryConnected ? "Connected" :
-        IsTelemetryConnected || State is ReadinessState.WaitingForTelemetry or ReadinessState.TelemetryStale
-            or ReadinessState.Ready ? "Standby" : "Disconnected";
+    public string TelemetryStatus => !IsRunning
+        ? "Disconnected"
+        : _maximumRpm > 0 && _isTelemetryConnected
+            ? "Connected"
+            : _isTelemetryConnected || State is ReadinessState.WaitingForTelemetry or ReadinessState.TelemetryStale
+                or ReadinessState.Ready
+                ? "Standby"
+                : "Disconnected";
 
     public string AppControlStatusText => !IsRunning ? "Control is stopped" :
         State == ReadinessState.Driving ? "RPM control is active" : "Control is ready";
 
-    public string WheelStatusText => IsWheelConnected ? $"{WheelName} connected" : "No wheel detected";
+    public string WheelStatusText => _isWheelConnected ? $"{WheelName} connected" : "No wheel detected";
 
-    public string TelemetryStatusText => MaximumRpm > 0 && IsTelemetryConnected
-        ?
-        $"{TelemetryFormat} drive data active"
-        : IsTelemetryConnected
+    public string TelemetryStatusText => _maximumRpm > 0 && _isTelemetryConnected
+        ? $"{TelemetryFormat} drive data active"
+        : _isTelemetryConnected
             ? "Telemetry connected, no drive data"
             : State == ReadinessState.TelemetryStale
                 ? "Telemetry paused"
@@ -328,142 +119,35 @@ public sealed class MainViewModel : INotifyPropertyChanged, IAsyncDisposable
                     ? "Listening for telemetry"
                     : "No telemetry signal";
 
-    public string StateTitle => State switch
-    {
-        ReadinessState.Driving => "Driving", ReadinessState.Ready => "Ready",
-        ReadinessState.SearchingForWheel => "Wheel not found",
-        ReadinessState.WaitingForTelemetry => "Waiting for telemetry",
-        ReadinessState.TelemetryStale => "Telemetry paused", ReadinessState.NeedsAttention => "Needs attention",
-        _ => "Control paused"
-    };
-
-    public string StateDetail => StatusMessage;
-
-    public string StateGlyph => State switch
-    {
-        ReadinessState.Driving => "●", ReadinessState.Ready => "✓", ReadinessState.NeedsAttention => "!",
-        ReadinessState.SearchingForWheel => "○", _ => "◌"
-    };
-
-    public string WheelVerification => _activeDefinition is null ? "Waiting for detection" :
-        _activeDefinition.HardwareVerified ? "Hardware verified" : "Protocol compatible — hardware validation pending";
-
-    public string DefinitionDiagnostics => _service.WheelDefinitionDiagnostics.Count == 0
-        ? "All wheel definitions loaded"
-        : string.Join(Environment.NewLine, _service.WheelDefinitionDiagnostics);
-
-    public string CalibrationStatus => _learnedRedlinePercent is double value
-        ? $"Learned shift point: {value:0.0}%"
-        : "Learning per-car shift point";
-
-    public LedProfileSettings CurrentSettings => _service.Settings;
-
     public async ValueTask DisposeAsync()
     {
         _service.SnapshotChanged -= OnSnapshotChanged;
+        Dashboard.Dispose();
+        RpmProfile.Dispose();
+        Settings.Dispose();
         await _service.DisposeAsync();
     }
 
-    public event PropertyChangedEventHandler? PropertyChanged;
     public event EventHandler? ExitRequested;
 
     public async Task InitializeAsync(nint windowHandle)
     {
         var settings = await _service.LoadSettingsAsync();
-        BindAddress = settings.BindAddress;
-        Port = settings.Port.ToString(CultureInfo.InvariantCulture);
-        FirstLedPercent = settings.FirstLedPercent;
-        RedlinePercent = settings.RedlinePercent;
-        BlinkAtRedline = settings.BlinkAtRedline;
-        AutoStartControl = settings.AutoStartControl;
-        // These are intentionally product defaults rather than user-facing
-        // switches: minimize-to-tray and the ready animation are always on.
-        MinimizeToTray = true;
-        CloseToTray = settings.CloseToTray;
-        ReadyAnimation = true;
-        ProfileMode = settings.ProfileMode;
-        GameTitle = "Auto";
-        Theme = settings.Theme;
-        WheelOptions.Add(new WheelOption(null, "Auto-detect (recommended)"));
-        foreach (var wheel in _service.Wheels) WheelOptions.Add(new WheelOption(wheel.Id, wheel.DisplayName));
-        SelectedWheel = WheelOptions.FirstOrDefault(x => x.Id == settings.PreferredWheelId) ?? WheelOptions[0];
-        ConfigureThresholds(_service.Wheels.FirstOrDefault(x => x.Id == settings.PreferredWheelId),
+        _draft.BindAddress = settings.BindAddress;
+        _draft.Port = settings.Port.ToString(CultureInfo.InvariantCulture);
+        _draft.FirstLedPercent = settings.FirstLedPercent;
+        _draft.RedlinePercent = settings.RedlinePercent;
+        _draft.BlinkAtRedline = settings.BlinkAtRedline;
+        _draft.LearnPerCarShift = settings.LearnPerCarShift;
+        _draft.AutoStartControl = settings.AutoStartControl;
+        _draft.CloseToTray = settings.CloseToTray;
+        _draft.ProfileMode = settings.ProfileMode;
+        _draft.Theme = settings.Theme;
+        Settings.Initialize(settings, _service.Wheels);
+        RpmProfile.Initialize(_service.Wheels.FirstOrDefault(x => x.Id == settings.PreferredWheelId),
             settings.AdvancedThresholds);
         _service.InitializeWindow(windowHandle);
         if (settings.AutoStartControl) await StartServiceWithErrorHandlingAsync();
-    }
-
-    private async Task ToggleRunningAsync()
-    {
-        if (_service.IsRunning) await _service.StopAsync();
-        else await StartServiceWithErrorHandlingAsync();
-    }
-
-    private async Task RestartControlAsync()
-    {
-        try
-        {
-            if (_service.IsRunning) await _service.StopAsync();
-            await _service.StartAsync();
-        }
-        catch (Exception ex)
-        {
-            StatusMessage = $"Could not restart: {ex.Message}";
-        }
-    }
-
-    private async Task StartServiceWithErrorHandlingAsync()
-    {
-        try
-        {
-            await _service.StartAsync();
-        }
-        catch (Exception ex)
-        {
-            StatusMessage = $"Could not start: {ex.Message}";
-        }
-    }
-
-    private async Task SaveSettingsAsync()
-    {
-        if (!int.TryParse(Port, NumberStyles.Integer, CultureInfo.InvariantCulture, out var port))
-        {
-            StatusMessage = "Enter a valid UDP port.";
-            return;
-        }
-
-        var settings = _service.Settings with
-        {
-            BindAddress = BindAddress.Trim(), Port = port, FirstLedPercent = FirstLedPercent,
-            RedlinePercent = RedlinePercent,
-            BlinkAtRedline = BlinkAtRedline, AutoStartControl = AutoStartControl, MinimizeToTray = true,
-            CloseToTray = CloseToTray, ReadyAnimation = true, Theme = Theme, ProfileMode = ProfileMode,
-            GameTitle = "Auto", PreferredWheelId = SelectedWheel?.Id,
-            AdvancedThresholds = Thresholds.Select(x => x.Value).ToArray()
-        };
-        if (!settings.TryValidate(out var error))
-        {
-            StatusMessage = error;
-            return;
-        }
-
-        try
-        {
-            await _service.UpdateSettingsAsync(settings);
-            var wheel = _activeDefinition ?? _service.Wheels.FirstOrDefault(x => x.Id == SelectedWheel?.Id);
-            if (wheel is not null)
-                await _service.SaveWheelProfileAsync(
-                    new WheelProfile
-                    {
-                        WheelId = wheel.Id, Mode = ProfileMode, FirstLedPercent = FirstLedPercent,
-                        RedlinePercent = RedlinePercent, BlinkAtRedline = BlinkAtRedline,
-                        AdvancedThresholds = Thresholds.Select(x => x.Value).ToArray()
-                    }, wheel.ControlGroupCount);
-        }
-        catch (Exception ex)
-        {
-            StatusMessage = $"Could not apply settings: {ex.Message}";
-        }
     }
 
     public async Task SaveWindowPlacementAsync(double width, double height, double left, double top, bool maximized)
@@ -484,35 +168,62 @@ public sealed class MainViewModel : INotifyPropertyChanged, IAsyncDisposable
         }
     }
 
-    private void ResetProfile()
+    private async Task SaveSettingsAsync()
     {
-        FirstLedPercent = _activeDefinition?.DefaultFirstPercent ?? LedProfileSettings.DefaultFirstLedPercent;
-        RedlinePercent = _activeDefinition?.DefaultRedlinePercent ?? LedProfileSettings.DefaultRedlinePercent;
-        BlinkAtRedline = true;
-        ConfigureThresholds(_activeDefinition, []);
+        if (!int.TryParse(_draft.Port, NumberStyles.Integer, CultureInfo.InvariantCulture, out var port))
+        {
+            StatusMessage = "Enter a valid UDP port.";
+            return;
+        }
+
+        var settings = _service.Settings with
+        {
+            BindAddress = _draft.BindAddress.Trim(), Port = port,
+            FirstLedPercent = _draft.FirstLedPercent, RedlinePercent = _draft.RedlinePercent,
+            BlinkAtRedline = _draft.BlinkAtRedline, AutoStartControl = _draft.AutoStartControl,
+            MinimizeToTray = true, CloseToTray = _draft.CloseToTray, ReadyAnimation = true,
+            Theme = _draft.Theme, ProfileMode = _draft.ProfileMode, LearnPerCarShift = _draft.LearnPerCarShift,
+            GameTitle = "Auto", PreferredWheelId = _draft.SelectedWheel?.Id,
+            AdvancedThresholds = RpmProfile.Thresholds.Select(x => x.Value).ToArray()
+        };
+        if (!settings.TryValidate(out var error))
+        {
+            StatusMessage = error;
+            return;
+        }
+
+        try
+        {
+            await _service.UpdateSettingsAsync(settings);
+            var wheel = _activeDefinition ?? _service.Wheels.FirstOrDefault(x => x.Id == _draft.SelectedWheel?.Id);
+            if (wheel is not null)
+                await _service.SaveWheelProfileAsync(new WheelProfile
+                {
+                    WheelId = wheel.Id, Mode = _draft.ProfileMode, FirstLedPercent = _draft.FirstLedPercent,
+                    RedlinePercent = _draft.RedlinePercent, BlinkAtRedline = _draft.BlinkAtRedline,
+                    AdvancedThresholds = settings.AdvancedThresholds
+                }, wheel.ControlGroupCount);
+            OnPropertyChanged(nameof(CurrentSettings));
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = $"Could not apply settings: {ex.Message}";
+        }
     }
 
-    private void ConfigurePreview(string? id)
+    private async Task StartServiceWithErrorHandlingAsync()
     {
-        _service.SetPreviewWheel(id);
+        try
+        {
+            await _service.StartAsync();
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = $"Could not start: {ex.Message}";
+        }
     }
 
-    private void ConfigureThresholds(WheelDefinition? definition, IReadOnlyList<double> saved)
-    {
-        var wheel = definition ?? _service.Wheels.FirstOrDefault();
-        var count = wheel?.ControlGroupCount ?? 5;
-        var values = saved.Count == count ? saved.ToArray() : LedMath.BuildRecommendedThresholds(count);
-        var colors = wheel?.Colors ?? ["#38D982", "#6EE65A", "#F0D84A", "#FFAA3B", "#FF5265"];
-        Thresholds.Clear();
-        for (var i = 0; i < count; i++)
-            Thresholds.Add(new ThresholdViewModel
-            {
-                Label = i == count - 1 ? "Red light" : $"LED group {i + 1}",
-                Color = (Media.Brush)new Media.BrushConverter().ConvertFromString(
-                    colors[Math.Min(i, colors.Length - 1)])!,
-                Value = values[i]
-            });
-    }
+    private void SetStatusMessage(string value) => StatusMessage = value;
 
     private void OnSnapshotChanged(object? sender, AppSnapshot snapshot)
     {
@@ -523,101 +234,17 @@ public sealed class MainViewModel : INotifyPropertyChanged, IAsyncDisposable
 
     private void ApplySnapshot(AppSnapshot snapshot)
     {
-        IsRunning = snapshot.IsRunning;
-        IsTelemetryConnected = snapshot.IsTelemetryConnected;
-        IsWheelConnected = snapshot.IsWheelConnected;
+        _isRunning = snapshot.IsRunning;
+        _isWheelConnected = snapshot.IsWheelConnected;
+        _isTelemetryConnected = snapshot.IsTelemetryConnected;
+        _maximumRpm = snapshot.MaximumRpm;
+        if (snapshot.Wheel is not null) _activeDefinition = snapshot.Wheel;
         State = snapshot.State;
         StatusMessage = snapshot.StatusMessage;
         WheelName = snapshot.WheelName;
         TelemetryFormat = snapshot.TelemetryFormat;
-        CurrentVehicle = snapshot.CurrentVehicle;
-        CurrentRpm = snapshot.CurrentRpm;
-        MaximumRpm = snapshot.MaximumRpm;
-        IsFlashing = snapshot.IsFlashing;
-        if (_learnedRedlinePercent != snapshot.LearnedRedlinePercent)
-        {
-            _learnedRedlinePercent = snapshot.LearnedRedlinePercent;
-            OnPropertyChanged(nameof(CalibrationStatus));
-        }
-
-        if (snapshot.Wheel is not null && snapshot.Wheel.Id != _activeDefinition?.Id)
-        {
-            _activeDefinition = snapshot.Wheel;
-            _ = LoadWheelProfileAsync(snapshot.Wheel, true);
-            OnPropertyChanged(nameof(WheelVerification));
-        }
-
-        if (snapshot.PreviewWheel is not null)
-            BuildLeds(snapshot.PreviewWheel, snapshot.IlluminatedLedCount, snapshot.IsFlashing);
-        else
-            foreach (var led in Leds)
-            {
-                led.IsLit = false;
-                led.IsBlinking = false;
-            }
-
-        _testCommand.RaiseCanExecuteChanged();
-        _readyAnimationCommand.RaiseCanExecuteChanged();
-    }
-
-    private async Task LoadWheelProfileAsync(WheelDefinition wheel, bool applyToService)
-    {
-        try
-        {
-            if (!applyToService && _loadedProfileWheelId == wheel.Id) return;
-            var profile = await _service.LoadWheelProfileAsync(wheel);
-            _loadedProfileWheelId = wheel.Id;
-            ProfileMode = profile.Mode;
-            FirstLedPercent = profile.FirstLedPercent;
-            RedlinePercent = profile.RedlinePercent;
-            BlinkAtRedline = profile.BlinkAtRedline;
-            ConfigureThresholds(wheel, profile.AdvancedThresholds);
-            if (applyToService)
-                await _service.UpdateSettingsAsync(_service.Settings with
-                {
-                    ProfileMode = profile.Mode, FirstLedPercent = profile.FirstLedPercent,
-                    RedlinePercent = profile.RedlinePercent, BlinkAtRedline = profile.BlinkAtRedline,
-                    AdvancedThresholds = profile.AdvancedThresholds
-                });
-        }
-        catch (Exception ex)
-        {
-            StatusMessage = $"Could not load wheel profile: {ex.Message}";
-        }
-    }
-
-    private void BuildLeds(WheelDefinition definition, int litGroups, bool flashing)
-    {
-        if (Leds.Count != definition.PhysicalLedCount)
-        {
-            Leds.Clear();
-            for (var i = 0; i < definition.PhysicalLedCount; i++)
-            {
-                var group = definition.Direction == "outside-in"
-                    ? Math.Min(i, definition.PhysicalLedCount - 1 - i) + 1
-                    : Math.Min(i + 1, definition.ControlGroupCount);
-                Leds.Add(new LedIndicatorViewModel(definition.Colors[i], group));
-            }
-        }
-
-        // The service already sends the exact visible group count for the
-        // current blink phase. Do not start a second UI-only storyboard: it
-        // can drift from the wheel and leave the preview flashing forever.
-        foreach (var led in Leds)
-        {
-            led.IsLit = led.Group <= litGroups;
-            led.IsBlinking = false;
-        }
-    }
-
-    private void NotifyRpm()
-    {
-        OnPropertyChanged(nameof(RpmDisplay));
-        OnPropertyChanged(nameof(MaximumRpmDisplay));
-        OnPropertyChanged(nameof(RpmPercentDisplay));
-        OnPropertyChanged(nameof(ShiftState));
-        OnPropertyChanged(nameof(TelemetryStatus));
-        OnPropertyChanged(nameof(TelemetryStatusText));
+        OnPropertyChanged(nameof(IsRunning));
+        NotifyStatusProperties();
     }
 
     private void NotifyStatusProperties()
@@ -628,18 +255,5 @@ public sealed class MainViewModel : INotifyPropertyChanged, IAsyncDisposable
         OnPropertyChanged(nameof(AppControlStatusText));
         OnPropertyChanged(nameof(WheelStatusText));
         OnPropertyChanged(nameof(TelemetryStatusText));
-    }
-
-    private bool SetField<T>(ref T field, T value, [CallerMemberName] string? name = null)
-    {
-        if (EqualityComparer<T>.Default.Equals(field, value)) return false;
-        field = value;
-        OnPropertyChanged(name);
-        return true;
-    }
-
-    private void OnPropertyChanged([CallerMemberName] string? name = null)
-    {
-        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
     }
 }

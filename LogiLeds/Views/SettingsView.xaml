@@ -1,0 +1,136 @@
+<UserControl
+    x:Class="LogiLeds.Views.SettingsView"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <Grid Margin="20,14,20,20">
+        <ScrollViewer Padding="4,20,12,4" VerticalScrollBarVisibility="Auto">
+            <StackPanel>
+                <Grid Margin="0,0,0,16">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <TextBlock
+                        VerticalAlignment="Center"
+                        FontSize="30"
+                        FontWeight="Bold"
+                        Text="Settings" />
+                    <Button
+                        Grid.Column="1"
+                        VerticalAlignment="Center"
+                        Command="{Binding SaveCommand}"
+                        Content="Save settings" />
+                </Grid>
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition />
+                        <ColumnDefinition Width="16" />
+                        <ColumnDefinition />
+                    </Grid.ColumnDefinitions>
+                    <StackPanel Grid.Column="0">
+                        <Border Margin="0,0,0,16" Style="{StaticResource CardStyle}">
+                            <StackPanel>
+                                <TextBlock Style="{StaticResource EyebrowStyle}" Text="WHEEL" />
+                                <TextBlock
+                                    Margin="0,7,0,16"
+                                    FontSize="19"
+                                    FontWeight="SemiBold"
+                                    Text="Device selection" />
+                                <ComboBox ItemsSource="{Binding WheelOptions}" SelectedItem="{Binding SelectedWheel}" />
+                                <TextBlock
+                                    Margin="0,10,0,15"
+                                    FontSize="12"
+                                    Foreground="{DynamicResource MutedBrush}"
+                                    Text="{Binding WheelVerification}" />
+                                <Button
+                                    HorizontalAlignment="Left"
+                                    Command="{Binding TestCommand}"
+                                    Content="Test LEDs"
+                                    Style="{StaticResource SecondaryButton}" />
+                            </StackPanel>
+                        </Border>
+                        <Border Margin="0,0,0,16" Style="{StaticResource CardStyle}">
+                            <StackPanel>
+                                <TextBlock Style="{StaticResource EyebrowStyle}" Text="CONNECTION" />
+                                <TextBlock
+                                    Margin="0,7,0,16"
+                                    FontSize="19"
+                                    FontWeight="SemiBold"
+                                    Text="Forza Data Out" />
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition />
+                                        <ColumnDefinition Width="12" />
+                                        <ColumnDefinition Width="120" />
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel>
+                                        <TextBlock
+                                            Margin="0,0,0,5"
+                                            FontSize="12"
+                                            Foreground="{DynamicResource MutedBrush}"
+                                            Text="Bind address" />
+                                        <TextBox Text="{Binding BindAddress, UpdateSourceTrigger=PropertyChanged}" />
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="2">
+                                        <TextBlock
+                                            Margin="0,0,0,5"
+                                            FontSize="12"
+                                            Foreground="{DynamicResource MutedBrush}"
+                                            Text="UDP port" />
+                                        <TextBox Text="{Binding Port, UpdateSourceTrigger=PropertyChanged}" />
+                                    </StackPanel>
+                                </Grid>
+                                <TextBlock
+                                    Margin="0,12,0,0"
+                                    FontSize="12"
+                                    Foreground="{DynamicResource MutedBrush}"
+                                    Text="All interfaces (0.0.0.0) supports Xbox and remote PCs. Set Forza Data Out to this PC’s LAN address and the port above." />
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                    <StackPanel Grid.Column="2">
+                        <Border Margin="0,0,0,16" Style="{StaticResource CardStyle}">
+                            <StackPanel>
+                                <TextBlock Style="{StaticResource EyebrowStyle}" Text="APP BEHAVIOR" />
+                                <TextBlock
+                                    Margin="0,7,0,14"
+                                    FontSize="19"
+                                    FontWeight="SemiBold"
+                                    Text="Startup and tray" />
+                                <CheckBox Content="Start LED control on launch" IsChecked="{Binding AutoStartControl}" />
+                                <CheckBox Content="Close to notification area" IsChecked="{Binding CloseToTray}" />
+                                <Button
+                                    Margin="0,10,0,0"
+                                    HorizontalAlignment="Left"
+                                    Command="{Binding StartStopCommand}"
+                                    Content="{Binding StartStopText}"
+                                    Style="{StaticResource StartStopButtonStyle}" />
+                                <TextBlock
+                                    Margin="0,8,0,0"
+                                    FontSize="12"
+                                    Foreground="{DynamicResource MutedBrush}"
+                                    Text="Minimizing and the startup animation are always handled for a smooth desktop experience." />
+                            </StackPanel>
+                        </Border>
+                        <Border Margin="0,0,0,16" Style="{StaticResource CardStyle}">
+                            <StackPanel>
+                                <TextBlock Style="{StaticResource EyebrowStyle}" Text="APPEARANCE" />
+                                <TextBlock
+                                    Margin="0,7,0,16"
+                                    FontSize="19"
+                                    FontWeight="SemiBold"
+                                    Text="Theme" />
+                                <ComboBox ItemsSource="{Binding Themes}" SelectedItem="{Binding Theme}" />
+                                <TextBlock
+                                    Margin="0,10,0,0"
+                                    FontSize="12"
+                                    Foreground="{DynamicResource MutedBrush}"
+                                    Text="System follows the Windows app theme. Motion is kept short and restrained." />
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </Grid>
+            </StackPanel>
+        </ScrollViewer>
+    </Grid>
+</UserControl>

@@ -30,6 +30,7 @@ public sealed record LedProfileSettings
     public double FirstLedPercent { get; init; } = DefaultFirstLedPercent;
     public double RedlinePercent { get; init; } = DefaultRedlinePercent;
     public bool BlinkAtRedline { get; init; } = true;
+    public bool LearnPerCarShift { get; init; } = true;
     public bool AutoStartControl { get; init; } = true;
     public bool MinimizeToTray { get; init; } = true;
     public bool CloseToTray { get; init; } = true;
