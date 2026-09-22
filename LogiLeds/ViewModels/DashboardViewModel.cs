@@ -9,7 +9,6 @@ namespace LogiLeds.ViewModels;
 
 public sealed class DashboardViewModel : ObservableObject, IDisposable
 {
-    private readonly AsyncRelayCommand _restartCommand;
     private readonly LedApplicationService _service;
     private readonly Action<string> _setStatus;
     private readonly AsyncRelayCommand _testCommand;
@@ -21,15 +20,12 @@ public sealed class DashboardViewModel : ObservableObject, IDisposable
     {
         _service = service;
         _setStatus = setStatus;
-        _restartCommand =
-            new AsyncRelayCommand(RestartAsync, onError: ex => _setStatus($"Could not restart: {ex.Message}"));
         _testCommand = new AsyncRelayCommand(() => _service.TestLedsAsync(), () => _isWheelConnected,
             ex => _setStatus($"LED test failed: {ex.Message}"));
         _service.SnapshotChanged += OnSnapshotChanged;
     }
 
     public ObservableCollection<LedIndicatorViewModel> Leds { get; } = [];
-    public ICommand RestartCommand => _restartCommand;
     public ICommand TestCommand => _testCommand;
 
     public string WheelName
@@ -82,12 +78,9 @@ public sealed class DashboardViewModel : ObservableObject, IDisposable
     public string RpmPercentDisplay => MaximumRpm > 0 ? $"{CurrentRpm / MaximumRpm:P0}" : "—";
     public string ShiftState => IsFlashing ? "SHIFT NOW" : MaximumRpm > 0 ? "LIVE RPM" : "WAITING FOR DATA";
 
-    public void Dispose() => _service.SnapshotChanged -= OnSnapshotChanged;
-
-    private async Task RestartAsync()
+    public void Dispose()
     {
-        if (_service.IsRunning) await _service.StopAsync();
-        await _service.StartAsync();
+        _service.SnapshotChanged -= OnSnapshotChanged;
     }
 
     private void OnSnapshotChanged(object? sender, AppSnapshot snapshot)

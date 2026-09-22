@@ -5,22 +5,11 @@
     <Grid Margin="20,14,20,20">
         <ScrollViewer Padding="4,20,12,4" VerticalScrollBarVisibility="Auto">
             <StackPanel>
-                <Grid Margin="0,0,0,16">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition />
-                        <ColumnDefinition Width="Auto" />
-                    </Grid.ColumnDefinitions>
-                    <TextBlock
-                        VerticalAlignment="Center"
-                        FontSize="30"
-                        FontWeight="Bold"
-                        Text="Dashboard" />
-                    <Button
-                        Grid.Column="1"
-                        VerticalAlignment="Center"
-                        Command="{Binding RestartCommand}"
-                        Style="{StaticResource DashboardControlButtonStyle}" />
-                </Grid>
+                <TextBlock
+                    Margin="0,0,0,16"
+                    FontSize="30"
+                    FontWeight="Bold"
+                    Text="Dashboard" />
                 <Grid Margin="0,0,0,16">
                     <Border Style="{StaticResource CardStyle}">
                         <Grid>
@@ -96,8 +85,6 @@
                         <ColumnDefinition />
                         <ColumnDefinition Width="12" />
                         <ColumnDefinition />
-                        <ColumnDefinition Width="12" />
-                        <ColumnDefinition />
                     </Grid.ColumnDefinitions>
                     <Border
                         Grid.Column="0"
@@ -129,20 +116,6 @@
                     </Border>
                     <Border
                         Grid.Column="4"
-                        Padding="18"
-                        Style="{StaticResource CardStyle}">
-                        <StackPanel>
-                            <TextBlock Style="{StaticResource EyebrowStyle}" Text="VEHICLE" />
-                            <TextBlock
-                                Margin="0,7,0,0"
-                                FontSize="17"
-                                FontWeight="SemiBold"
-                                Text="{Binding CurrentVehicle}"
-                                TextTrimming="CharacterEllipsis" />
-                        </StackPanel>
-                    </Border>
-                    <Border
-                        Grid.Column="6"
                         Padding="18"
                         Style="{StaticResource CardStyle}">
                         <Grid>

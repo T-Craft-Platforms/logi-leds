@@ -18,13 +18,11 @@ public sealed class SettingsViewModel : ObservableObject, IDisposable
     private WheelDefinition? _activeDefinition;
     private bool _isRunning, _isWheelConnected;
 
-    public SettingsViewModel(LedApplicationService service, SettingsDraft draft, Action<string> setStatus,
-        Func<Task> saveCommand)
+    public SettingsViewModel(LedApplicationService service, SettingsDraft draft, Action<string> setStatus)
     {
         _service = service;
         _draft = draft;
         _setStatus = setStatus;
-        SaveCommand = new AsyncRelayCommand(saveCommand);
         _startStopCommand = new AsyncRelayCommand(ToggleRunningAsync,
             onError: ex => _setStatus($"Could not change control state: {ex.Message}"));
         _testCommand = new AsyncRelayCommand(() => _service.TestLedsAsync(), () => _isWheelConnected,
@@ -35,7 +33,6 @@ public sealed class SettingsViewModel : ObservableObject, IDisposable
 
     public ObservableCollection<WheelOption> WheelOptions { get; } = [];
     public IReadOnlyList<AppTheme> Themes { get; } = Enum.GetValues<AppTheme>();
-    public ICommand SaveCommand { get; }
     public ICommand TestCommand => _testCommand;
     public ICommand StartStopCommand => _startStopCommand;
 

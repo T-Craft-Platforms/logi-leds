@@ -5,26 +5,33 @@
     <StackPanel>
         <Grid Margin="0,0,0,14">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition />
-                <ColumnDefinition />
-                <ColumnDefinition />
+                <ColumnDefinition Width="150" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="82" />
             </Grid.ColumnDefinitions>
-            <TextBlock
-                FontSize="12"
-                Foreground="{DynamicResource MutedBrush}"
-                Text="0%" />
-            <TextBlock
-                Grid.Column="1"
-                HorizontalAlignment="Center"
-                FontSize="12"
-                Foreground="{DynamicResource MutedBrush}"
-                Text="RPM activation timeline" />
-            <TextBlock
-                Grid.Column="2"
-                HorizontalAlignment="Right"
-                FontSize="12"
-                Foreground="{DynamicResource MutedBrush}"
-                Text="100%" />
+            <Grid Grid.Column="1" Margin="25,0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition />
+                    <ColumnDefinition />
+                    <ColumnDefinition />
+                </Grid.ColumnDefinitions>
+                <TextBlock
+                    FontSize="12"
+                    Foreground="{DynamicResource MutedBrush}"
+                    Text="50%" />
+                <TextBlock
+                    Grid.Column="1"
+                    HorizontalAlignment="Center"
+                    FontSize="12"
+                    Foreground="{DynamicResource MutedBrush}"
+                    Text="RPM activation timeline" />
+                <TextBlock
+                    Grid.Column="2"
+                    HorizontalAlignment="Right"
+                    FontSize="12"
+                    Foreground="{DynamicResource MutedBrush}"
+                    Text="100%" />
+            </Grid>
         </Grid>
         <ItemsControl ItemsSource="{Binding Thresholds}">
             <ItemsControl.ItemTemplate>
@@ -50,19 +57,31 @@
                             Maximum="99"
                             Minimum="50"
                             TickFrequency="0.5"
-                            Value="{Binding Value, Mode=TwoWay}" />
+                            Value="{Binding Value, Mode=TwoWay}">
+                            <Slider.Style>
+                                <Style BasedOn="{StaticResource {x:Type Slider}}" TargetType="Slider">
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsReadOnly, RelativeSource={RelativeSource AncestorType=UserControl}}" Value="True">
+                                            <Setter Property="IsHitTestVisible" Value="False" />
+                                            <Setter Property="Focusable" Value="False" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Slider.Style>
+                        </Slider>
                         <TextBox
                             Grid.Column="2"
                             MinHeight="32"
                             Padding="7,5"
                             HorizontalContentAlignment="Center"
+                            IsReadOnly="{Binding IsReadOnly, RelativeSource={RelativeSource AncestorType=UserControl}}"
                             Text="{Binding Value, Mode=TwoWay, UpdateSourceTrigger=LostFocus, StringFormat={}{0:0.0}}"
                             ToolTip="Enter a percentage" />
                     </Grid>
                 </DataTemplate>
             </ItemsControl.ItemTemplate>
         </ItemsControl>
-        <Grid Margin="0,8,0,0">
+        <Grid Margin="0,0,0,0">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="150" />
                 <ColumnDefinition />
@@ -81,15 +100,27 @@
                 Margin="16,0"
                 IsSnapToTickEnabled="True"
                 Maximum="100"
-                Minimum="60"
+                Minimum="50"
                 TickFrequency="0.5"
-                Value="{Binding RedlinePercent, Mode=TwoWay}" />
+                Value="{Binding RedlinePercent, Mode=TwoWay}">
+                <Slider.Style>
+                    <Style BasedOn="{StaticResource {x:Type Slider}}" TargetType="Slider">
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding IsReadOnly, RelativeSource={RelativeSource AncestorType=UserControl}}" Value="True">
+                                <Setter Property="IsHitTestVisible" Value="False" />
+                                <Setter Property="Focusable" Value="False" />
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </Slider.Style>
+            </Slider>
             <TextBox
                 Grid.Column="2"
                 MinHeight="32"
                 Padding="7,5"
                 HorizontalContentAlignment="Center"
                 BorderBrush="{DynamicResource DangerBrush}"
+                IsReadOnly="{Binding IsReadOnly, RelativeSource={RelativeSource AncestorType=UserControl}}"
                 Text="{Binding RedlinePercent, Mode=TwoWay, UpdateSourceTrigger=LostFocus, StringFormat={}{0:0.0}}"
                 ToolTip="Enter a percentage" />
         </Grid>

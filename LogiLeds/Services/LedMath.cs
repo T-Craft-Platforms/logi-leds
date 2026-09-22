@@ -12,12 +12,18 @@ public static class LedMath
 
     public static double[] BuildRecommendedThresholds(int groupCount,
         double firstPercent = LedProfileSettings.DefaultFirstLedPercent,
-        double lastPercent = LedProfileSettings.DefaultRedlinePercent - 1)
+        double lastPercent = LedProfileSettings.DefaultRedlinePercent - 5)
     {
         if (groupCount <= 0) return [];
         if (groupCount == 1) return [firstPercent];
         return Enumerable.Range(0, groupCount)
-            .Select(i => firstPercent + (lastPercent - firstPercent) * i / (groupCount - 1d))
+            .Select(i =>
+            {
+                var position = i / (groupCount - 1d);
+                // Keep early LEDs calm and pack the last groups toward the shift point.
+                var progression = Math.Pow(position, 1.4);
+                return firstPercent + (lastPercent - firstPercent) * progression;
+            })
             .ToArray();
     }
 
@@ -30,7 +36,7 @@ public static class LedMath
         var flashing = percent >= redlinePercent;
         var thresholds = advancedThresholds is { Count: > 0 }
             ? advancedThresholds
-            : BuildRecommendedThresholds(groupCount, firstPercent, Math.Max(firstPercent, redlinePercent - 1));
+            : BuildRecommendedThresholds(groupCount, firstPercent, Math.Max(firstPercent, redlinePercent - 5));
         var count = thresholds.Take(groupCount).Count(x => percent >= x);
         return (Math.Clamp(count, 0, groupCount), flashing);
     }

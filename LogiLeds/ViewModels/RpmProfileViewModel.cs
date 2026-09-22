@@ -4,6 +4,7 @@ using System.Windows.Input;
 using LogiLeds.Commands;
 using LogiLeds.Models;
 using LogiLeds.Services;
+using LogiLeds.Views;
 using Media = System.Windows.Media;
 using Application = System.Windows.Application;
 
@@ -12,30 +13,60 @@ namespace LogiLeds.ViewModels;
 public sealed class RpmProfileViewModel : ObservableObject, IDisposable
 {
     private readonly SettingsDraft _draft;
-    private readonly AsyncRelayCommand _resetLearningCommand;
     private readonly LedApplicationService _service;
     private readonly Action<string> _setStatus;
     private WheelDefinition? _activeDefinition;
+    private IReadOnlyList<CarTrainingViewModel> _carTrainings = [];
+    private bool? _learnPerCarShiftBeforeAdvanced;
     private double? _learnedRedlinePercent;
     private string? _loadedProfileWheelId;
+    private WheelProfile? _selectedSavedProfile;
 
-    public RpmProfileViewModel(LedApplicationService service, SettingsDraft draft, Action<string> setStatus,
-        Func<Task> saveCommand)
+    public RpmProfileViewModel(LedApplicationService service, SettingsDraft draft, Action<string> setStatus)
     {
         _service = service;
         _draft = draft;
         _setStatus = setStatus;
-        SaveCommand = new AsyncRelayCommand(saveCommand);
         ResetProfileCommand = new RelayCommand(ResetProfile);
-        _resetLearningCommand = new AsyncRelayCommand(() => _service.ResetLearningAsync());
+        SaveProfileCommand = new AsyncRelayCommand(SaveSelectedProfileAsync, () => SelectedSavedProfile is not null,
+            ex => _setStatus(ex.Message));
+        LoadProfileCommand = new AsyncRelayCommand(LoadSelectedProfileAsync,
+            () => SelectedSavedProfile?.ProfileId is not null, ex => _setStatus(ex.Message));
+        DeleteProfileCommand = new AsyncRelayCommand(DeleteSelectedProfileAsync,
+            () => SelectedSavedProfile?.ProfileId is not null, ex => _setStatus(ex.Message));
         _draft.PropertyChanged += OnDraftPropertyChanged;
         _service.SnapshotChanged += OnSnapshotChanged;
     }
 
     public ObservableCollection<ThresholdViewModel> Thresholds { get; } = [];
-    public ICommand SaveCommand { get; }
     public ICommand ResetProfileCommand { get; }
-    public ICommand ResetLearningCommand => _resetLearningCommand;
+    public ICommand SaveProfileCommand { get; }
+    public ICommand LoadProfileCommand { get; }
+    public ICommand DeleteProfileCommand { get; }
+    public ObservableCollection<WheelProfile> SavedProfiles { get; } = [];
+
+    public WheelProfile? SelectedSavedProfile
+    {
+        get => _selectedSavedProfile;
+        set
+        {
+            if (!SetField(ref _selectedSavedProfile, value)) return;
+            OnPropertyChanged(nameof(HasSelectedSavedProfile));
+            RefreshProfileCommandStates();
+        }
+    }
+
+    public bool HasSelectedSavedProfile => SelectedSavedProfile?.ProfileId is not null;
+
+    public string ProfileWheelName => _draft.SelectedWheel?.Id is null
+        ? _activeDefinition?.DisplayName ?? _service.Wheels.FirstOrDefault()?.DisplayName ?? "Selected wheel"
+        : _draft.SelectedWheel.Name;
+
+    public IReadOnlyList<CarTrainingViewModel> CarTrainings
+    {
+        get => _carTrainings;
+        private set => SetField(ref _carTrainings, value);
+    }
 
     public double FirstLedPercent
     {
@@ -83,32 +114,81 @@ public sealed class RpmProfileViewModel : ObservableObject, IDisposable
         ? $"Learned shift point: {value:0.0}%"
         : "Learning per-car shift";
 
+    private WheelDefinition? SelectedDefinition => _draft.SelectedWheel?.Id is { } selectedId
+        ? _service.Wheels.FirstOrDefault(x => x.Id == selectedId)
+        : _activeDefinition ?? _service.Wheels.FirstOrDefault();
+
     public void Dispose()
     {
         _draft.PropertyChanged -= OnDraftPropertyChanged;
         _service.SnapshotChanged -= OnSnapshotChanged;
     }
 
+    public void RefreshCarTrainings()
+    {
+        CarTrainings = _service.GetCarTrainingMappings().Select(mapping => new CarTrainingViewModel(mapping)).ToArray();
+    }
+
+    public async Task ResetCarTrainingsAsync()
+    {
+        await _service.ResetLearningAsync();
+        RefreshCarTrainings();
+    }
+
     public void Initialize(WheelDefinition? selectedWheel, IReadOnlyList<double> thresholds)
     {
         ConfigureThresholds(selectedWheel, thresholds);
         _service.SetPreviewWheel(_draft.SelectedWheel?.Id);
+        var wheel = selectedWheel ?? SelectedDefinition;
+        if (wheel is not null) _ = RefreshSavedProfilesAsync(wheel);
     }
 
     private void OnDraftPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
         if (e.PropertyName == nameof(SettingsDraft.SelectedWheel))
         {
+            OnPropertyChanged(nameof(ProfileWheelName));
             _service.SetPreviewWheel(_draft.SelectedWheel?.Id);
             var wheel = _service.Wheels.FirstOrDefault(x => x.Id == _draft.SelectedWheel?.Id);
-            if (wheel is not null) _ = LoadWheelProfileAsync(wheel, false);
+            if (wheel is not null)
+            {
+                _ = LoadWheelProfileAsync(wheel, false);
+                _ = RefreshSavedProfilesAsync(wheel);
+            }
         }
-        else if (e.PropertyName == nameof(SettingsDraft.FirstLedPercent)) OnPropertyChanged(nameof(FirstLedPercent));
-        else if (e.PropertyName == nameof(SettingsDraft.RedlinePercent)) OnPropertyChanged(nameof(RedlinePercent));
-        else if (e.PropertyName == nameof(SettingsDraft.BlinkAtRedline)) OnPropertyChanged(nameof(BlinkAtRedline));
-        else if (e.PropertyName == nameof(SettingsDraft.LearnPerCarShift)) OnPropertyChanged(nameof(LearnPerCarShift));
+        else if (e.PropertyName == nameof(SettingsDraft.FirstLedPercent))
+        {
+            OnPropertyChanged(nameof(FirstLedPercent));
+        }
+        else if (e.PropertyName == nameof(SettingsDraft.RedlinePercent))
+        {
+            OnPropertyChanged(nameof(RedlinePercent));
+        }
+        else if (e.PropertyName == nameof(SettingsDraft.BlinkAtRedline))
+        {
+            OnPropertyChanged(nameof(BlinkAtRedline));
+        }
+        else if (e.PropertyName == nameof(SettingsDraft.LearnPerCarShift))
+        {
+            OnPropertyChanged(nameof(LearnPerCarShift));
+        }
         else if (e.PropertyName == nameof(SettingsDraft.ProfileMode))
         {
+            if (_draft.ProfileMode == RpmProfileMode.Advanced)
+            {
+                _learnPerCarShiftBeforeAdvanced ??= _draft.LearnPerCarShift;
+                if (_draft.LearnPerCarShift) _draft.LearnPerCarShift = false;
+            }
+            else if (_learnPerCarShiftBeforeAdvanced is bool previousLearnState)
+            {
+                _draft.LearnPerCarShift = previousLearnState;
+                _learnPerCarShiftBeforeAdvanced = null;
+            }
+            else if (!_draft.LearnPerCarShift)
+            {
+                _draft.LearnPerCarShift = true;
+            }
+
             OnPropertyChanged(nameof(ProfileMode));
             OnPropertyChanged(nameof(IsEasyMode));
             OnPropertyChanged(nameof(IsAdvancedMode));
@@ -132,6 +212,8 @@ public sealed class RpmProfileViewModel : ObservableObject, IDisposable
 
         if (snapshot.Wheel is null || snapshot.Wheel.Id == _activeDefinition?.Id) return;
         _activeDefinition = snapshot.Wheel;
+        if (_draft.SelectedWheel?.Id is null) _ = RefreshSavedProfilesAsync(snapshot.Wheel);
+        OnPropertyChanged(nameof(ProfileWheelName));
         _ = LoadWheelProfileAsync(snapshot.Wheel, true);
     }
 
@@ -143,11 +225,101 @@ public sealed class RpmProfileViewModel : ObservableObject, IDisposable
         ConfigureThresholds(_activeDefinition, []);
     }
 
+    private WheelProfile CaptureProfile(string? profileId = null, string? name = null)
+    {
+        var wheel = SelectedDefinition ??
+                    throw new InvalidOperationException("Select a wheel before managing RPM profiles.");
+        return new WheelProfile
+        {
+            WheelId = wheel.Id, ProfileId = profileId, Name = name, Mode = ProfileMode,
+            FirstLedPercent = FirstLedPercent, RedlinePercent = RedlinePercent,
+            BlinkAtRedline = BlinkAtRedline, AdvancedThresholds = Thresholds.Select(x => x.Value).ToArray()
+        };
+    }
+
+    private async Task RefreshSavedProfilesAsync(WheelDefinition wheel)
+    {
+        try
+        {
+            var previousId = SelectedSavedProfile?.ProfileId;
+            var profiles = await _service.ListNamedWheelProfilesAsync(wheel.Id);
+            SavedProfiles.Clear();
+            foreach (var profile in profiles) SavedProfiles.Add(profile);
+            SavedProfiles.Add(new WheelProfile { WheelId = wheel.Id, Name = "New profile" });
+            SelectedSavedProfile = SavedProfiles.FirstOrDefault(x => x.ProfileId == previousId);
+            OnPropertyChanged(nameof(ProfileWheelName));
+        }
+        catch (Exception ex)
+        {
+            _setStatus($"Could not read saved RPM profiles: {ex.Message}");
+        }
+    }
+
+    private async Task SaveSelectedProfileAsync()
+    {
+        var selected = SelectedSavedProfile;
+        if (selected is null) return;
+        var wheel = SelectedDefinition ?? throw new InvalidOperationException("Select a wheel first.");
+        var profileName = selected.ProfileId is null
+            ? ProfileNameDialog.Show(Application.Current?.MainWindow)
+            : selected.Name;
+        if (string.IsNullOrWhiteSpace(profileName)) return;
+        var saved = await _service.SaveNamedWheelProfileAsync(
+            CaptureProfile(selected.ProfileId, profileName), wheel.ControlGroupCount);
+        await RefreshSavedProfilesAsync(wheel);
+        SelectedSavedProfile = SavedProfiles.FirstOrDefault(x => x.ProfileId == saved.ProfileId);
+        _setStatus(selected.ProfileId is null ? $"Created “{saved.Name}”." : $"Saved changes to “{saved.Name}”.");
+    }
+
+    private async Task LoadSelectedProfileAsync()
+    {
+        var profile = SelectedSavedProfile;
+        if (profile is null) return;
+        var wheel = SelectedDefinition ?? throw new InvalidOperationException("Select a wheel first.");
+        if (profile.WheelId != wheel.Id)
+            throw new InvalidOperationException("This profile belongs to a different wheel.");
+        if (!profile.TryValidate(wheel.ControlGroupCount, out var error))
+            throw new InvalidOperationException(error);
+        ProfileMode = profile.Mode;
+        FirstLedPercent = profile.FirstLedPercent;
+        RedlinePercent = profile.RedlinePercent;
+        BlinkAtRedline = profile.BlinkAtRedline;
+        ConfigureThresholds(wheel, profile.AdvancedThresholds);
+        await _service.UpdateSettingsAsync(_service.Settings with
+        {
+            PreferredWheelId = wheel.Id, ProfileMode = profile.Mode,
+            FirstLedPercent = profile.FirstLedPercent, RedlinePercent = profile.RedlinePercent,
+            BlinkAtRedline = profile.BlinkAtRedline, AdvancedThresholds = profile.AdvancedThresholds
+        });
+        _setStatus($"Loaded “{profile.Name}”.");
+    }
+
+    private async Task DeleteSelectedProfileAsync()
+    {
+        var profile = SelectedSavedProfile;
+        if (profile?.ProfileId is null) return;
+        var wheel = SelectedDefinition ?? throw new InvalidOperationException("Select a wheel first.");
+        await _service.DeleteNamedWheelProfileAsync(wheel.Id, profile.ProfileId);
+        await RefreshSavedProfilesAsync(wheel);
+        _setStatus($"Deleted “{profile.Name}”.");
+    }
+
+    private void RefreshProfileCommandStates()
+    {
+        (SaveProfileCommand as AsyncRelayCommand)?.RaiseCanExecuteChanged();
+        (LoadProfileCommand as AsyncRelayCommand)?.RaiseCanExecuteChanged();
+        (DeleteProfileCommand as AsyncRelayCommand)?.RaiseCanExecuteChanged();
+    }
+
     private void ConfigureThresholds(WheelDefinition? definition, IReadOnlyList<double> saved)
     {
         var wheel = definition ?? _service.Wheels.FirstOrDefault();
         var count = wheel?.ControlGroupCount ?? 5;
-        var values = saved.Count == count ? saved.ToArray() : LedMath.BuildRecommendedThresholds(count);
+        var firstThreshold = Math.Min(FirstLedPercent, RedlinePercent - 10);
+        var lastThreshold = Math.Max(firstThreshold, RedlinePercent - 5);
+        var values = saved.Count == count
+            ? saved.ToArray()
+            : LedMath.BuildRecommendedThresholds(count, firstThreshold, lastThreshold);
         var colors = wheel?.Colors ?? ["#38D982", "#6EE65A", "#F0D84A", "#FFAA3B", "#FF5265"];
         Thresholds.Clear();
         for (var i = 0; i < count; i++)

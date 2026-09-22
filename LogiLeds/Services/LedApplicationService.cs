@@ -232,6 +232,11 @@ public sealed class LedApplicationService : IAsyncDisposable
         PublishSnapshot("Learned redlines reset");
     }
 
+    public IReadOnlyList<CarTrainingMapping> GetCarTrainingMappings()
+    {
+        return _redlineLearner.GetMappings();
+    }
+
     public Task<WheelProfile> LoadWheelProfileAsync(WheelDefinition wheel,
         CancellationToken cancellationToken = default)
     {
@@ -242,6 +247,24 @@ public sealed class LedApplicationService : IAsyncDisposable
         CancellationToken cancellationToken = default)
     {
         return _profileStore.SaveAsync(profile, groupCount, cancellationToken);
+    }
+
+    public Task<IReadOnlyList<WheelProfile>> ListNamedWheelProfilesAsync(string wheelId,
+        CancellationToken cancellationToken = default)
+    {
+        return _profileStore.ListNamedAsync(wheelId, cancellationToken);
+    }
+
+    public Task<WheelProfile> SaveNamedWheelProfileAsync(WheelProfile profile, int groupCount,
+        CancellationToken cancellationToken = default)
+    {
+        return _profileStore.SaveNamedAsync(profile, groupCount, cancellationToken);
+    }
+
+    public Task DeleteNamedWheelProfileAsync(string wheelId, string profileId,
+        CancellationToken cancellationToken = default)
+    {
+        return _profileStore.DeleteNamedAsync(wheelId, profileId, cancellationToken);
     }
 
     private async Task RunManualOutputAsync(bool readyAnimation, CancellationToken cancellationToken)
@@ -374,7 +397,7 @@ public sealed class LedApplicationService : IAsyncDisposable
 
     private int GetVisibleLedCount((int Count, bool IsFlashing) preview, DateTimeOffset now)
     {
-        return !preview.IsFlashing || !Settings.BlinkAtRedline || (now.ToUnixTimeMilliseconds() / 62) % 2 == 0
+        return !preview.IsFlashing || !Settings.BlinkAtRedline || now.ToUnixTimeMilliseconds() / 62 % 2 == 0
             ? preview.Count
             : 0;
     }

@@ -1,3 +1,5 @@
+using System.Collections.Specialized;
+using System.ComponentModel;
 using System.Globalization;
 using System.Windows.Input;
 using LogiLeds.Commands;
@@ -11,11 +13,14 @@ namespace LogiLeds.ViewModels;
 public sealed class MainViewModel : ObservableObject, IAsyncDisposable
 {
     private readonly SettingsDraft _draft = new();
+    private readonly HashSet<ThresholdViewModel> _observedThresholds = [];
     private readonly LedApplicationService _service;
+    private readonly SemaphoreSlim _settingsSaveGate = new(1, 1);
     private WheelDefinition? _activeDefinition;
-    private bool _isRunning, _isWheelConnected, _isTelemetryConnected;
+    private bool _isWheelConnected, _isTelemetryConnected, _settingsLoaded;
     private float _maximumRpm;
     private int _selectedTab;
+    private CancellationTokenSource? _settingsSaveDelay;
     private ReadinessState _state;
     private string _statusMessage = "Starting LogiLeds", _wheelName = "No Logitech wheel", _telemetryFormat = "—";
 
@@ -23,12 +28,10 @@ public sealed class MainViewModel : ObservableObject, IAsyncDisposable
     {
         _service = service;
         Dashboard = new DashboardViewModel(service, SetStatusMessage);
-        RpmProfile = new RpmProfileViewModel(service, _draft, SetStatusMessage, SaveSettingsAsync);
-        Settings = new SettingsViewModel(service, _draft, SetStatusMessage, SaveSettingsAsync);
-        _draft.PropertyChanged += (_, e) =>
-        {
-            if (e.PropertyName == nameof(SettingsDraft.CloseToTray)) OnPropertyChanged(nameof(CloseToTray));
-        };
+        RpmProfile = new RpmProfileViewModel(service, _draft, SetStatusMessage);
+        Settings = new SettingsViewModel(service, _draft, SetStatusMessage);
+        _draft.PropertyChanged += OnDraftPropertyChanged;
+        RpmProfile.Thresholds.CollectionChanged += OnThresholdsCollectionChanged;
         ExitCommand = new RelayCommand(() => ExitRequested?.Invoke(this, EventArgs.Empty));
         _service.SnapshotChanged += OnSnapshotChanged;
     }
@@ -37,9 +40,10 @@ public sealed class MainViewModel : ObservableObject, IAsyncDisposable
     public RpmProfileViewModel RpmProfile { get; }
     public SettingsViewModel Settings { get; }
     public ICommand ExitCommand { get; }
-    public bool MinimizeToTray => true;
+    public bool MinimizeToTray => _draft.CloseToTray;
     public bool CloseToTray => _draft.CloseToTray;
-    public bool IsRunning => _isRunning;
+    public bool IsRunning { get; private set; }
+
     public LedProfileSettings CurrentSettings => _service.Settings;
 
     public int SelectedTab
@@ -121,6 +125,25 @@ public sealed class MainViewModel : ObservableObject, IAsyncDisposable
 
     public async ValueTask DisposeAsync()
     {
+        var saveOnDispose = _settingsLoaded;
+        _settingsLoaded = false;
+        _settingsSaveDelay?.Cancel();
+        _draft.PropertyChanged -= OnDraftPropertyChanged;
+        RpmProfile.Thresholds.CollectionChanged -= OnThresholdsCollectionChanged;
+        foreach (var threshold in _observedThresholds) threshold.PropertyChanged -= OnThresholdValueChanged;
+        _observedThresholds.Clear();
+        await _settingsSaveGate.WaitAsync();
+        try
+        {
+            if (saveOnDispose) await SaveSettingsAsync();
+        }
+        finally
+        {
+            _settingsSaveGate.Release();
+            _settingsSaveGate.Dispose();
+            _settingsSaveDelay?.Dispose();
+        }
+
         _service.SnapshotChanged -= OnSnapshotChanged;
         Dashboard.Dispose();
         RpmProfile.Dispose();
@@ -130,6 +153,82 @@ public sealed class MainViewModel : ObservableObject, IAsyncDisposable
 
     public event EventHandler? ExitRequested;
 
+    private void OnDraftPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(SettingsDraft.CloseToTray))
+        {
+            OnPropertyChanged(nameof(CloseToTray));
+            OnPropertyChanged(nameof(MinimizeToTray));
+        }
+
+        ScheduleSettingsSave();
+    }
+
+    private void OnThresholdsCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
+    {
+        foreach (var threshold in _observedThresholds) threshold.PropertyChanged -= OnThresholdValueChanged;
+        _observedThresholds.Clear();
+        foreach (var threshold in RpmProfile.Thresholds)
+        {
+            threshold.PropertyChanged += OnThresholdValueChanged;
+            _observedThresholds.Add(threshold);
+        }
+
+        ScheduleSettingsSave();
+    }
+
+    private void OnThresholdValueChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        ScheduleSettingsSave();
+    }
+
+    private void ScheduleSettingsSave()
+    {
+        if (!_settingsLoaded) return;
+        var next = new CancellationTokenSource();
+        var previous = _settingsSaveDelay;
+        _settingsSaveDelay = next;
+        previous?.Cancel();
+        _ = SaveSettingsAfterDelayAsync(next);
+    }
+
+    private async Task SaveSettingsAfterDelayAsync(CancellationTokenSource delay)
+    {
+        try
+        {
+            await Task.Delay(TimeSpan.FromMilliseconds(500), delay.Token);
+            if (!ReferenceEquals(_settingsSaveDelay, delay)) return;
+            await _settingsSaveGate.WaitAsync(delay.Token);
+            try
+            {
+                await SaveSettingsAsync();
+            }
+            finally
+            {
+                _settingsSaveGate.Release();
+            }
+        }
+        catch (OperationCanceledException)
+        {
+        }
+        finally
+        {
+            if (ReferenceEquals(_settingsSaveDelay, delay)) _settingsSaveDelay = null;
+            delay.Dispose();
+        }
+    }
+
+    private void UpdateSettingsDraftAutoSaveSubscriptions()
+    {
+        foreach (var threshold in _observedThresholds) threshold.PropertyChanged -= OnThresholdValueChanged;
+        _observedThresholds.Clear();
+        foreach (var threshold in RpmProfile.Thresholds)
+        {
+            threshold.PropertyChanged += OnThresholdValueChanged;
+            _observedThresholds.Add(threshold);
+        }
+    }
+
     public async Task InitializeAsync(nint windowHandle)
     {
         var settings = await _service.LoadSettingsAsync();
@@ -138,15 +237,17 @@ public sealed class MainViewModel : ObservableObject, IAsyncDisposable
         _draft.FirstLedPercent = settings.FirstLedPercent;
         _draft.RedlinePercent = settings.RedlinePercent;
         _draft.BlinkAtRedline = settings.BlinkAtRedline;
+        _draft.ProfileMode = settings.ProfileMode;
         _draft.LearnPerCarShift = settings.LearnPerCarShift;
         _draft.AutoStartControl = settings.AutoStartControl;
         _draft.CloseToTray = settings.CloseToTray;
-        _draft.ProfileMode = settings.ProfileMode;
         _draft.Theme = settings.Theme;
         Settings.Initialize(settings, _service.Wheels);
         RpmProfile.Initialize(_service.Wheels.FirstOrDefault(x => x.Id == settings.PreferredWheelId),
             settings.AdvancedThresholds);
         _service.InitializeWindow(windowHandle);
+        _settingsLoaded = true;
+        UpdateSettingsDraftAutoSaveSubscriptions();
         if (settings.AutoStartControl) await StartServiceWithErrorHandlingAsync();
     }
 
@@ -181,7 +282,7 @@ public sealed class MainViewModel : ObservableObject, IAsyncDisposable
             BindAddress = _draft.BindAddress.Trim(), Port = port,
             FirstLedPercent = _draft.FirstLedPercent, RedlinePercent = _draft.RedlinePercent,
             BlinkAtRedline = _draft.BlinkAtRedline, AutoStartControl = _draft.AutoStartControl,
-            MinimizeToTray = true, CloseToTray = _draft.CloseToTray, ReadyAnimation = true,
+            MinimizeToTray = _draft.CloseToTray, CloseToTray = _draft.CloseToTray, ReadyAnimation = true,
             Theme = _draft.Theme, ProfileMode = _draft.ProfileMode, LearnPerCarShift = _draft.LearnPerCarShift,
             GameTitle = "Auto", PreferredWheelId = _draft.SelectedWheel?.Id,
             AdvancedThresholds = RpmProfile.Thresholds.Select(x => x.Value).ToArray()
@@ -223,7 +324,10 @@ public sealed class MainViewModel : ObservableObject, IAsyncDisposable
         }
     }
 
-    private void SetStatusMessage(string value) => StatusMessage = value;
+    private void SetStatusMessage(string value)
+    {
+        StatusMessage = value;
+    }
 
     private void OnSnapshotChanged(object? sender, AppSnapshot snapshot)
     {
@@ -234,7 +338,7 @@ public sealed class MainViewModel : ObservableObject, IAsyncDisposable
 
     private void ApplySnapshot(AppSnapshot snapshot)
     {
-        _isRunning = snapshot.IsRunning;
+        IsRunning = snapshot.IsRunning;
         _isWheelConnected = snapshot.IsWheelConnected;
         _isTelemetryConnected = snapshot.IsTelemetryConnected;
         _maximumRpm = snapshot.MaximumRpm;

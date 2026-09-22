@@ -26,6 +26,7 @@ public partial class MainWindow : Window
         _viewModel = viewModel;
         DataContext = viewModel;
         _viewModel.ExitRequested += async (_, _) => await ExitAsync();
+        _viewModel.PropertyChanged += OnMainViewModelPropertyChanged;
 
         _startStopMenuItem = new ToolStripMenuItem("Stop control");
         _startStopMenuItem.Click += (_, _) => _viewModel.Settings.StartStopCommand.Execute(null);
@@ -43,7 +44,7 @@ public partial class MainWindow : Window
         var icon = File.Exists(iconPath) ? new Icon(iconPath) : null;
         _trayIcon = new NotifyIcon
         {
-            Icon = icon ?? SystemIcons.Application, Text = "LogiLeds", Visible = true, ContextMenuStrip = menu
+            Icon = icon ?? SystemIcons.Application, Text = "LogiLeds", Visible = false, ContextMenuStrip = menu
         };
         _trayIcon.DoubleClick += (_, _) => RestoreWindow();
 
@@ -81,6 +82,7 @@ public partial class MainWindow : Window
             _startupComplete = true;
             if (!IsVisible) Show();
             Activate();
+            UpdateTrayIconVisibility();
         }
     }
 
@@ -104,9 +106,32 @@ public partial class MainWindow : Window
         if (_startupComplete && WindowState == WindowState.Minimized && _viewModel.MinimizeToTray) HideToTray();
     }
 
+    private void OnMainViewModelPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(MainViewModel.CloseToTray)) UpdateTrayIconVisibility();
+    }
+
+    private void UpdateTrayIconVisibility()
+    {
+        if (_trayDisposed) return;
+        _trayIcon.Visible = _viewModel.CloseToTray;
+        if (_viewModel.CloseToTray)
+        {
+            _shownTrayHint = false;
+            return;
+        }
+
+        if (_startupComplete && !IsVisible)
+        {
+            Show();
+            WindowState = WindowState.Normal;
+            Activate();
+        }
+    }
+
     private void HideToTray()
     {
-        if (!_trayDisposed) _trayIcon.Visible = true;
+        if (!_trayDisposed) _trayIcon.Visible = _viewModel.CloseToTray;
         Hide();
         if (_shownTrayHint) return;
         _shownTrayHint = true;
@@ -116,7 +141,7 @@ public partial class MainWindow : Window
 
     private void RestoreWindow()
     {
-        if (!_trayDisposed) _trayIcon.Visible = true;
+        if (!_trayDisposed) _trayIcon.Visible = _viewModel.CloseToTray;
         Show();
         if (WindowState == WindowState.Minimized) WindowState = WindowState.Normal;
         Activate();

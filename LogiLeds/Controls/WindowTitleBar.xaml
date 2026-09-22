@@ -6,7 +6,6 @@
     xmlns:fa="http://schemas.awesome.incremented/wpf/xaml/fontawesome.sharp"
     xmlns:shell="clr-namespace:System.Windows.Shell;assembly=PresentationFramework">
     <Grid
-        Grid.Row="0"
         Background="{DynamicResource SurfaceBrush}"
         MouseLeftButtonDown="TitleBar_OnMouseLeftButtonDown"
         MouseRightButtonUp="TitleBar_OnMouseRightButtonUp">

@@ -23,34 +23,94 @@
                             Command="{Binding ResetProfileCommand}"
                             Content="Reset"
                             Style="{StaticResource GhostButton}" />
-                        <Button
-                            MinHeight="34"
-                            Padding="14,7"
-                            Command="{Binding SaveCommand}"
-                            Content="Apply profile" />
                     </StackPanel>
                 </Grid>
                 <Border Style="{StaticResource CardStyle}">
                     <StackPanel>
-                        <Border
-                            Margin="0,0,0,24"
-                            Padding="4"
-                            HorizontalAlignment="Left"
-                            Background="{DynamicResource ElevatedBrush}"
-                            CornerRadius="10">
-                            <StackPanel Orientation="Horizontal">
-                                <RadioButton
-                                    Content="Smart mode"
-                                    GroupName="ProfileMode"
-                                    IsChecked="{Binding IsEasyMode}"
-                                    Style="{StaticResource SegmentStyle}" />
-                                <RadioButton
-                                    Content="Advanced"
-                                    GroupName="ProfileMode"
-                                    IsChecked="{Binding IsAdvancedMode}"
-                                    Style="{StaticResource SegmentStyle}" />
+                        <Grid Margin="0,0,0,24">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <Border
+                                Padding="4"
+                                HorizontalAlignment="Left"
+                                Background="{DynamicResource ElevatedBrush}"
+                                CornerRadius="10">
+                                <StackPanel Orientation="Horizontal">
+                                    <RadioButton
+                                        Content="Smart mode"
+                                        GroupName="ProfileMode"
+                                        IsChecked="{Binding IsEasyMode}"
+                                        Style="{StaticResource SegmentStyle}" />
+                                    <RadioButton
+                                        Content="Advanced"
+                                        GroupName="ProfileMode"
+                                        IsChecked="{Binding IsAdvancedMode}"
+                                        Style="{StaticResource SegmentStyle}" />
+                                </StackPanel>
+                            </Border>
+                            <StackPanel
+                                Grid.Column="1"
+                                HorizontalAlignment="Right"
+                                VerticalAlignment="Center"
+                                Orientation="Horizontal">
+                                <StackPanel.Style>
+                                    <Style TargetType="StackPanel">
+                                        <Setter Property="Visibility" Value="Collapsed" />
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding IsAdvancedMode}" Value="True">
+                                                <Setter Property="Visibility" Value="Visible" />
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </StackPanel.Style>
+                                <Button
+                                    MinHeight="32"
+                                    Margin="0,0,6,0"
+                                    Padding="9,5"
+                                    Command="{Binding DeleteProfileCommand}"
+                                    Content="Delete"
+                                    ToolTip="Delete the selected profile">
+                                    <Button.Style>
+                                        <Style BasedOn="{StaticResource {x:Type Button}}" TargetType="Button">
+                                            <Setter Property="Visibility" Value="Collapsed" />
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding HasSelectedSavedProfile}" Value="True">
+                                                    <Setter Property="Visibility" Value="Visible" />
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </Button.Style>
+                                </Button>
+                                <ComboBox
+                                    Width="180"
+                                    MinHeight="32"
+                                    Margin="0,0,6,0"
+                                    ItemsSource="{Binding SavedProfiles}"
+                                    SelectedItem="{Binding SelectedSavedProfile}"
+                                    TextSearch.TextPath="Name"
+                                    ToolTip="Saved profiles for the selected wheel">
+                                    <ComboBox.ItemTemplate>
+                                        <DataTemplate>
+                                            <TextBlock Text="{Binding Name}" />
+                                        </DataTemplate>
+                                    </ComboBox.ItemTemplate>
+                                </ComboBox>
+                                <Button
+                                    MinHeight="32"
+                                    Padding="9,5"
+                                    Command="{Binding LoadProfileCommand}"
+                                    Content="Load" />
+                                <Button
+                                    MinHeight="32"
+                                    Margin="6,0,0,0"
+                                    Padding="9,5"
+                                    Command="{Binding SaveProfileCommand}"
+                                    Content="Save"
+                                    ToolTip="Save changes to the selected profile" />
                             </StackPanel>
-                        </Border>
+                        </Grid>
                         <Grid>
                             <Grid.Style>
                                 <Style TargetType="Grid">
@@ -141,36 +201,48 @@
                                 VerticalAlignment="Center"
                                 IsChecked="{Binding BlinkAtRedline}" />
                         </Grid>
-                        <Border
-                            Height="1"
-                            Margin="0,24,0,16"
-                            Background="{DynamicResource BorderBrush}" />
-                        <Grid>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition />
-                                <ColumnDefinition Width="Auto" />
-                                <ColumnDefinition Width="Auto" />
-                            </Grid.ColumnDefinitions>
-                            <StackPanel>
-                                <TextBlock FontWeight="SemiBold" Text="Learn per-car shift" />
-                                <TextBlock
-                                    Margin="0,3,0,0"
-                                    FontSize="12"
-                                    Foreground="{DynamicResource MutedBrush}"
-                                    Text="Adapt the shift point to each car" />
-                            </StackPanel>
-                            <Button
-                                Grid.Column="1"
-                                Margin="0,0,12,0"
-                                Padding="12,6"
-                                Command="{Binding ResetLearningCommand}"
-                                Content="Reset learning"
-                                Style="{StaticResource GhostButton}" />
-                            <CheckBox
-                                Grid.Column="2"
-                                VerticalAlignment="Center"
-                                IsChecked="{Binding LearnPerCarShift}" />
-                        </Grid>
+                        <StackPanel>
+                            <StackPanel.Style>
+                                <Style TargetType="StackPanel">
+                                    <Setter Property="Visibility" Value="Collapsed" />
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsEasyMode}" Value="True">
+                                            <Setter Property="Visibility" Value="Visible" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </StackPanel.Style>
+                            <Border
+                                Height="1"
+                                Margin="0,24,0,16"
+                                Background="{DynamicResource BorderBrush}" />
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition />
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <StackPanel>
+                                    <TextBlock FontWeight="SemiBold" Text="Learn per-car shift" />
+                                    <TextBlock
+                                        Margin="0,3,0,0"
+                                        FontSize="12"
+                                        Foreground="{DynamicResource MutedBrush}"
+                                        Text="Adapt shift points from full-throttle gear changes" />
+                                </StackPanel>
+                                <Button
+                                    Grid.Column="1"
+                                    Padding="12,6"
+                                    Click="OpenCarTrainings_OnClick"
+                                    Content="Car trainings"
+                                    Style="{StaticResource GhostButton}" />
+                                <CheckBox
+                                    Grid.Column="2"
+                                    Margin="16,0,0,0"
+                                    VerticalAlignment="Center"
+                                    IsChecked="{Binding LearnPerCarShift}" />
+                            </Grid>
+                        </StackPanel>
                     </StackPanel>
                 </Border>
             </StackPanel>

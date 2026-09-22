@@ -29,8 +29,10 @@ public partial class WindowTitleBar : UserControl
         var window = Window.GetWindow(this);
         if (window is null) return;
         if (e.ClickCount == 2)
+        {
             window.WindowState =
                 window.WindowState == WindowState.Maximized ? WindowState.Normal : WindowState.Maximized;
+        }
         else
         {
             if (window.WindowState == WindowState.Maximized)
@@ -78,7 +80,10 @@ public partial class WindowTitleBar : UserControl
         window.WindowState = window.WindowState == WindowState.Maximized ? WindowState.Normal : WindowState.Maximized;
     }
 
-    private void CloseButton_OnClick(object sender, RoutedEventArgs e) => Window.GetWindow(this)?.Close();
+    private void CloseButton_OnClick(object sender, RoutedEventArgs e)
+    {
+        Window.GetWindow(this)?.Close();
+    }
 
     private void UpdateMaximizeIcon(Window window)
     {
