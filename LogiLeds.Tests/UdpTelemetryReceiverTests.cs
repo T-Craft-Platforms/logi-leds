@@ -14,7 +14,8 @@ public sealed class UdpTelemetryReceiverTests
     {
         var port = GetUnusedPort();
         await using var receiver = new UdpTelemetryReceiver();
-        var received = new TaskCompletionSource<ForzaTelemetryFrame>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var received =
+            new TaskCompletionSource<ForzaTelemetryFrame>(TaskCreationOptions.RunContinuationsAsynchronously);
         receiver.FrameReceived += frame => received.TrySetResult(frame);
         await receiver.StartAsync(LedProfileSettings.Defaults with { Port = port });
 
@@ -36,7 +37,8 @@ public sealed class UdpTelemetryReceiverTests
         blocker.Client.Bind(new IPEndPoint(IPAddress.Loopback, 0));
         var port = ((IPEndPoint)blocker.Client.LocalEndPoint!).Port;
         await using var receiver = new UdpTelemetryReceiver();
-        await Assert.ThrowsExceptionAsync<SocketException>(() => receiver.StartAsync(LedProfileSettings.Defaults with { Port = port }));
+        await Assert.ThrowsExceptionAsync<SocketException>(() =>
+            receiver.StartAsync(LedProfileSettings.Defaults with { Port = port }));
     }
 
     private static int GetUnusedPort()

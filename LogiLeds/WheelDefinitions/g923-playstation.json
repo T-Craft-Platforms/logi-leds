@@ -1,7 +1,26 @@
 {
-  "schemaVersion": 1, "id": "logitech-g923-playstation", "displayName": "Logitech G923 (PlayStation/PC)",
-  "vendorId": 1133, "productIds": [49766,49767], "transport": "hidpp-level", "hidppFeatureIndex": 17, "requiresArm": true,
-  "physicalLedCount": 5, "controlGroupCount": 5, "direction": "left-to-right",
-  "colors": ["#38D982","#38D982","#F0D84A","#FF5265","#4CA7FF"],
-  "defaultFirstPercent": 65, "defaultRedlinePercent": 90, "hardwareVerified": false
+  "schemaVersion": 1,
+  "id": "logitech-g923-playstation",
+  "displayName": "Logitech G923 (PlayStation/PC)",
+  "vendorId": 1133,
+  "productIds": [
+    49766,
+    49767
+  ],
+  "transport": "hidpp-level",
+  "hidppFeatureIndex": 17,
+  "requiresArm": true,
+  "physicalLedCount": 5,
+  "controlGroupCount": 5,
+  "direction": "left-to-right",
+  "colors": [
+    "#38D982",
+    "#38D982",
+    "#F0D84A",
+    "#FF5265",
+    "#4CA7FF"
+  ],
+  "defaultFirstPercent": 65,
+  "defaultRedlinePercent": 90,
+  "hardwareVerified": false
 }

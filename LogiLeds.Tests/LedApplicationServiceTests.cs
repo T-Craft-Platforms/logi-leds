@@ -14,7 +14,7 @@ public sealed class LedApplicationServiceTests
         var wheel = new FakeWheelController();
         await using var service = CreateService(receiver, wheel);
         await service.LoadSettingsAsync();
-        service.InitializeWindow((nint)1);
+        service.InitializeWindow(1);
         await service.StartAsync();
         receiver.Emit(new ForzaTelemetryFrame(true, 10, 10_000, 900, 8_500, DateTimeOffset.UtcNow));
         await WaitUntilAsync(() => wheel.SetCalls > 0);
@@ -31,7 +31,7 @@ public sealed class LedApplicationServiceTests
         var wheel = new FakeWheelController();
         await using var service = CreateService(receiver, wheel);
         await service.LoadSettingsAsync();
-        service.InitializeWindow((nint)1);
+        service.InitializeWindow(1);
         await service.StartAsync();
         receiver.Emit(new ForzaTelemetryFrame(true, 10, 9_000, 900, 8_000, DateTimeOffset.UtcNow));
         await WaitUntilAsync(() => wheel.SetCalls > 0);
@@ -43,13 +43,13 @@ public sealed class LedApplicationServiceTests
     public async Task Snapshot_UsesSelectedPreviewWheel_WhenNoPhysicalWheelIsConnected()
     {
         var receiver = new FakeTelemetryReceiver();
-        var wheel = new FakeWheelController(isConnected: false);
+        var wheel = new FakeWheelController(false);
         await using var service = CreateService(receiver, wheel);
         AppSnapshot? snapshot = null;
         service.SnapshotChanged += (_, current) => snapshot = current;
 
         await service.LoadSettingsAsync();
-        service.InitializeWindow((nint)1);
+        service.InitializeWindow(1);
         service.SetPreviewWheel("fake");
         await service.StartAsync();
         receiver.Emit(new ForzaTelemetryFrame(true, 10, 10_000, 900, 8_500, DateTimeOffset.UtcNow));
@@ -76,12 +76,37 @@ public sealed class LedApplicationServiceTests
     private sealed class FakeTelemetryReceiver : ITelemetryReceiver
     {
         public event Action<ForzaTelemetryFrame>? FrameReceived;
-        public event Action<string>? ErrorOccurred { add { } remove { } }
+
+        public event Action<string>? ErrorOccurred
+        {
+            add { }
+            remove { }
+        }
+
         public bool IsRunning { get; private set; }
-        public Task StartAsync(LedProfileSettings settings, CancellationToken cancellationToken = default) { IsRunning = true; return Task.CompletedTask; }
-        public Task StopAsync() { IsRunning = false; return Task.CompletedTask; }
-        public void Emit(ForzaTelemetryFrame frame) => FrameReceived?.Invoke(frame);
-        public ValueTask DisposeAsync() { IsRunning = false; return ValueTask.CompletedTask; }
+
+        public Task StartAsync(LedProfileSettings settings, CancellationToken cancellationToken = default)
+        {
+            IsRunning = true;
+            return Task.CompletedTask;
+        }
+
+        public Task StopAsync()
+        {
+            IsRunning = false;
+            return Task.CompletedTask;
+        }
+
+        public ValueTask DisposeAsync()
+        {
+            IsRunning = false;
+            return ValueTask.CompletedTask;
+        }
+
+        public void Emit(ForzaTelemetryFrame frame)
+        {
+            FrameReceived?.Invoke(frame);
+        }
     }
 
     private sealed class FakeWheelController : IWheelLedController
@@ -91,25 +116,70 @@ public sealed class LedApplicationServiceTests
             Id = "fake", DisplayName = "Fake G29", ProductIds = [1], PhysicalLedCount = 10, ControlGroupCount = 5,
             Colors = Enumerable.Repeat("#FF0000", 10).ToArray()
         };
-        public FakeWheelController(bool isConnected = true) => IsConnected = isConnected;
+
+        public FakeWheelController(bool isConnected = true)
+        {
+            IsConnected = isConnected;
+        }
+
+        public int SetCalls { get; private set; }
+        public int ClearCalls { get; set; }
+        public int LastLevel { get; private set; }
+
         public bool IsConnected { get; private set; }
         public string WheelName => Definition.DisplayName;
         public string StatusMessage => "Wheel ready";
         public WheelDefinition? CurrentDefinition => IsConnected ? Definition : null;
         public IReadOnlyList<WheelDefinition> AvailableDefinitions => [Definition];
         public IReadOnlyList<string> DefinitionDiagnostics => [];
-        public int SetCalls { get; private set; }
-        public int ClearCalls { get; set; }
-        public int LastLevel { get; private set; }
-        public bool Initialize(nint windowHandle) => true;
-        public void SetPreferredWheel(string? wheelId) { }
-        public void Refresh() { }
-        public void RefreshNow() { }
-        public bool SetLevel(int illuminatedGroups) { SetCalls++; LastLevel = illuminatedGroups; return true; }
-        public void ClearLeds() => ClearCalls++;
-        public Task TestLedsAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;
-        public Task PlayReadyAnimationAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;
-        public void Shutdown() => IsConnected = false;
-        public void Dispose() => Shutdown();
+
+        public bool Initialize(nint windowHandle)
+        {
+            return true;
+        }
+
+        public void SetPreferredWheel(string? wheelId)
+        {
+        }
+
+        public void Refresh()
+        {
+        }
+
+        public void RefreshNow()
+        {
+        }
+
+        public bool SetLevel(int illuminatedGroups)
+        {
+            SetCalls++;
+            LastLevel = illuminatedGroups;
+            return true;
+        }
+
+        public void ClearLeds()
+        {
+            ClearCalls++;
+        }
+
+        public Task TestLedsAsync(CancellationToken cancellationToken = default)
+        {
+            return Task.CompletedTask;
+        }
+
+        public Task PlayReadyAnimationAsync(CancellationToken cancellationToken = default)
+        {
+            return Task.CompletedTask;
+        }
+
+        public void Shutdown()
+        {
+            IsConnected = false;
+        }
+
+        public void Dispose()
+        {
+            Shutdown();
+        }
     }
 }

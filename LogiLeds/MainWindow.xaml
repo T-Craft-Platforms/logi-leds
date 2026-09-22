@@ -25,6 +25,8 @@
     <Border
         x:Name="WindowFrame"
         Background="{DynamicResource WindowBrush}"
+        BorderBrush="{DynamicResource BorderBrush}"
+        BorderThickness="1"
         CornerRadius="0">
         <Grid>
             <Grid.RowDefinitions>
@@ -92,8 +94,6 @@
                                     ToolTip="App control" />
                             </Viewbox>
                             <ContentControl
-                                Width="16"
-                                Height="16"
                                 Margin="3,0"
                                 Style="{StaticResource WheelStatusIconStyle}"
                                 Template="{StaticResource WheelGlyphTemplate}"
@@ -264,16 +264,11 @@
                                         Text="Dashboard" />
                                     <Button
                                         Grid.Column="1"
-                                        MinHeight="36"
-                                        Padding="16,8"
                                         VerticalAlignment="Center"
                                         Command="{Binding RestartCommand}"
                                         Style="{StaticResource DashboardControlButtonStyle}" />
                                 </Grid>
                                 <Grid Margin="0,0,0,16">
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition />
-                                    </Grid.ColumnDefinitions>
                                     <Border Style="{StaticResource CardStyle}">
                                         <Grid>
                                             <Grid.RowDefinitions>
@@ -348,6 +343,8 @@
                                         <ColumnDefinition />
                                         <ColumnDefinition Width="12" />
                                         <ColumnDefinition />
+                                        <ColumnDefinition Width="12" />
+                                        <ColumnDefinition />
                                     </Grid.ColumnDefinitions>
                                     <Border
                                         Grid.Column="0"
@@ -379,6 +376,20 @@
                                     </Border>
                                     <Border
                                         Grid.Column="4"
+                                        Padding="18"
+                                        Style="{StaticResource CardStyle}">
+                                        <StackPanel>
+                                            <TextBlock Style="{StaticResource EyebrowStyle}" Text="VEHICLE" />
+                                            <TextBlock
+                                                Margin="0,7,0,0"
+                                                FontSize="17"
+                                                FontWeight="SemiBold"
+                                                Text="{Binding CurrentVehicle}"
+                                                TextTrimming="CharacterEllipsis" />
+                                        </StackPanel>
+                                    </Border>
+                                    <Border
+                                        Grid.Column="6"
                                         Padding="18"
                                         Style="{StaticResource CardStyle}">
                                         <Grid>

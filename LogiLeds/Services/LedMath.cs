@@ -4,8 +4,11 @@ namespace LogiLeds.Services;
 
 public static class LedMath
 {
-    public static (float FirstLedRpm, float RedlineRpm) CalculateThresholds(float maximumRpm, double firstPercent, double redlinePercent) =>
-        (maximumRpm * (float)(firstPercent / 100d), maximumRpm * (float)(redlinePercent / 100d));
+    public static (float FirstLedRpm, float RedlineRpm) CalculateThresholds(float maximumRpm, double firstPercent,
+        double redlinePercent)
+    {
+        return (maximumRpm * (float)(firstPercent / 100d), maximumRpm * (float)(redlinePercent / 100d));
+    }
 
     public static double[] BuildRecommendedThresholds(int groupCount,
         double firstPercent = LedProfileSettings.DefaultFirstLedPercent,
@@ -25,7 +28,7 @@ public static class LedMath
         if (maximumRpm <= 0 || currentRpm <= 0 || groupCount <= 0) return (0, false);
         var percent = currentRpm / (double)maximumRpm * 100d;
         var flashing = percent >= redlinePercent;
-        IReadOnlyList<double> thresholds = advancedThresholds is { Count: > 0 }
+        var thresholds = advancedThresholds is { Count: > 0 }
             ? advancedThresholds
             : BuildRecommendedThresholds(groupCount, firstPercent, Math.Max(firstPercent, redlinePercent - 1));
         var count = thresholds.Take(groupCount).Count(x => percent >= x);

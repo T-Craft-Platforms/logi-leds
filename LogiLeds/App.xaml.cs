@@ -1,14 +1,15 @@
-using System.Threading;
 using System.Windows;
 using LogiLeds.Services;
 using LogiLeds.ViewModels;
+using Application = System.Windows.Application;
+using MessageBox = System.Windows.MessageBox;
 
 namespace LogiLeds;
 
-public partial class App : System.Windows.Application
+public partial class App : Application
 {
-    private Mutex? _singleInstanceMutex;
     private bool _ownsMutex;
+    private Mutex? _singleInstanceMutex;
 
     protected override void OnStartup(StartupEventArgs e)
     {
@@ -18,7 +19,7 @@ public partial class App : System.Windows.Application
         _ownsMutex = createdNew;
         if (!createdNew)
         {
-            System.Windows.MessageBox.Show("LogiLeds is already running. Check the notification area.", "LogiLeds",
+            MessageBox.Show("LogiLeds is already running. Check the notification area.", "LogiLeds",
                 MessageBoxButton.OK, MessageBoxImage.Information);
             Shutdown();
             return;

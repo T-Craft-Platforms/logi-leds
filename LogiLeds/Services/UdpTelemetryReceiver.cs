@@ -6,8 +6,8 @@ namespace LogiLeds.Services;
 
 public sealed class UdpTelemetryReceiver(TimeProvider? timeProvider = null) : ITelemetryReceiver
 {
-    private readonly TimeProvider _timeProvider = timeProvider ?? TimeProvider.System;
     private readonly SemaphoreSlim _lifecycleGate = new(1, 1);
+    private readonly TimeProvider _timeProvider = timeProvider ?? TimeProvider.System;
     private UdpClient? _client;
     private CancellationTokenSource? _receiveCts;
     private Task? _receiveTask;
@@ -21,9 +21,7 @@ public sealed class UdpTelemetryReceiver(TimeProvider? timeProvider = null) : IT
     {
         ArgumentNullException.ThrowIfNull(settings);
         if (!settings.TryValidate(out var validationError))
-        {
             throw new ArgumentException(validationError, nameof(settings));
-        }
 
         await _lifecycleGate.WaitAsync(cancellationToken);
         try
@@ -68,17 +66,29 @@ public sealed class UdpTelemetryReceiver(TimeProvider? timeProvider = null) : IT
             cts?.Cancel();
             client?.Dispose();
             if (receiveTask is not null)
-            {
-                try { await receiveTask; }
-                catch (OperationCanceledException) { }
-                catch (ObjectDisposedException) { }
-            }
+                try
+                {
+                    await receiveTask;
+                }
+                catch (OperationCanceledException)
+                {
+                }
+                catch (ObjectDisposedException)
+                {
+                }
+
             cts?.Dispose();
         }
         finally
         {
             _lifecycleGate.Release();
         }
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        await StopAsync();
+        _lifecycleGate.Dispose();
     }
 
     private async Task ReceiveLoopAsync(UdpClient client, CancellationToken cancellationToken)
@@ -89,23 +99,21 @@ public sealed class UdpTelemetryReceiver(TimeProvider? timeProvider = null) : IT
             {
                 var result = await client.ReceiveAsync(cancellationToken);
                 if (ForzaTelemetryParser.TryParse(result.Buffer, _timeProvider.GetUtcNow(), out var frame))
-                {
                     FrameReceived?.Invoke(frame);
-                }
             }
         }
-        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { }
-        catch (ObjectDisposedException) when (cancellationToken.IsCancellationRequested) { }
-        catch (SocketException) when (cancellationToken.IsCancellationRequested) { }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+        }
+        catch (ObjectDisposedException) when (cancellationToken.IsCancellationRequested)
+        {
+        }
+        catch (SocketException) when (cancellationToken.IsCancellationRequested)
+        {
+        }
         catch (Exception ex)
         {
             ErrorOccurred?.Invoke($"Telemetry receiver stopped: {ex.Message}");
         }
-    }
-
-    public async ValueTask DisposeAsync()
-    {
-        await StopAsync();
-        _lifecycleGate.Dispose();
     }
 }

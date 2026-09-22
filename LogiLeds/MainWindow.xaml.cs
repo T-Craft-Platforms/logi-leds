@@ -1,5 +1,5 @@
 using System.ComponentModel;
-using System.Drawing;
+using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Windows;
@@ -7,9 +7,14 @@ using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Interop;
+using System.Windows.Media;
 using FontAwesome.Sharp;
 using LogiLeds.ViewModels;
-using Forms = System.Windows.Forms;
+using Application = System.Windows.Application;
+using ButtonBase = System.Windows.Controls.Primitives.ButtonBase;
+using Icon = System.Drawing.Icon;
+using Point = System.Windows.Point;
+using Size = System.Windows.Size;
 
 namespace LogiLeds;
 
@@ -17,13 +22,10 @@ public partial class MainWindow : Window
 {
     private const int DwmWindowCornerPreferenceAttribute = 33;
     private const int DwmDoNotRound = 1;
-
-    [DllImport("dwmapi.dll")]
-    private static extern int DwmSetWindowAttribute(nint windowHandle, int attribute, ref int value, int valueSize);
+    private readonly ToolStripMenuItem _startStopMenuItem;
+    private readonly NotifyIcon _trayIcon;
 
     private readonly MainViewModel _viewModel;
-    private readonly Forms.NotifyIcon _trayIcon;
-    private readonly Forms.ToolStripMenuItem _startStopMenuItem;
     private bool _allowClose, _shownTrayHint, _exiting, _trayDisposed, _startupComplete;
 
     public MainWindow(MainViewModel viewModel)
@@ -36,18 +38,22 @@ public partial class MainWindow : Window
         DataContext = viewModel;
         _viewModel.ExitRequested += async (_, _) => await ExitAsync();
 
-        _startStopMenuItem = new Forms.ToolStripMenuItem("Stop control");
+        _startStopMenuItem = new ToolStripMenuItem("Stop control");
         _startStopMenuItem.Click += (_, _) => _viewModel.StartStopCommand.Execute(null);
-        var openItem = new Forms.ToolStripMenuItem("Open LogiLeds");
+        var openItem = new ToolStripMenuItem("Open LogiLeds");
         openItem.Click += (_, _) => RestoreWindow();
-        var exitItem = new Forms.ToolStripMenuItem("Exit LogiLeds");
+        var exitItem = new ToolStripMenuItem("Exit LogiLeds");
         exitItem.Click += async (_, _) => await ExitAsync();
-        var menu = new Forms.ContextMenuStrip();
-        menu.Items.Add(openItem); menu.Items.Add(_startStopMenuItem); menu.Items.Add(new Forms.ToolStripSeparator()); menu.Items.Add(exitItem);
+        var menu = new ContextMenuStrip();
+        menu.Items.Add(openItem);
+        menu.Items.Add(_startStopMenuItem);
+        menu.Items.Add(new ToolStripSeparator());
+        menu.Items.Add(exitItem);
         menu.Opening += (_, _) => _startStopMenuItem.Text = _viewModel.IsRunning ? "Stop control" : "Start control";
         var iconPath = Path.Combine(AppContext.BaseDirectory, "Assets", "LogiLeds.ico");
-        var icon = File.Exists(iconPath) ? new System.Drawing.Icon(iconPath) : null;
-        _trayIcon = new Forms.NotifyIcon { Icon = icon ?? SystemIcons.Application, Text = "LogiLeds", Visible = true, ContextMenuStrip = menu };
+        var icon = File.Exists(iconPath) ? new Icon(iconPath) : null;
+        _trayIcon = new NotifyIcon
+            { Icon = icon ?? SystemIcons.Application, Text = "LogiLeds", Visible = true, ContextMenuStrip = menu };
         _trayIcon.DoubleClick += (_, _) => RestoreWindow();
 
         SourceInitialized += OnSourceInitialized;
@@ -56,26 +62,31 @@ public partial class MainWindow : Window
         StateChanged += OnStateChanged;
     }
 
+    [DllImport("dwmapi.dll")]
+    private static extern int DwmSetWindowAttribute(nint windowHandle, int attribute, ref int value, int valueSize);
+
     private async void OnSourceInitialized(object? sender, EventArgs e)
     {
         try
         {
             var windowHandle = new WindowInteropHelper(this).Handle;
             var cornerPreference = DwmDoNotRound;
-            _ = DwmSetWindowAttribute(windowHandle, DwmWindowCornerPreferenceAttribute, ref cornerPreference, sizeof(int));
+            _ = DwmSetWindowAttribute(windowHandle, DwmWindowCornerPreferenceAttribute, ref cornerPreference,
+                sizeof(int));
 
             // Never inherit a minimized shell launch state. Tray minimization
             // is only meaningful after the window has completed initialization.
             WindowState = WindowState.Normal;
             await _viewModel.InitializeAsync(windowHandle);
             var settings = _viewModel.CurrentSettings;
-            Width = settings.WindowWidth; Height = settings.WindowHeight;
+            Width = settings.WindowWidth;
+            Height = settings.WindowHeight;
             if (settings.WindowMaximized) WindowState = WindowState.Maximized;
             else CenterWindowOnScreen();
         }
         catch (Exception ex)
         {
-            System.Diagnostics.Debug.WriteLine($"Startup failed: {ex}");
+            Debug.WriteLine($"Startup failed: {ex}");
         }
         finally
         {
@@ -88,9 +99,22 @@ public partial class MainWindow : Window
     private void OnClosing(object? sender, CancelEventArgs e)
     {
         if (_allowClose) return;
-        if (!_startupComplete) { e.Cancel = true; return; }
-        if (_viewModel.CloseToTray) { e.Cancel = true; HideToTray(); }
-        else { e.Cancel = true; _ = ExitAsync(); }
+        if (!_startupComplete)
+        {
+            e.Cancel = true;
+            return;
+        }
+
+        if (_viewModel.CloseToTray)
+        {
+            e.Cancel = true;
+            HideToTray();
+        }
+        else
+        {
+            e.Cancel = true;
+            _ = ExitAsync();
+        }
     }
 
     private void OnStateChanged(object? sender, EventArgs e)
@@ -106,7 +130,8 @@ public partial class MainWindow : Window
         Hide();
         if (_shownTrayHint) return;
         _shownTrayHint = true;
-        _trayIcon.ShowBalloonTip(2200, "LogiLeds is running", "Open or exit from the notification area.", Forms.ToolTipIcon.Info);
+        _trayIcon.ShowBalloonTip(2200, "LogiLeds is running", "Open or exit from the notification area.",
+            ToolTipIcon.Info);
     }
 
     private void RestoreWindow()
@@ -127,7 +152,8 @@ public partial class MainWindow : Window
         {
             // Shutdown must never leave a hidden process holding the mutex if
             // a device driver or settings provider is slow to return.
-            var save = _viewModel.SaveWindowPlacementAsync(bounds.Width, bounds.Height, bounds.Left, bounds.Top, WindowState == WindowState.Maximized);
+            var save = _viewModel.SaveWindowPlacementAsync(bounds.Width, bounds.Height, bounds.Left, bounds.Top,
+                WindowState == WindowState.Maximized);
             await Task.WhenAny(save, Task.Delay(TimeSpan.FromSeconds(2)));
             var dispose = _viewModel.DisposeAsync().AsTask();
             await Task.WhenAny(dispose, Task.Delay(TimeSpan.FromSeconds(2)));
@@ -136,7 +162,7 @@ public partial class MainWindow : Window
         {
             DisposeTrayIcon();
             Close();
-            System.Windows.Application.Current.Shutdown();
+            Application.Current.Shutdown();
         }
     }
 
@@ -144,15 +170,31 @@ public partial class MainWindow : Window
     {
         if (_trayDisposed) return;
         _trayDisposed = true;
-        try { _trayIcon.Visible = false; } catch { }
-        try { _trayIcon.Dispose(); } catch { }
+        try
+        {
+            _trayIcon.Visible = false;
+        }
+        catch
+        {
+        }
+
+        try
+        {
+            _trayIcon.Dispose();
+        }
+        catch
+        {
+        }
     }
 
     private void TitleBar_OnMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
     {
         if (IsInteractiveTitleBarSource(e.OriginalSource as DependencyObject)) return;
 
-        if (e.ClickCount == 2) WindowState = WindowState == WindowState.Maximized ? WindowState.Normal : WindowState.Maximized;
+        if (e.ClickCount == 2)
+        {
+            WindowState = WindowState == WindowState.Maximized ? WindowState.Normal : WindowState.Maximized;
+        }
         else
         {
             if (WindowState == WindowState.Maximized)
@@ -170,28 +212,42 @@ public partial class MainWindow : Window
         }
     }
 
-    private void TitleBar_OnMouseRightButtonUp(object sender, MouseButtonEventArgs e) =>
+    private void TitleBar_OnMouseRightButtonUp(object sender, MouseButtonEventArgs e)
+    {
         SystemCommands.ShowSystemMenu(this, PointToScreen(e.GetPosition(this)));
+    }
 
     private static bool IsInteractiveTitleBarSource(DependencyObject? source)
     {
         while (source is not null)
         {
-            if (source is System.Windows.Controls.Primitives.ButtonBase or TabItem) return true;
-            source = System.Windows.Media.VisualTreeHelper.GetParent(source);
+            if (source is ButtonBase or TabItem) return true;
+            source = VisualTreeHelper.GetParent(source);
         }
 
         return false;
     }
 
-    private void MinimizeButton_OnClick(object sender, RoutedEventArgs e) => WindowState = WindowState.Minimized;
-    private void MaximizeButton_OnClick(object sender, RoutedEventArgs e) => WindowState = WindowState == WindowState.Maximized ? WindowState.Normal : WindowState.Maximized;
-    private void CloseButton_OnClick(object sender, RoutedEventArgs e) => Close();
+    private void MinimizeButton_OnClick(object sender, RoutedEventArgs e)
+    {
+        WindowState = WindowState.Minimized;
+    }
 
-    private static CustomPopupPlacement[] StatusPopup_OnCustomPopupPlacement(System.Windows.Size popupSize, System.Windows.Size targetSize, System.Windows.Point offset)
+    private void MaximizeButton_OnClick(object sender, RoutedEventArgs e)
+    {
+        WindowState = WindowState == WindowState.Maximized ? WindowState.Normal : WindowState.Maximized;
+    }
+
+    private void CloseButton_OnClick(object sender, RoutedEventArgs e)
+    {
+        Close();
+    }
+
+    private static CustomPopupPlacement[] StatusPopup_OnCustomPopupPlacement(Size popupSize, Size targetSize,
+        Point offset)
     {
         var centeredX = (targetSize.Width - popupSize.Width) / 2;
-        return [new CustomPopupPlacement(new System.Windows.Point(centeredX, targetSize.Height), PopupPrimaryAxis.Horizontal)];
+        return [new CustomPopupPlacement(new Point(centeredX, targetSize.Height), PopupPrimaryAxis.Horizontal)];
     }
 
     private void UpdateWindowChromeMetrics()
@@ -210,5 +266,8 @@ public partial class MainWindow : Window
         Top = workArea.Top + Math.Max(0, (workArea.Height - Height) / 2);
     }
 
-    private void UpdateMaximizeIcon() => MaximizeIcon.Icon = WindowState == WindowState.Maximized ? IconChar.Compress : IconChar.Expand;
+    private void UpdateMaximizeIcon()
+    {
+        MaximizeIcon.Icon = WindowState == WindowState.Maximized ? IconChar.Compress : IconChar.Expand;
+    }
 }

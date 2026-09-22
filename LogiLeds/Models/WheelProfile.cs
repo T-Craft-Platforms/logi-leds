@@ -13,10 +13,26 @@ public sealed record WheelProfile
 
     public bool TryValidate(int groupCount, out string error)
     {
-        if (string.IsNullOrWhiteSpace(WheelId)) { error = "Wheel profile id is missing."; return false; }
-        if (FirstLedPercent < 0 || FirstLedPercent >= RedlinePercent || RedlinePercent > 100) { error = "Wheel profile thresholds are invalid."; return false; }
-        if (AdvancedThresholds.Length != groupCount || AdvancedThresholds.Any(x => x < 0 || x >= RedlinePercent) || !AdvancedThresholds.SequenceEqual(AdvancedThresholds.OrderBy(x => x)))
-        { error = "Advanced wheel thresholds are invalid."; return false; }
-        error = string.Empty; return true;
+        if (string.IsNullOrWhiteSpace(WheelId))
+        {
+            error = "Wheel profile id is missing.";
+            return false;
+        }
+
+        if (FirstLedPercent < 0 || FirstLedPercent >= RedlinePercent || RedlinePercent > 100)
+        {
+            error = "Wheel profile thresholds are invalid.";
+            return false;
+        }
+
+        if (AdvancedThresholds.Length != groupCount || AdvancedThresholds.Any(x => x < 0 || x >= RedlinePercent) ||
+            !AdvancedThresholds.SequenceEqual(AdvancedThresholds.OrderBy(x => x)))
+        {
+            error = "Advanced wheel thresholds are invalid.";
+            return false;
+        }
+
+        error = string.Empty;
+        return true;
     }
 }

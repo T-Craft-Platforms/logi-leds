@@ -25,8 +25,10 @@ public sealed class SettingsStore
             LedProfileSettings? settings;
             await using (var stream = File.OpenRead(_settingsPath))
             {
-                settings = await JsonSerializer.DeserializeAsync<LedProfileSettings>(stream, JsonOptions, cancellationToken);
+                settings = await JsonSerializer.DeserializeAsync<LedProfileSettings>(stream, JsonOptions,
+                    cancellationToken);
             }
+
             if (settings is not null && settings.SchemaVersion < LedProfileSettings.CurrentSchemaVersion)
             {
                 // Version 2 was the first preview build. Move its provisional
@@ -37,18 +39,34 @@ public sealed class SettingsStore
                     SchemaVersion = LedProfileSettings.CurrentSchemaVersion,
                     FirstLedPercent = LedProfileSettings.DefaultFirstLedPercent,
                     RedlinePercent = LedProfileSettings.DefaultRedlinePercent,
-                    AdvancedThresholds = LedMath.BuildRecommendedThresholds(5, LedProfileSettings.DefaultFirstLedPercent, LedProfileSettings.DefaultRedlinePercent - 1),
+                    AdvancedThresholds = LedMath.BuildRecommendedThresholds(5),
                     CloseToTray = true,
                     MinimizeToTray = true,
                     ReadyAnimation = true
                 };
-                try { await SaveAsync(settings, cancellationToken); } catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { }
+                try
+                {
+                    await SaveAsync(settings, cancellationToken);
+                }
+                catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+                {
+                }
             }
+
             return settings is not null && settings.TryValidate(out _) ? settings : LedProfileSettings.Defaults;
         }
-        catch (JsonException) { return LedProfileSettings.Defaults; }
-        catch (IOException) { return LedProfileSettings.Defaults; }
-        catch (UnauthorizedAccessException) { return LedProfileSettings.Defaults; }
+        catch (JsonException)
+        {
+            return LedProfileSettings.Defaults;
+        }
+        catch (IOException)
+        {
+            return LedProfileSettings.Defaults;
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return LedProfileSettings.Defaults;
+        }
     }
 
     public async Task SaveAsync(LedProfileSettings settings, CancellationToken cancellationToken = default)
@@ -64,16 +82,26 @@ public sealed class SettingsStore
         var tempPath = Path.Combine(directory, $"{Path.GetFileName(_settingsPath)}.{Guid.NewGuid():N}.tmp");
         try
         {
-            await using (var stream = new FileStream(tempPath, FileMode.CreateNew, FileAccess.Write, FileShare.None, 4096, FileOptions.WriteThrough))
+            await using (var stream = new FileStream(tempPath, FileMode.CreateNew, FileAccess.Write, FileShare.None,
+                             4096, FileOptions.WriteThrough))
             {
-                await JsonSerializer.SerializeAsync(stream, settings with { SchemaVersion = LedProfileSettings.CurrentSchemaVersion }, JsonOptions, cancellationToken);
+                await JsonSerializer.SerializeAsync(stream,
+                    settings with { SchemaVersion = LedProfileSettings.CurrentSchemaVersion }, JsonOptions,
+                    cancellationToken);
                 await stream.FlushAsync(cancellationToken);
             }
+
             File.Move(tempPath, _settingsPath, true);
         }
         finally
         {
-            try { if (File.Exists(tempPath)) File.Delete(tempPath); } catch { }
+            try
+            {
+                if (File.Exists(tempPath)) File.Delete(tempPath);
+            }
+            catch
+            {
+            }
         }
     }
 }

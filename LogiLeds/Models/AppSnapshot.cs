@@ -1,6 +1,15 @@
 namespace LogiLeds.Models;
 
-public enum ReadinessState { ControlPaused, SearchingForWheel, WaitingForTelemetry, Ready, Driving, TelemetryStale, NeedsAttention }
+public enum ReadinessState
+{
+    ControlPaused,
+    SearchingForWheel,
+    WaitingForTelemetry,
+    Ready,
+    Driving,
+    TelemetryStale,
+    NeedsAttention
+}
 
 public sealed record AppSnapshot(
     bool IsRunning,
@@ -15,6 +24,7 @@ public sealed record AppSnapshot(
     string StatusMessage,
     ReadinessState State = ReadinessState.ControlPaused,
     string TelemetryFormat = "—",
+    string CurrentVehicle = "—",
     WheelDefinition? Wheel = null,
     double? LearnedRedlinePercent = null,
     WheelDefinition? PreviewWheel = null);

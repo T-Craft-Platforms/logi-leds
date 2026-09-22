@@ -27,7 +27,8 @@ public sealed class SettingsAndLedMathTests
     {
         Assert.IsFalse((LedProfileSettings.Defaults with { BindAddress = "not-an-ip" }).TryValidate(out _));
         Assert.IsFalse((LedProfileSettings.Defaults with { Port = 0 }).TryValidate(out _));
-        Assert.IsFalse((LedProfileSettings.Defaults with { FirstLedPercent = 96, RedlinePercent = 95 }).TryValidate(out _));
+        Assert.IsFalse(
+            (LedProfileSettings.Defaults with { FirstLedPercent = 96, RedlinePercent = 95 }).TryValidate(out _));
         Assert.IsFalse((LedProfileSettings.Defaults with { AdvancedThresholds = [90, 85] }).TryValidate(out _));
     }
 

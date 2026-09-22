@@ -4,10 +4,9 @@ namespace LogiLeds.Services;
 
 public interface ITelemetryReceiver : IAsyncDisposable
 {
+    bool IsRunning { get; }
     event Action<ForzaTelemetryFrame>? FrameReceived;
     event Action<string>? ErrorOccurred;
-
-    bool IsRunning { get; }
     Task StartAsync(LedProfileSettings settings, CancellationToken cancellationToken = default);
     Task StopAsync();
 }

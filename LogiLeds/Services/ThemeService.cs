@@ -1,37 +1,49 @@
-using Microsoft.Win32;
 using System.Windows;
+using LogiLeds.Models;
+using Microsoft.Win32;
+using Application = System.Windows.Application;
 
 namespace LogiLeds.Services;
 
 public static class ThemeService
 {
-    private static Models.AppTheme _selected = Models.AppTheme.System;
+    private static AppTheme _selected = AppTheme.System;
     private static bool _initialized;
 
     public static void Initialize()
     {
         if (_initialized) return;
         _initialized = true;
-        SystemEvents.UserPreferenceChanged += (_, _) => { if (_selected == Models.AppTheme.System) Apply(_selected); };
+        SystemEvents.UserPreferenceChanged += (_, _) =>
+        {
+            if (_selected == AppTheme.System) Apply(_selected);
+        };
     }
 
-    public static void Apply(Models.AppTheme theme)
+    public static void Apply(AppTheme theme)
     {
         _selected = theme;
-        var effective = theme == Models.AppTheme.System ? GetSystemTheme() : theme;
-        var dictionaries = System.Windows.Application.Current.Resources.MergedDictionaries;
-        var existing = dictionaries.FirstOrDefault(x => x.Source?.OriginalString.Contains("Themes/", StringComparison.OrdinalIgnoreCase) == true);
+        var effective = theme == AppTheme.System ? GetSystemTheme() : theme;
+        var dictionaries = Application.Current.Resources.MergedDictionaries;
+        var existing = dictionaries.FirstOrDefault(x =>
+            x.Source?.OriginalString.Contains("Themes/", StringComparison.OrdinalIgnoreCase) == true);
         if (existing is not null) dictionaries.Remove(existing);
-        dictionaries.Insert(0, new ResourceDictionary { Source = new Uri($"Themes/{effective}.xaml", UriKind.Relative) });
+        dictionaries.Insert(0,
+            new ResourceDictionary { Source = new Uri($"Themes/{effective}.xaml", UriKind.Relative) });
     }
 
-    private static Models.AppTheme GetSystemTheme()
+    private static AppTheme GetSystemTheme()
     {
         try
         {
-            var value = Registry.GetValue(@"HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize", "AppsUseLightTheme", 0);
-            return value is int i && i != 0 ? Models.AppTheme.Light : Models.AppTheme.Dark;
+            var value = Registry.GetValue(
+                @"HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize", "AppsUseLightTheme",
+                0);
+            return value is int i && i != 0 ? AppTheme.Light : AppTheme.Dark;
         }
-        catch { return Models.AppTheme.Dark; }
+        catch
+        {
+            return AppTheme.Dark;
+        }
     }
 }

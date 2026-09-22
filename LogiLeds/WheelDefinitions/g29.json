@@ -1,7 +1,30 @@
 {
-  "schemaVersion": 1, "id": "logitech-g29", "displayName": "Logitech G29 Driving Force",
-  "vendorId": 1133, "productIds": [49743], "transport": "classic-bitmask", "outputReportId": 0, "outputReportLength": 17,
-  "physicalLedCount": 10, "controlGroupCount": 5, "direction": "outside-in",
-  "colors": ["#38D982","#6EE65A","#F0D84A","#FFAA3B","#FF5265","#FF5265","#FFAA3B","#F0D84A","#6EE65A","#38D982"],
-  "defaultFirstPercent": 65, "defaultRedlinePercent": 90, "hardwareVerified": true
+  "schemaVersion": 1,
+  "id": "logitech-g29",
+  "displayName": "Logitech G29 Driving Force",
+  "vendorId": 1133,
+  "productIds": [
+    49743
+  ],
+  "transport": "classic-bitmask",
+  "outputReportId": 0,
+  "outputReportLength": 17,
+  "physicalLedCount": 10,
+  "controlGroupCount": 5,
+  "direction": "outside-in",
+  "colors": [
+    "#38D982",
+    "#6EE65A",
+    "#F0D84A",
+    "#FFAA3B",
+    "#FF5265",
+    "#FF5265",
+    "#FFAA3B",
+    "#F0D84A",
+    "#6EE65A",
+    "#38D982"
+  ],
+  "defaultFirstPercent": 65,
+  "defaultRedlinePercent": 90,
+  "hardwareVerified": true
 }
