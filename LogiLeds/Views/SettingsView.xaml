@@ -21,66 +21,78 @@
                             Height="240"
                             Margin="0,0,0,16"
                             Style="{StaticResource CardStyle}">
-                            <StackPanel>
-                                <TextBlock Style="{StaticResource EyebrowStyle}" Text="WHEEL" />
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="*" />
+                                </Grid.RowDefinitions>
                                 <TextBlock
-                                    Margin="0,7,0,16"
+                                    Grid.Row="0"
+                                    Margin="0,0,0,12"
                                     FontSize="19"
                                     FontWeight="SemiBold"
-                                    Text="Device selection" />
-                                <ComboBox ItemsSource="{Binding WheelOptions}" SelectedItem="{Binding SelectedWheel}" />
-                                <TextBlock
-                                    Margin="0,10,0,15"
-                                    FontSize="12"
-                                    Foreground="{DynamicResource MutedBrush}"
-                                    Text="{Binding WheelVerification}" />
-                                <Button
-                                    HorizontalAlignment="Left"
-                                    Command="{Binding TestCommand}"
-                                    Content="Test LEDs"
-                                    Style="{StaticResource SecondaryButton}" />
-                            </StackPanel>
+                                    Text="Appearance" />
+                                <Grid Grid.Row="1">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="120" />
+                                        <ColumnDefinition />
+                                    </Grid.ColumnDefinitions>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto" />
+                                        <RowDefinition Height="Auto" />
+                                    </Grid.RowDefinitions>
+                                    <TextBlock
+                                        VerticalAlignment="Center"
+                                        Foreground="{DynamicResource TextBrush}"
+                                        Text="Theme" />
+                                    <ComboBox
+                                        x:Name="ThemeSelector"
+                                        Grid.Column="1"
+                                        HorizontalAlignment="Right"
+                                        ItemsSource="{Binding Themes}"
+                                        SelectedItem="{Binding Theme}" />
+                                    <CheckBox
+                                        Grid.Row="1"
+                                        Grid.ColumnSpan="2"
+                                        Margin="0,14,0,0"
+                                        Content="Use pointer cursors"
+                                        IsChecked="{Binding UsePointerCursors}" />
+                                </Grid>
+                            </Grid>
                         </Border>
                         <Border
                             Height="240"
                             Margin="0,0,0,16"
                             Style="{StaticResource CardStyle}">
-                            <StackPanel>
-                                <TextBlock Style="{StaticResource EyebrowStyle}" Text="CONNECTION" />
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="*" />
+                                </Grid.RowDefinitions>
                                 <TextBlock
-                                    Margin="0,7,0,16"
+                                    Grid.Row="0"
+                                    Margin="0,0,0,14"
                                     FontSize="19"
                                     FontWeight="SemiBold"
-                                    Text="Forza Data Out" />
-                                <Grid>
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition />
-                                        <ColumnDefinition Width="12" />
-                                        <ColumnDefinition Width="120" />
-                                    </Grid.ColumnDefinitions>
-                                    <StackPanel>
-                                        <TextBlock
-                                            Margin="0,0,0,5"
-                                            FontSize="12"
-                                            Foreground="{DynamicResource MutedBrush}"
-                                            Text="Bind address" />
-                                        <TextBox Text="{Binding BindAddress, UpdateSourceTrigger=PropertyChanged}" />
-                                    </StackPanel>
-                                    <StackPanel Grid.Column="2">
-                                        <TextBlock
-                                            Margin="0,0,0,5"
-                                            FontSize="12"
-                                            Foreground="{DynamicResource MutedBrush}"
-                                            Text="UDP port" />
-                                        <TextBox Text="{Binding Port, UpdateSourceTrigger=PropertyChanged}" />
-                                    </StackPanel>
-                                </Grid>
-                                <TextBlock
-                                    Margin="0,12,0,0"
-                                    FontSize="12"
-                                    Foreground="{DynamicResource MutedBrush}"
-                                    Text="All interfaces (0.0.0.0) supports Xbox and remote PCs. Set Forza Data Out to this PC’s LAN address and the port above." />
-                            </StackPanel>
+                                    Text="Startup and tray" />
+                                <CheckBox
+                                    Grid.Row="1"
+                                    Content="Start LED control on launch"
+                                    IsChecked="{Binding AutoStartControl}" />
+                                <CheckBox
+                                    Grid.Row="2"
+                                    Content="Close to notification area"
+                                    IsChecked="{Binding CloseToTray}" />
+                                <Button
+                                    Grid.Row="3"
+                                    Margin="0,10,0,0"
+                                    HorizontalAlignment="Left"
+                                    Command="{Binding StartStopCommand}"
+                                    Content="{Binding StartStopText}"
+                                    Style="{StaticResource StartStopButtonStyle}" />
+                            </Grid>
                         </Border>
                     </StackPanel>
                     <StackPanel Grid.Column="2">
@@ -88,45 +100,103 @@
                             Height="240"
                             Margin="0,0,0,16"
                             Style="{StaticResource CardStyle}">
-                            <StackPanel>
-                                <TextBlock Style="{StaticResource EyebrowStyle}" Text="APP BEHAVIOR" />
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="*" />
+                                </Grid.RowDefinitions>
                                 <TextBlock
-                                    Margin="0,7,0,14"
+                                    Grid.Row="0"
+                                    Margin="0,0,0,12"
                                     FontSize="19"
                                     FontWeight="SemiBold"
-                                    Text="Startup and tray" />
-                                <CheckBox Content="Start LED control on launch" IsChecked="{Binding AutoStartControl}" />
-                                <CheckBox Content="Close to notification area" IsChecked="{Binding CloseToTray}" />
+                                    Text="Device selection" />
+                                <Grid Grid.Row="1">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="120" />
+                                        <ColumnDefinition />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock
+                                        VerticalAlignment="Center"
+                                        Foreground="{DynamicResource TextBrush}"
+                                        Text="Wheel" />
+                                    <ComboBox
+                                        x:Name="WheelSelector"
+                                        Grid.Column="1"
+                                        HorizontalAlignment="Right"
+                                        ItemsSource="{Binding WheelOptions}"
+                                        SelectedItem="{Binding SelectedWheel}" />
+                                </Grid>
+                                <TextBlock
+                                    Grid.Row="2"
+                                    Margin="0,10,0,15"
+                                    FontSize="12"
+                                    Foreground="{DynamicResource MutedBrush}"
+                                    Text="{Binding WheelVerification}" />
                                 <Button
-                                    Margin="0,10,0,0"
+                                    Grid.Row="3"
                                     HorizontalAlignment="Left"
-                                    Command="{Binding StartStopCommand}"
-                                    Content="{Binding StartStopText}"
-                                    Style="{StaticResource StartStopButtonStyle}" />
-                            </StackPanel>
+                                    Command="{Binding TestCommand}"
+                                    Content="Test LEDs"
+                                    Style="{StaticResource SecondaryButton}" />
+                            </Grid>
                         </Border>
                         <Border
                             Height="240"
                             Margin="0,0,0,16"
                             Style="{StaticResource CardStyle}">
-                            <StackPanel>
-                                <TextBlock Style="{StaticResource EyebrowStyle}" Text="GENERAL" />
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="*" />
+                                </Grid.RowDefinitions>
                                 <TextBlock
-                                    Margin="0,7,0,16"
+                                    Grid.Row="0"
+                                    Margin="0,0,0,16"
                                     FontSize="19"
                                     FontWeight="SemiBold"
-                                    Text="Appearance" />
-                                <ComboBox ItemsSource="{Binding Themes}" SelectedItem="{Binding Theme}" />
-                                <CheckBox
-                                    Margin="0,14,0,0"
-                                    Content="Use pointer cursors"
-                                    IsChecked="{Binding UsePointerCursors}" />
+                                    Text="Forza Data Out" />
+                                <Grid Grid.Row="1">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="120" />
+                                        <ColumnDefinition />
+                                    </Grid.ColumnDefinitions>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto" />
+                                        <RowDefinition Height="Auto" />
+                                    </Grid.RowDefinitions>
+                                    <TextBlock
+                                        VerticalAlignment="Center"
+                                        Foreground="{DynamicResource TextBrush}"
+                                        Text="Bind address" />
+                                    <TextBox
+                                        Grid.Column="1"
+                                        Width="190"
+                                        HorizontalAlignment="Right"
+                                        Text="{Binding BindAddress, UpdateSourceTrigger=PropertyChanged}" />
+                                    <TextBlock
+                                        Grid.Row="1"
+                                        Margin="0,10,0,0"
+                                        VerticalAlignment="Center"
+                                        Foreground="{DynamicResource TextBrush}"
+                                        Text="UDP port" />
+                                    <TextBox
+                                        Grid.Row="1"
+                                        Grid.Column="1"
+                                        Width="120"
+                                        Margin="0,10,0,0"
+                                        HorizontalAlignment="Right"
+                                        Text="{Binding Port, UpdateSourceTrigger=PropertyChanged}" />
+                                </Grid>
                                 <TextBlock
-                                    Margin="0,5,0,0"
+                                    Grid.Row="2"
+                                    Margin="0,12,0,0"
                                     FontSize="12"
                                     Foreground="{DynamicResource MutedBrush}"
-                                    Text="Change the cursor to a pointer when hovering over interactive elements" />
-                            </StackPanel>
+                                    Text="All interfaces (0.0.0.0) supports Xbox and remote PCs. Set Forza Data Out to this PC’s LAN address and the port above." />
+                            </Grid>
                         </Border>
                     </StackPanel>
                 </Grid>
