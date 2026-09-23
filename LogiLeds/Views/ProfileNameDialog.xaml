@@ -46,14 +46,12 @@
             <Button
                 MinWidth="82"
                 Margin="0,0,8,0"
-                Padding="12,7"
                 Content="Cancel"
                 IsCancel="True"
                 Style="{StaticResource GhostButton}" />
             <Button
                 x:Name="CreateButton"
                 MinWidth="82"
-                Padding="12,7"
                 Click="Create_OnClick"
                 Content="Create"
                 IsDefault="True" />

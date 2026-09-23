@@ -57,16 +57,12 @@
                                     </Style>
                                 </StackPanel.Style>
                                 <Button
-                                    MinHeight="32"
                                     Margin="0,0,8,0"
-                                    Padding="12,6"
                                     Command="{Binding ResetProfileCommand}"
                                     Content="Reset"
                                     Style="{StaticResource GhostButton}" />
                                 <Button
-                                    MinHeight="32"
                                     Margin="0,0,6,0"
-                                    Padding="9,5"
                                     Command="{Binding DeleteProfileCommand}"
                                     Content="Delete"
                                     ToolTip="Delete the selected profile">
@@ -83,7 +79,6 @@
                                 </Button>
                                 <ComboBox
                                     Width="180"
-                                    MinHeight="32"
                                     Margin="0,0,6,0"
                                     ItemsSource="{Binding SavedProfiles}"
                                     SelectedItem="{Binding SelectedSavedProfile}"
@@ -95,15 +90,9 @@
                                         </DataTemplate>
                                     </ComboBox.ItemTemplate>
                                 </ComboBox>
+                                <Button Command="{Binding LoadProfileCommand}" Content="Load" />
                                 <Button
-                                    MinHeight="32"
-                                    Padding="9,5"
-                                    Command="{Binding LoadProfileCommand}"
-                                    Content="Load" />
-                                <Button
-                                    MinHeight="32"
                                     Margin="6,0,0,0"
-                                    Padding="9,5"
                                     Command="{Binding SaveProfileCommand}"
                                     Content="Save"
                                     ToolTip="Save changes to the selected profile" />
@@ -230,7 +219,6 @@
                                 </StackPanel>
                                 <Button
                                     Grid.Column="1"
-                                    Padding="12,6"
                                     Click="OpenCarTrainings_OnClick"
                                     Content="Car trainings"
                                     Style="{StaticResource GhostButton}" />

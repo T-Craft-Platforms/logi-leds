@@ -430,7 +430,7 @@ public sealed class LedApplicationService : IAsyncDisposable
             : "No vehicle data";
         var message = transientMessage ?? _runtimeError ?? state switch
         {
-            ReadinessState.ControlPaused => "LED control is paused",
+            ReadinessState.ControlPaused => "App control is paused",
             ReadinessState.SearchingForWheel => _wheelController.StatusMessage,
             ReadinessState.WaitingForTelemetry => $"Listening on {Settings.BindAddress}:{Settings.Port}",
             ReadinessState.TelemetryStale => "Telemetry stream stopped",

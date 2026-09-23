@@ -18,7 +18,7 @@
                     </Grid.ColumnDefinitions>
                     <StackPanel Grid.Column="0">
                         <Border
-                            Height="240"
+                            Height="210"
                             Margin="0,0,0,16"
                             Style="{StaticResource CardStyle}">
                             <Grid>
@@ -61,7 +61,7 @@
                             </Grid>
                         </Border>
                         <Border
-                            Height="240"
+                            Height="210"
                             Margin="0,0,0,16"
                             Style="{StaticResource CardStyle}">
                             <Grid>
@@ -79,29 +79,43 @@
                                     Text="Startup" />
                                 <CheckBox
                                     Grid.Row="1"
-                                    Content="Start LED control on launch"
-                                    IsChecked="{Binding AutoStartControl}" />
-                                <CheckBox
-                                    Grid.Row="2"
                                     Content="Close to notification area"
                                     IsChecked="{Binding CloseToTray}" />
-                                <Button
+                                <CheckBox
+                                    Grid.Row="2"
+                                    Content="Start App control on launch"
+                                    IsChecked="{Binding AutoStartControl}" />
+                                <Grid
                                     Grid.Row="3"
                                     Margin="0,10,0,0"
-                                    HorizontalAlignment="Left"
-                                    Command="{Binding StartStopCommand}"
-                                    Content="{Binding StartStopText}"
-                                    Style="{StaticResource StartStopButtonStyle}" />
+                                    VerticalAlignment="Top">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="120" />
+                                        <ColumnDefinition />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock
+                                        VerticalAlignment="Center"
+                                        Foreground="{DynamicResource TextBrush}"
+                                        Text="App control" />
+                                    <Button
+                                        Grid.Column="1"
+                                        HorizontalAlignment="Right"
+                                        VerticalAlignment="Center"
+                                        Command="{Binding StartStopCommand}"
+                                        Content="{Binding StartStopText}"
+                                        Style="{StaticResource StartStopButtonStyle}" />
+                                </Grid>
                             </Grid>
                         </Border>
                     </StackPanel>
                     <StackPanel Grid.Column="2">
                         <Border
-                            Height="240"
+                            Height="210"
                             Margin="0,0,0,16"
                             Style="{StaticResource CardStyle}">
                             <Grid>
                                 <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto" />
                                     <RowDefinition Height="Auto" />
                                     <RowDefinition Height="Auto" />
                                     <RowDefinition Height="*" />
@@ -130,21 +144,35 @@
                                 </Grid>
                                 <TextBlock
                                     Grid.Row="2"
-                                    Margin="0,10,0,15"
+                                    Margin="0,10,0,10"
                                     FontSize="12"
                                     Foreground="{DynamicResource MutedBrush}"
                                     Text="{Binding WheelVerification}"
                                     TextAlignment="Right" />
-                                <Button
+                                <Grid
                                     Grid.Row="3"
-                                    HorizontalAlignment="Left"
-                                    Command="{Binding TestCommand}"
-                                    Content="Test LEDs"
-                                    Style="{StaticResource SecondaryButton}" />
+                                    Margin="0,10,0,0"
+                                    VerticalAlignment="Top">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="120" />
+                                        <ColumnDefinition />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock
+                                        VerticalAlignment="Center"
+                                        Foreground="{DynamicResource TextBrush}"
+                                        Text="LED test" />
+                                    <Button
+                                        Grid.Column="1"
+                                        HorizontalAlignment="Right"
+                                        VerticalAlignment="Center"
+                                        Command="{Binding TestCommand}"
+                                        Content="Test"
+                                        Style="{StaticResource SecondaryButton}" />
+                                </Grid>
                             </Grid>
                         </Border>
                         <Border
-                            Height="240"
+                            Height="210"
                             Margin="0,0,0,16"
                             Style="{StaticResource CardStyle}">
                             <Grid>

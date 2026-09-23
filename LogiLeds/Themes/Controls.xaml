@@ -105,7 +105,8 @@
         <Setter Property="Foreground" Value="White" />
         <Setter Property="Background" Value="{DynamicResource AccentBrush}" />
         <Setter Property="BorderThickness" Value="0" />
-        <Setter Property="Padding" Value="16,8" />
+        <Setter Property="Padding" Value="4,0" />
+        <Setter Property="MinWidth" Value="120" />
         <Setter Property="MinHeight" Value="36" />
         <Setter Property="FontWeight" Value="SemiBold" />
         <Setter Property="Cursor" Value="{DynamicResource InteractiveCursor}" />
@@ -255,7 +256,6 @@
         x:Key="StartStopButtonStyle"
         BasedOn="{StaticResource {x:Type Button}}"
         TargetType="Button">
-        <Setter Property="MinWidth" Value="140" />
         <Style.Triggers>
             <DataTrigger Binding="{Binding IsRunning}" Value="True">
                 <Setter Property="Background" Value="{DynamicResource DangerBrush}" />

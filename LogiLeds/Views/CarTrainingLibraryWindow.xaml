@@ -35,7 +35,6 @@
                 x:Name="ResetTrainingsButton"
                 Grid.Column="1"
                 Margin="16,0,0,0"
-                Padding="12,6"
                 Click="ResetTrainings_OnClick"
                 Content="Reset trainings"
                 Style="{StaticResource GhostButton}" />

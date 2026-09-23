@@ -133,7 +133,6 @@
                             </StackPanel>
                             <Button
                                 Grid.Column="1"
-                                Padding="14,7"
                                 Command="{Binding TestCommand}"
                                 Content="Test"
                                 Style="{StaticResource SecondaryButton}" />
