@@ -76,7 +76,7 @@
                                     Margin="0,0,0,14"
                                     FontSize="19"
                                     FontWeight="SemiBold"
-                                    Text="Startup and tray" />
+                                    Text="Startup" />
                                 <CheckBox
                                     Grid.Row="1"
                                     Content="Start LED control on launch"
@@ -111,7 +111,7 @@
                                     Margin="0,0,0,12"
                                     FontSize="19"
                                     FontWeight="SemiBold"
-                                    Text="Device selection" />
+                                    Text="Device" />
                                 <Grid Grid.Row="1">
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="120" />
@@ -133,7 +133,8 @@
                                     Margin="0,10,0,15"
                                     FontSize="12"
                                     Foreground="{DynamicResource MutedBrush}"
-                                    Text="{Binding WheelVerification}" />
+                                    Text="{Binding WheelVerification}"
+                                    TextAlignment="Right" />
                                 <Button
                                     Grid.Row="3"
                                     HorizontalAlignment="Left"
@@ -157,7 +158,7 @@
                                     Margin="0,0,0,16"
                                     FontSize="19"
                                     FontWeight="SemiBold"
-                                    Text="Forza Data Out" />
+                                    Text="Telemetry" />
                                 <Grid Grid.Row="1">
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="120" />
@@ -173,7 +174,7 @@
                                         Text="Bind address" />
                                     <TextBox
                                         Grid.Column="1"
-                                        Width="190"
+                                        Width="225"
                                         HorizontalAlignment="Right"
                                         Text="{Binding BindAddress, UpdateSourceTrigger=PropertyChanged}" />
                                     <TextBlock
@@ -185,17 +186,11 @@
                                     <TextBox
                                         Grid.Row="1"
                                         Grid.Column="1"
-                                        Width="120"
+                                        Width="225"
                                         Margin="0,10,0,0"
                                         HorizontalAlignment="Right"
                                         Text="{Binding Port, UpdateSourceTrigger=PropertyChanged}" />
                                 </Grid>
-                                <TextBlock
-                                    Grid.Row="2"
-                                    Margin="0,12,0,0"
-                                    FontSize="12"
-                                    Foreground="{DynamicResource MutedBrush}"
-                                    Text="All interfaces (0.0.0.0) supports Xbox and remote PCs. Set Forza Data Out to this PC’s LAN address and the port above." />
                             </Grid>
                         </Border>
                     </StackPanel>

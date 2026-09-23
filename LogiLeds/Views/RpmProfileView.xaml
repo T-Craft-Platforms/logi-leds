@@ -15,15 +15,6 @@
                         FontSize="30"
                         FontWeight="Bold"
                         Text="RPM Profile" />
-                    <StackPanel Grid.Column="1" Orientation="Horizontal">
-                        <Button
-                            MinHeight="32"
-                            Margin="0,0,8,0"
-                            Padding="12,6"
-                            Command="{Binding ResetProfileCommand}"
-                            Content="Reset"
-                            Style="{StaticResource GhostButton}" />
-                    </StackPanel>
                 </Grid>
                 <Border Style="{StaticResource CardStyle}">
                     <StackPanel>
@@ -65,6 +56,13 @@
                                         </Style.Triggers>
                                     </Style>
                                 </StackPanel.Style>
+                                <Button
+                                    MinHeight="32"
+                                    Margin="0,0,8,0"
+                                    Padding="12,6"
+                                    Command="{Binding ResetProfileCommand}"
+                                    Content="Reset"
+                                    Style="{StaticResource GhostButton}" />
                                 <Button
                                     MinHeight="32"
                                     Margin="0,0,6,0"

@@ -7,7 +7,7 @@
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="150" />
                 <ColumnDefinition Width="*" />
-                <ColumnDefinition Width="82" />
+                <ColumnDefinition Width="120" />
             </Grid.ColumnDefinitions>
             <Grid Grid.Column="1" Margin="25,0">
                 <Grid.ColumnDefinitions>
@@ -40,7 +40,7 @@
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="150" />
                             <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="82" />
+                            <ColumnDefinition Width="120" />
                         </Grid.ColumnDefinitions>
                         <StackPanel VerticalAlignment="Center" Orientation="Horizontal">
                             <Ellipse
