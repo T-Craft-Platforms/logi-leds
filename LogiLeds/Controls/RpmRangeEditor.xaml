@@ -85,7 +85,7 @@
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="150" />
                 <ColumnDefinition />
-                <ColumnDefinition Width="82" />
+                <ColumnDefinition Width="120" />
             </Grid.ColumnDefinitions>
             <StackPanel VerticalAlignment="Center" Orientation="Horizontal">
                 <Ellipse
