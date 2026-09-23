@@ -108,7 +108,7 @@
         <Setter Property="Padding" Value="16,8" />
         <Setter Property="MinHeight" Value="36" />
         <Setter Property="FontWeight" Value="SemiBold" />
-        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="Cursor" Value="{DynamicResource InteractiveCursor}" />
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="Button">
@@ -145,7 +145,7 @@
         <Setter Property="Height" Value="32" />
         <Setter Property="FontFamily" Value="Segoe MDL2 Assets" />
         <Setter Property="FontSize" Value="12" />
-        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="Cursor" Value="{DynamicResource InteractiveCursor}" />
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="Button">
@@ -175,7 +175,7 @@
         <Setter Property="BorderThickness" Value="1" />
         <Setter Property="Padding" Value="10,0" />
         <Setter Property="Height" Value="30" />
-        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="Cursor" Value="{DynamicResource InteractiveCursor}" />
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="ToggleButton">
@@ -322,7 +322,7 @@
         <Setter Property="OverridesDefaultStyle" Value="True" />
         <Setter Property="Background" Value="Transparent" />
         <Setter Property="BorderThickness" Value="0" />
-        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="Cursor" Value="{DynamicResource InteractiveCursor}" />
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="ToggleButton">
@@ -434,7 +434,7 @@
         <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
         <Setter Property="VerticalContentAlignment" Value="Center" />
         <Setter Property="Margin" Value="0,6" />
-        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="Cursor" Value="{DynamicResource InteractiveCursor}" />
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="CheckBox">
@@ -619,7 +619,7 @@
                         Padding="{TemplateBinding Padding}"
                         Background="{TemplateBinding Background}"
                         CornerRadius="9"
-                        Cursor="Hand">
+                        Cursor="{DynamicResource InteractiveCursor}">
                         <ContentPresenter
                             HorizontalAlignment="Center"
                             VerticalAlignment="Center"
@@ -661,7 +661,7 @@
                         Padding="{TemplateBinding Padding}"
                         Background="{TemplateBinding Background}"
                         CornerRadius="8"
-                        Cursor="Hand">
+                        Cursor="{DynamicResource InteractiveCursor}">
                         <ContentPresenter HorizontalAlignment="Center" />
                     </Border>
                     <ControlTemplate.Triggers>

@@ -18,7 +18,7 @@
                     </Grid.ColumnDefinitions>
                     <StackPanel Grid.Column="0">
                         <Border
-                            MinHeight="220"
+                            Height="240"
                             Margin="0,0,0,16"
                             Style="{StaticResource CardStyle}">
                             <StackPanel>
@@ -42,7 +42,7 @@
                             </StackPanel>
                         </Border>
                         <Border
-                            MinHeight="220"
+                            Height="240"
                             Margin="0,0,0,16"
                             Style="{StaticResource CardStyle}">
                             <StackPanel>
@@ -85,7 +85,7 @@
                     </StackPanel>
                     <StackPanel Grid.Column="2">
                         <Border
-                            MinHeight="220"
+                            Height="240"
                             Margin="0,0,0,16"
                             Style="{StaticResource CardStyle}">
                             <StackPanel>
@@ -106,17 +106,26 @@
                             </StackPanel>
                         </Border>
                         <Border
-                            MinHeight="220"
+                            Height="240"
                             Margin="0,0,0,16"
                             Style="{StaticResource CardStyle}">
                             <StackPanel>
-                                <TextBlock Style="{StaticResource EyebrowStyle}" Text="APPEARANCE" />
+                                <TextBlock Style="{StaticResource EyebrowStyle}" Text="GENERAL" />
                                 <TextBlock
                                     Margin="0,7,0,16"
                                     FontSize="19"
                                     FontWeight="SemiBold"
-                                    Text="Theme" />
+                                    Text="Appearance" />
                                 <ComboBox ItemsSource="{Binding Themes}" SelectedItem="{Binding Theme}" />
+                                <CheckBox
+                                    Margin="0,14,0,0"
+                                    Content="Use pointer cursors"
+                                    IsChecked="{Binding UsePointerCursors}" />
+                                <TextBlock
+                                    Margin="0,5,0,0"
+                                    FontSize="12"
+                                    Foreground="{DynamicResource MutedBrush}"
+                                    Text="Change the cursor to a pointer when hovering over interactive elements" />
                             </StackPanel>
                         </Border>
                     </StackPanel>

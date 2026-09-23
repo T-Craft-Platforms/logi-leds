@@ -60,6 +60,12 @@ public sealed class SettingsViewModel : ObservableObject, IDisposable
         set => _draft.CloseToTray = value;
     }
 
+    public bool UsePointerCursors
+    {
+        get => _draft.UsePointerCursors;
+        set => _draft.UsePointerCursors = value;
+    }
+
     public AppTheme Theme
     {
         get => _draft.Theme;
@@ -99,6 +105,7 @@ public sealed class SettingsViewModel : ObservableObject, IDisposable
             nameof(SettingsDraft.Port) => nameof(Port),
             nameof(SettingsDraft.AutoStartControl) => nameof(AutoStartControl),
             nameof(SettingsDraft.CloseToTray) => nameof(CloseToTray),
+            nameof(SettingsDraft.UsePointerCursors) => nameof(UsePointerCursors),
             nameof(SettingsDraft.Theme) => nameof(Theme),
             nameof(SettingsDraft.SelectedWheel) => nameof(SelectedWheel),
             _ => null

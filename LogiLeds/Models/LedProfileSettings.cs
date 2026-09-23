@@ -34,6 +34,7 @@ public sealed record LedProfileSettings
     public bool AutoStartControl { get; init; } = true;
     public bool MinimizeToTray { get; init; } = true;
     public bool CloseToTray { get; init; } = true;
+    public bool UsePointerCursors { get; init; } = true;
     public bool ReadyAnimation { get; init; } = true;
     public AppTheme Theme { get; init; } = AppTheme.System;
     public RpmProfileMode ProfileMode { get; init; } = RpmProfileMode.Easy;

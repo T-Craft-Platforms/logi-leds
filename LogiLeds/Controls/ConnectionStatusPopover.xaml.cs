@@ -1,3 +1,4 @@
+using System.Windows;
 using System.Windows.Controls.Primitives;
 using Point = System.Windows.Point;
 using Size = System.Windows.Size;
@@ -11,6 +12,15 @@ public partial class ConnectionStatusPopover : UserControl
     {
         InitializeComponent();
         StatusPopup.CustomPopupPlacementCallback = StatusPopup_OnCustomPopupPlacement;
+        StatusPopup.Closed += (_, _) =>
+        {
+            if (StatusButton.IsChecked == true) StatusButton.IsChecked = false;
+        };
+    }
+
+    private void StatusButton_OnClick(object sender, RoutedEventArgs e)
+    {
+        StatusPopup.IsOpen = StatusButton.IsChecked == true;
     }
 
     private static CustomPopupPlacement[] StatusPopup_OnCustomPopupPlacement(Size popupSize, Size targetSize,

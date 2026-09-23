@@ -2,13 +2,28 @@ using System.Windows;
 using LogiLeds.Models;
 using Microsoft.Win32;
 using Application = System.Windows.Application;
+using Cursors = System.Windows.Input.Cursors;
 
 namespace LogiLeds.Services;
 
 public static class ThemeService
 {
     private static AppTheme _selected = AppTheme.System;
+    private static bool _usePointerCursors = false;
     private static bool _initialized;
+
+    public static bool UsePointerCursors
+    {
+        get => _usePointerCursors;
+        set
+        {
+            _usePointerCursors = value;
+            if (Application.Current is not { } app) return;
+            app.Resources["InteractiveCursor"] = value
+                ? Cursors.Hand
+                : Cursors.Arrow;
+        }
+    }
 
     public static void Initialize()
     {

@@ -60,9 +60,10 @@
                     Icon="Minus" />
             </Button>
             <Button
+                x:Name="MaximizeButton"
                 Click="MaximizeButton_OnClick"
                 Style="{StaticResource WindowButtonStyle}"
-                ToolTip="Maximize or restore">
+                ToolTip="Maximize">
                 <fa:IconImage
                     x:Name="MaximizeIcon"
                     Width="12"

@@ -6,40 +6,33 @@
     <Grid>
         <ToggleButton
             x:Name="StatusButton"
+            Click="StatusButton_OnClick"
             Style="{StaticResource StatusButtonStyle}"
-            ToolTip="Show connection status">
+            ToolTip="System Status">
             <StackPanel Orientation="Horizontal">
                 <Viewbox
                     Width="16"
                     Height="16"
                     Margin="3,0"
                     Stretch="Uniform">
-                    <fa:IconImage
-                        Icon="PowerOff"
-                        Style="{StaticResource AppStatusIconStyle}"
-                        ToolTip="App control" />
+                    <fa:IconImage Icon="PowerOff" Style="{StaticResource AppStatusIconStyle}" />
                 </Viewbox>
                 <ContentControl
                     Margin="3,0"
                     Style="{StaticResource WheelStatusIconStyle}"
-                    Template="{StaticResource WheelGlyphTemplate}"
-                    ToolTip="Wheel connection" />
+                    Template="{StaticResource WheelGlyphTemplate}" />
                 <Viewbox
                     Width="16"
                     Height="16"
                     Margin="3,0"
                     Stretch="Uniform">
-                    <fa:IconImage
-                        Icon="Cloud"
-                        Style="{StaticResource TelemetryStatusIconStyle}"
-                        ToolTip="Telemetry connection" />
+                    <fa:IconImage Icon="Cloud" Style="{StaticResource TelemetryStatusIconStyle}" />
                 </Viewbox>
             </StackPanel>
         </ToggleButton>
         <Popup
             x:Name="StatusPopup"
             AllowsTransparency="True"
-            IsOpen="{Binding IsChecked, ElementName=StatusButton, Mode=TwoWay}"
             Placement="Custom"
             PlacementTarget="{Binding ElementName=StatusButton}"
             PopupAnimation="Fade"

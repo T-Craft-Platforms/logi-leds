@@ -15,6 +15,7 @@ public sealed class SettingsDraft : ObservableObject
     private double _redlinePercent = LedProfileSettings.DefaultRedlinePercent;
     private WheelOption? _selectedWheel;
     private AppTheme _theme = AppTheme.System;
+    private bool _usePointerCursors;
 
     public string BindAddress
     {
@@ -62,6 +63,16 @@ public sealed class SettingsDraft : ObservableObject
     {
         get => _closeToTray;
         set => SetField(ref _closeToTray, value);
+    }
+
+    public bool UsePointerCursors
+    {
+        get => _usePointerCursors;
+        set
+        {
+            ThemeService.UsePointerCursors = value;
+            SetField(ref _usePointerCursors, value);
+        }
     }
 
     public AppTheme Theme

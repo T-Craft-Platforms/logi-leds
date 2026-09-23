@@ -241,6 +241,8 @@ public sealed class MainViewModel : ObservableObject, IAsyncDisposable
         _draft.LearnPerCarShift = settings.LearnPerCarShift;
         _draft.AutoStartControl = settings.AutoStartControl;
         _draft.CloseToTray = settings.CloseToTray;
+        _draft.UsePointerCursors = settings.UsePointerCursors;
+        ThemeService.UsePointerCursors = settings.UsePointerCursors;
         _draft.Theme = settings.Theme;
         Settings.Initialize(settings, _service.Wheels);
         RpmProfile.Initialize(_service.Wheels.FirstOrDefault(x => x.Id == settings.PreferredWheelId),
@@ -283,7 +285,8 @@ public sealed class MainViewModel : ObservableObject, IAsyncDisposable
             FirstLedPercent = _draft.FirstLedPercent, RedlinePercent = _draft.RedlinePercent,
             BlinkAtRedline = _draft.BlinkAtRedline, AutoStartControl = _draft.AutoStartControl,
             MinimizeToTray = _draft.CloseToTray, CloseToTray = _draft.CloseToTray, ReadyAnimation = true,
-            Theme = _draft.Theme, ProfileMode = _draft.ProfileMode, LearnPerCarShift = _draft.LearnPerCarShift,
+            Theme = _draft.Theme, UsePointerCursors = _draft.UsePointerCursors,
+            ProfileMode = _draft.ProfileMode, LearnPerCarShift = _draft.LearnPerCarShift,
             GameTitle = "Auto", PreferredWheelId = _draft.SelectedWheel?.Id,
             AdvancedThresholds = RpmProfile.Thresholds.Select(x => x.Value).ToArray()
         };

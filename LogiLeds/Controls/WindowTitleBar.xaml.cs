@@ -87,6 +87,8 @@ public partial class WindowTitleBar : UserControl
 
     private void UpdateMaximizeIcon(Window window)
     {
-        MaximizeIcon.Icon = window.WindowState == WindowState.Maximized ? IconChar.Compress : IconChar.Expand;
+        var isMaximized = window.WindowState == WindowState.Maximized;
+        MaximizeIcon.Icon = isMaximized ? IconChar.Compress : IconChar.Expand;
+        MaximizeButton.ToolTip = isMaximized ? "Restore" : "Maximize";
     }
 }
