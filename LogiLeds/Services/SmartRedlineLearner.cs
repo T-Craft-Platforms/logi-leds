@@ -7,12 +7,13 @@ namespace LogiLeds.Services;
 
 public sealed class SmartRedlineLearner
 {
+    private const int TargetShifts = 5;
     private static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = true };
-    private readonly Dictionary<string, double> _learned = new(StringComparer.OrdinalIgnoreCase);
-    private readonly object _learnedLock = new();
+    private readonly object _gate = new();
     private readonly string _path;
     private readonly SemaphoreSlim _saveGate = new(1, 1);
     private readonly Dictionary<string, LearningState> _states = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<string, TrainingData> _trainings = new(StringComparer.OrdinalIgnoreCase);
 
     public SmartRedlineLearner(string? path = null)
     {
@@ -22,18 +23,20 @@ public sealed class SmartRedlineLearner
 
     public IReadOnlyList<CarTrainingMapping> GetMappings()
     {
-        lock (_learnedLock)
-        {
-            return _learned
-                .Select(pair => TryParseKey(pair.Key, out var mapping)
-                    ? mapping with { LearnedRedlinePercent = pair.Value }
+        lock (_gate)
+            return _trainings.Select(pair => TryParseKey(pair.Key, out var mapping)
+                    ? mapping with
+                    {
+                        LearnedRedlinePercent = Estimate(pair.Value.Candidates),
+                        ShiftCount = pair.Value.Candidates.Count,
+                        ConfidencePercent = Confidence(pair.Value.Candidates)
+                    }
                     : null)
-                .Where(mapping => mapping is not null)
+                .Where(mapping => mapping is { ProgressPercent: >= 10 })
                 .Cast<CarTrainingMapping>()
                 .OrderBy(mapping => mapping.GameTitle)
                 .ThenBy(mapping => mapping.CarOrdinal)
                 .ToArray();
-        }
     }
 
     public async Task LoadAsync(CancellationToken cancellationToken = default)
@@ -42,13 +45,32 @@ public sealed class SmartRedlineLearner
         {
             if (!File.Exists(_path)) return;
             await using var stream = File.OpenRead(_path);
-            var values =
-                await JsonSerializer.DeserializeAsync<Dictionary<string, double>>(stream, JsonOptions,
-                    cancellationToken);
-            if (values is null) return;
-            lock (_learnedLock)
+            using var document = await JsonDocument.ParseAsync(stream, cancellationToken: cancellationToken);
+            lock (_gate)
             {
-                foreach (var pair in values.Where(x => x.Value is >= 70 and <= 100)) _learned[pair.Key] = pair.Value;
+                _trainings.Clear();
+                foreach (var pair in document.RootElement.EnumerateObject())
+                {
+                    if (!TryParseKey(pair.Name, out _)) continue;
+                    // Previous releases stored only the final percentage.
+                    if (pair.Value.ValueKind == JsonValueKind.Number && pair.Value.TryGetDouble(out var legacy))
+                    {
+                        if (legacy is >= 70 and <= 100)
+                            _trainings[pair.Name] = new TrainingData
+                                { Candidates = Enumerable.Repeat(legacy, TargetShifts).ToList() };
+                        continue;
+                    }
+
+                    if (pair.Value.ValueKind != JsonValueKind.Object ||
+                        !pair.Value.TryGetProperty(nameof(TrainingData.Candidates), out var candidates) ||
+                        candidates.ValueKind != JsonValueKind.Array) continue;
+                    var values = candidates.EnumerateArray()
+                        .Where(value => value.ValueKind == JsonValueKind.Number && value.TryGetDouble(out _))
+                        .Select(value => value.GetDouble())
+                        .Where(value => double.IsFinite(value) && value is >= 70 and <= 100)
+                        .TakeLast(8).ToList();
+                    if (values.Count > 0) _trainings[pair.Name] = new TrainingData { Candidates = values };
+                }
             }
         }
         catch (Exception ex) when (ex is IOException or JsonException or UnauthorizedAccessException)
@@ -58,75 +80,117 @@ public sealed class SmartRedlineLearner
 
     public double? Observe(ForzaTelemetryFrame frame, string gameTitle)
     {
-        if (!frame.IsRaceOn || frame.EngineMaxRpm <= 0 || frame.CarOrdinal is null) return null;
+        if (!frame.IsRaceOn || frame.EngineMaxRpm <= 0 || frame.CarOrdinal is null ||
+            !float.IsFinite(frame.CurrentEngineRpm) || frame.Gear is not byte gear || gear is < 1 or > 10 ||
+            frame.Accelerator is not byte throttle) return null;
+
         var key = BuildKey(frame, gameTitle);
-        double existing;
-        lock (_learnedLock)
+        var accepted = false;
+        double? learned;
+        lock (_gate)
         {
-            _learned.TryGetValue(key, out existing);
+            if (!_states.TryGetValue(key, out var state)) _states[key] = state = new LearningState();
+            if (state.LastFrameAt != default &&
+                (frame.ReceivedAt - state.LastFrameAt).Duration() > TimeSpan.FromSeconds(3))
+                state.Reset();
+
+            if (state.LastGear is byte oldGear && gear != oldGear)
+            {
+                if (gear == oldGear + 1 && state.HighThrottleFrames >= 2 &&
+                    frame.ReceivedAt - state.LastHighThrottleAt <= TimeSpan.FromMilliseconds(900))
+                {
+                    var percent = state.Peak / frame.EngineMaxRpm * 100d;
+                    if (percent is >= 75 and <= 100 && state.Peak > frame.EngineIdleRpm * 1.5f)
+                    {
+                        if (!_trainings.TryGetValue(key, out var data)) _trainings[key] = data = new TrainingData();
+                        data.Candidates.Add(percent);
+                        if (data.Candidates.Count > 8) data.Candidates.RemoveAt(0);
+                        accepted = true;
+                    }
+                }
+
+                state.Reset();
+            }
+
+            if (throttle >= 220 && frame.CurrentEngineRpm >= frame.EngineMaxRpm * .72f)
+            {
+                state.HighThrottleFrames++;
+                state.Peak = Math.Max(state.Peak, frame.CurrentEngineRpm);
+                state.LastHighThrottleAt = frame.ReceivedAt;
+            }
+
+            state.LastGear = gear;
+            state.LastFrameAt = frame.ReceivedAt;
+            learned = _trainings.TryGetValue(key, out var training) ? Estimate(training.Candidates) : null;
         }
 
-        if (existing > 0) return existing;
-        if (frame.Accelerator is not byte throttle || throttle < 235 || frame.Gear is not byte gear ||
-            gear == 0) return null;
-        if (!_states.TryGetValue(key, out var state)) _states[key] = state = new LearningState();
-        state.Peak = Math.Max(state.Peak, frame.CurrentEngineRpm);
-        var eventEnded = state.LastRpm > 0 &&
-                         (frame.CurrentEngineRpm < state.Peak * .92f || (state.LastGear > 0 && gear != state.LastGear));
-        state.LastRpm = frame.CurrentEngineRpm;
-        state.LastGear = gear;
-        if (!eventEnded) return null;
-        var percent = state.Peak / frame.EngineMaxRpm * 100d;
-        state.Peak = frame.CurrentEngineRpm;
-        if (percent is < 75 or > 100) return null;
-        state.Candidates.Add(percent);
-        if (state.Candidates.Count > 5) state.Candidates.RemoveAt(0);
-        if (state.Candidates.Count < 3 || state.Candidates.Max() - state.Candidates.Min() > 2) return null;
-        var ordered = state.Candidates.OrderBy(x => x).ToArray();
-        var learned = Math.Round(ordered[ordered.Length / 2], 1);
-        lock (_learnedLock)
-        {
-            _learned[key] = learned;
-        }
-
-        _ = SaveAsync();
+        if (accepted) _ = SaveAsync();
         return learned;
     }
 
     public double? Get(ForzaTelemetryFrame frame, string gameTitle)
     {
-        lock (_learnedLock)
-        {
-            return _learned.TryGetValue(BuildKey(frame, gameTitle), out var value) ? value : null;
-        }
+        lock (_gate)
+            return _trainings.TryGetValue(BuildKey(frame, gameTitle), out var data) ? Estimate(data.Candidates) : null;
     }
+
+    public bool IsCurrentCar(CarTrainingMapping mapping, ForzaTelemetryFrame frame, string gameTitle) =>
+        string.Equals(BuildKey(frame, gameTitle), BuildKey(mapping), StringComparison.OrdinalIgnoreCase);
 
     public async Task ClearAsync()
     {
-        lock (_learnedLock)
+        lock (_gate)
         {
-            _learned.Clear();
+            _trainings.Clear();
+            _states.Clear();
         }
 
-        _states.Clear();
         await SaveAsync();
     }
 
-    private static string BuildKey(ForzaTelemetryFrame frame, string gameTitle)
+    internal async Task FlushAsync()
     {
-        return $"{gameTitle}|{frame.ProtocolVariant}|{frame.CarOrdinal}|{Math.Round(frame.EngineMaxRpm / 50f) * 50:0}";
+        await _saveGate.WaitAsync();
+        _saveGate.Release();
     }
+
+    private static double? Estimate(IReadOnlyList<double> candidates)
+    {
+        if (candidates.Count < 3) return null;
+        var cluster = BestCluster(candidates);
+        if (cluster.Length < 3) return null;
+        return Math.Round(cluster.Order().ElementAt(cluster.Length / 2), 1);
+    }
+
+    private static int Confidence(IReadOnlyList<double> candidates)
+    {
+        var cluster = BestCluster(candidates);
+        return cluster.Length < 3
+            ? 0
+            : (int)Math.Round(Math.Min(1d, cluster.Length / (double)TargetShifts) *
+                cluster.Length / candidates.Count * 100);
+    }
+
+    private static double[] BestCluster(IReadOnlyList<double> candidates) => candidates
+        .Select(center => candidates.Where(value => Math.Abs(value - center) <= 2).ToArray())
+        .OrderByDescending(cluster => cluster.Length)
+        .ThenBy(cluster => cluster.Max() - cluster.Min())
+        .FirstOrDefault() ?? [];
+
+    private static string BuildKey(ForzaTelemetryFrame frame, string gameTitle) =>
+        $"{gameTitle}|{frame.ProtocolVariant}|{frame.CarOrdinal}|{Math.Round(frame.EngineMaxRpm / 50f) * 50:0}";
+
+    private static string BuildKey(CarTrainingMapping mapping) =>
+        $"{mapping.GameTitle}|{mapping.ProtocolVariant}|{mapping.CarOrdinal}|{mapping.EngineMaxRpm:0}";
 
     private static bool TryParseKey(string key, out CarTrainingMapping mapping)
     {
         mapping = default!;
         var parts = key.Split('|');
         if (parts.Length != 4 || !int.TryParse(parts[2], out var ordinal) ||
-            !float.TryParse(parts[3], NumberStyles.Float,
-                CultureInfo.InvariantCulture, out var maximumRpm))
+            !float.TryParse(parts[3], NumberStyles.Float, CultureInfo.InvariantCulture, out var maximumRpm))
             return false;
-
-        mapping = new CarTrainingMapping(parts[0], parts[1], ordinal, maximumRpm, 0);
+        mapping = new CarTrainingMapping(parts[0], parts[1], ordinal, maximumRpm, null, 0, 0);
         return true;
     }
 
@@ -135,15 +199,13 @@ public sealed class SmartRedlineLearner
         await _saveGate.WaitAsync();
         try
         {
-            var directory = Path.GetDirectoryName(_path)!;
-            Directory.CreateDirectory(directory);
+            Directory.CreateDirectory(Path.GetDirectoryName(_path)!);
             var temp = _path + ".tmp";
-            Dictionary<string, double> snapshot;
-            lock (_learnedLock)
-            {
-                snapshot = new Dictionary<string, double>(_learned, StringComparer.OrdinalIgnoreCase);
-            }
-
+            Dictionary<string, TrainingData> snapshot;
+            lock (_gate)
+                snapshot = _trainings.ToDictionary(pair => pair.Key,
+                    pair => new TrainingData { Candidates = [.. pair.Value.Candidates] },
+                    StringComparer.OrdinalIgnoreCase);
             await File.WriteAllTextAsync(temp, JsonSerializer.Serialize(snapshot, JsonOptions));
             File.Move(temp, _path, true);
         }
@@ -156,12 +218,26 @@ public sealed class SmartRedlineLearner
         }
     }
 
+    public sealed class TrainingData
+    {
+        public List<double> Candidates { get; set; } = [];
+    }
+
     private sealed class LearningState
     {
         public float Peak { get; set; }
-        public float LastRpm { get; set; }
-        public byte LastGear { get; set; }
-        public List<double> Candidates { get; } = [];
+        public int HighThrottleFrames { get; set; }
+        public byte? LastGear { get; set; }
+        public DateTimeOffset LastHighThrottleAt { get; set; }
+        public DateTimeOffset LastFrameAt { get; set; }
+
+        public void Reset()
+        {
+            Peak = 0;
+            HighThrottleFrames = 0;
+            LastGear = null;
+            LastHighThrottleAt = default;
+        }
     }
 }
 
@@ -170,4 +246,9 @@ public sealed record CarTrainingMapping(
     string ProtocolVariant,
     int CarOrdinal,
     float EngineMaxRpm,
-    double LearnedRedlinePercent);
+    double? LearnedRedlinePercent,
+    int ShiftCount,
+    int ConfidencePercent)
+{
+    public int ProgressPercent => Math.Min(100, ShiftCount * 20);
+}

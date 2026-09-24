@@ -129,6 +129,8 @@ public sealed class RpmProfileViewModel : ObservableObject, IDisposable
         CarTrainings = _service.GetCarTrainingMappings().Select(mapping => new CarTrainingViewModel(mapping)).ToArray();
     }
 
+    public CarTrainingOverview GetTrainingOverview() => _service.GetCarTrainingOverview();
+
     public async Task ResetCarTrainingsAsync()
     {
         await _service.ResetLearningAsync();

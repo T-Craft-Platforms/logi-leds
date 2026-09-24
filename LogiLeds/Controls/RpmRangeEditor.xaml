@@ -62,8 +62,8 @@
                                 <Style BasedOn="{StaticResource {x:Type Slider}}" TargetType="Slider">
                                     <Style.Triggers>
                                         <DataTrigger Binding="{Binding IsReadOnly, RelativeSource={RelativeSource AncestorType=UserControl}}" Value="True">
-                                            <Setter Property="IsHitTestVisible" Value="False" />
-                                            <Setter Property="Focusable" Value="False" />
+                                            <Setter Property="IsEnabled" Value="False" />
+                                            <Setter Property="Opacity" Value="0.65" />
                                         </DataTrigger>
                                     </Style.Triggers>
                                 </Style>
@@ -76,7 +76,34 @@
                             HorizontalContentAlignment="Center"
                             IsReadOnly="{Binding IsReadOnly, RelativeSource={RelativeSource AncestorType=UserControl}}"
                             Text="{Binding Value, Mode=TwoWay, UpdateSourceTrigger=LostFocus, StringFormat={}{0:0.0}}"
-                            ToolTip="Enter a percentage" />
+                            ToolTip="Enter a percentage">
+                            <TextBox.Style>
+                                <Style BasedOn="{StaticResource {x:Type TextBox}}" TargetType="TextBox">
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsReadOnly, RelativeSource={RelativeSource AncestorType=UserControl}}" Value="True">
+                                            <Setter Property="Visibility" Value="Collapsed" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBox.Style>
+                        </TextBox>
+                        <TextBlock
+                            Grid.Column="2"
+                            HorizontalAlignment="Center"
+                            VerticalAlignment="Center"
+                            FontWeight="SemiBold"
+                            Text="{Binding Value, StringFormat={}{0:0.0}%}">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="Visibility" Value="Collapsed" />
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsReadOnly, RelativeSource={RelativeSource AncestorType=UserControl}}" Value="True">
+                                            <Setter Property="Visibility" Value="Visible" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
                     </Grid>
                 </DataTemplate>
             </ItemsControl.ItemTemplate>
@@ -107,8 +134,8 @@
                     <Style BasedOn="{StaticResource {x:Type Slider}}" TargetType="Slider">
                         <Style.Triggers>
                             <DataTrigger Binding="{Binding IsReadOnly, RelativeSource={RelativeSource AncestorType=UserControl}}" Value="True">
-                                <Setter Property="IsHitTestVisible" Value="False" />
-                                <Setter Property="Focusable" Value="False" />
+                                <Setter Property="IsEnabled" Value="False" />
+                                <Setter Property="Opacity" Value="0.65" />
                             </DataTrigger>
                         </Style.Triggers>
                     </Style>
@@ -122,7 +149,34 @@
                 BorderBrush="{DynamicResource DangerBrush}"
                 IsReadOnly="{Binding IsReadOnly, RelativeSource={RelativeSource AncestorType=UserControl}}"
                 Text="{Binding RedlinePercent, Mode=TwoWay, UpdateSourceTrigger=LostFocus, StringFormat={}{0:0.0}}"
-                ToolTip="Enter a percentage" />
+                ToolTip="Enter a percentage">
+                <TextBox.Style>
+                    <Style BasedOn="{StaticResource {x:Type TextBox}}" TargetType="TextBox">
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding IsReadOnly, RelativeSource={RelativeSource AncestorType=UserControl}}" Value="True">
+                                <Setter Property="Visibility" Value="Collapsed" />
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </TextBox.Style>
+            </TextBox>
+            <TextBlock
+                Grid.Column="2"
+                HorizontalAlignment="Center"
+                VerticalAlignment="Center"
+                FontWeight="SemiBold"
+                Text="{Binding RedlinePercent, StringFormat={}{0:0.0}%}">
+                <TextBlock.Style>
+                    <Style TargetType="TextBlock">
+                        <Setter Property="Visibility" Value="Collapsed" />
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding IsReadOnly, RelativeSource={RelativeSource AncestorType=UserControl}}" Value="True">
+                                <Setter Property="Visibility" Value="Visible" />
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </TextBlock.Style>
+            </TextBlock>
         </Grid>
     </StackPanel>
 </UserControl>

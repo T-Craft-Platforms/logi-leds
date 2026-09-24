@@ -35,7 +35,7 @@ public sealed record WheelProfile
         if (AdvancedThresholds.Length != groupCount || AdvancedThresholds.Any(x => x < 0 || x >= RedlinePercent) ||
             !AdvancedThresholds.SequenceEqual(AdvancedThresholds.OrderBy(x => x)))
         {
-            error = "Advanced wheel thresholds are invalid.";
+            error = "Manual wheel thresholds are invalid.";
             return false;
         }
 

@@ -84,7 +84,7 @@ public sealed record LedProfileSettings
         if (AdvancedThresholds.Any(x => !double.IsFinite(x) || x < 0 || x >= RedlinePercent) ||
             !AdvancedThresholds.SequenceEqual(AdvancedThresholds.OrderBy(x => x)))
         {
-            error = "Advanced thresholds must be ordered and below redline.";
+            error = "Manual thresholds must be ordered and below redline.";
             return false;
         }
 

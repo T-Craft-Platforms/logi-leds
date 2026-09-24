@@ -35,7 +35,7 @@
                                         IsChecked="{Binding IsEasyMode}"
                                         Style="{StaticResource SegmentStyle}" />
                                     <RadioButton
-                                        Content="Advanced"
+                                        Content="Manual"
                                         GroupName="ProfileMode"
                                         IsChecked="{Binding IsAdvancedMode}"
                                         Style="{StaticResource SegmentStyle}" />

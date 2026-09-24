@@ -78,6 +78,7 @@ public sealed class LedApplicationService : IAsyncDisposable
 
         _telemetryReceiver.FrameReceived -= OnFrameReceived;
         _telemetryReceiver.ErrorOccurred -= OnReceiverError;
+        await _redlineLearner.FlushAsync();
         await _telemetryReceiver.DisposeAsync();
         _wheelController.Shutdown();
         _wheelController.Dispose();
@@ -237,6 +238,24 @@ public sealed class LedApplicationService : IAsyncDisposable
         return _redlineLearner.GetMappings();
     }
 
+    public CarTrainingOverview GetCarTrainingOverview()
+    {
+        ForzaTelemetryFrame? frame;
+        lock (_frameLock) frame = _latestFrame;
+        var live = IsRunning && frame is { IsRaceOn: true, CarOrdinal: not null, EngineMaxRpm: > 0 } &&
+                   _timeProvider.GetUtcNow() - frame.Value.ReceivedAt <= TelemetryTimeout;
+        var enabled = Settings.LearnPerCarShift && Settings.ProfileMode == RpmProfileMode.Easy;
+        var sampling = live && enabled && frame!.Value.Gear is >= 1 and <= 10 &&
+                       frame.Value.Accelerator is >= 220 &&
+                       frame.Value.CurrentEngineRpm >= frame.Value.EngineMaxRpm * .72f;
+        var mappings = _redlineLearner.GetMappings()
+            .Select(mapping => new CarTrainingEntry(mapping,
+                live && _redlineLearner.IsCurrentCar(mapping, frame!.Value, Settings.GameTitle)))
+            .ToArray();
+        return new CarTrainingOverview(mappings, enabled, live, sampling,
+            live ? $"Car #{frame!.Value.CarOrdinal}" : "No live vehicle");
+    }
+
     public Task<WheelProfile> LoadWheelProfileAsync(WheelDefinition wheel,
         CancellationToken cancellationToken = default)
     {
@@ -385,7 +404,7 @@ public sealed class LedApplicationService : IAsyncDisposable
         if (Settings.LearnPerCarShift && Settings.ProfileMode == RpmProfileMode.Easy)
             _learnedRedlinePercent = _redlineLearner.Observe(frame, Settings.GameTitle) ??
                                      _redlineLearner.Get(frame, Settings.GameTitle);
-        else if (!Settings.LearnPerCarShift)
+        else
             _learnedRedlinePercent = null;
     }
 
@@ -465,3 +484,12 @@ public sealed class LedApplicationService : IAsyncDisposable
         return frame.Value.IsRaceOn ? ReadinessState.Driving : ReadinessState.Ready;
     }
 }
+
+public sealed record CarTrainingEntry(CarTrainingMapping Mapping, bool IsCurrent);
+
+public sealed record CarTrainingOverview(
+    IReadOnlyList<CarTrainingEntry> Entries,
+    bool IsEnabled,
+    bool IsLive,
+    bool IsSampling,
+    string CurrentVehicle);

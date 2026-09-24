@@ -14,8 +14,7 @@ public partial class RpmProfileView : UserControl
     private void OpenCarTrainings_OnClick(object sender, RoutedEventArgs e)
     {
         if (DataContext is not RpmProfileViewModel viewModel) return;
-        viewModel.RefreshCarTrainings();
-        new CarTrainingLibraryWindow(viewModel.CarTrainings, viewModel.ResetCarTrainingsAsync)
+        new CarTrainingLibraryWindow(viewModel)
             { Owner = Window.GetWindow(this) }.ShowDialog();
     }
 }

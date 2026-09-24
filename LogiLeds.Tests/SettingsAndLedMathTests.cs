@@ -41,7 +41,7 @@ public sealed class SettingsAndLedMathTests
         var ten = LedMath.BuildRecommendedThresholds(10);
         Assert.AreEqual(10, ten.Length);
         Assert.AreEqual(65d, ten[0]);
-        Assert.AreEqual(89d, ten[^1]);
-        Assert.AreEqual((9, false), LedMath.CalculatePreview(8_800, 10_000, 80, 95, 10, ten));
+        Assert.AreEqual(85d, ten[^1]);
+        Assert.AreEqual((9, false), LedMath.CalculatePreview(8_400, 10_000, 80, 95, 10, ten));
     }
 }
