@@ -6,6 +6,8 @@ namespace LogiLeds.Views;
 
 public partial class RpmProfileView : UserControl
 {
+    private CarTrainingLibraryWindow? _carTrainingWindow;
+
     public RpmProfileView()
     {
         InitializeComponent();
@@ -14,7 +16,9 @@ public partial class RpmProfileView : UserControl
     private void OpenCarTrainings_OnClick(object sender, RoutedEventArgs e)
     {
         if (DataContext is not RpmProfileViewModel viewModel) return;
-        new CarTrainingLibraryWindow(viewModel)
-            { Owner = Window.GetWindow(this) }.ShowDialog();
+        if (_carTrainingWindow is { IsVisible: true }) return;
+        _carTrainingWindow = new CarTrainingLibraryWindow(viewModel) { Owner = Window.GetWindow(this) };
+        _carTrainingWindow.Closed += (_, _) => _carTrainingWindow = null;
+        _carTrainingWindow.Show();
     }
 }

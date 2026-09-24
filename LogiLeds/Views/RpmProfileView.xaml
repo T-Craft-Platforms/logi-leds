@@ -30,7 +30,7 @@
                                 CornerRadius="10">
                                 <StackPanel Orientation="Horizontal">
                                     <RadioButton
-                                        Content="Smart mode"
+                                        Content="Smart"
                                         GroupName="ProfileMode"
                                         IsChecked="{Binding IsEasyMode}"
                                         Style="{StaticResource SegmentStyle}" />

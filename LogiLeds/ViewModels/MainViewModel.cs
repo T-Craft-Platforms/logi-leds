@@ -17,7 +17,7 @@ public sealed class MainViewModel : ObservableObject, IAsyncDisposable
     private readonly LedApplicationService _service;
     private readonly SemaphoreSlim _settingsSaveGate = new(1, 1);
     private WheelDefinition? _activeDefinition;
-    private bool _isWheelConnected, _isTelemetryConnected, _settingsLoaded;
+    private bool _isWheelConnected, _isTelemetryConnected, _isRaceOn, _settingsLoaded;
     private float _maximumRpm;
     private int _selectedTab;
     private CancellationTokenSource? _settingsSaveDelay;
@@ -99,21 +99,18 @@ public sealed class MainViewModel : ObservableObject, IAsyncDisposable
     public string AppControlStatus => IsRunning ? "Connected" : "Disconnected";
     public string WheelStatus => !_isWheelConnected ? "Disconnected" : !IsRunning ? "Standby" : "Connected";
 
-    public string TelemetryStatus => !IsRunning
+    public string TelemetryStatus => !_isTelemetryConnected
         ? "Disconnected"
-        : _maximumRpm > 0 && _isTelemetryConnected
+        : _isRaceOn && _maximumRpm > 0
             ? "Connected"
-            : _isTelemetryConnected || State is ReadinessState.WaitingForTelemetry or ReadinessState.TelemetryStale
-                or ReadinessState.Ready
-                ? "Standby"
-                : "Disconnected";
+            : "Standby";
 
     public string AppControlStatusText => !IsRunning ? "Control is stopped" :
         State == ReadinessState.Driving ? "RPM control is active" : "Control is ready";
 
     public string WheelStatusText => _isWheelConnected ? $"{WheelName} connected" : "No wheel detected";
 
-    public string TelemetryStatusText => _maximumRpm > 0 && _isTelemetryConnected
+    public string TelemetryStatusText => _isTelemetryConnected && _isRaceOn && _maximumRpm > 0
         ? $"{TelemetryFormat} drive data active"
         : _isTelemetryConnected
             ? "Telemetry connected, no drive data"
@@ -344,6 +341,7 @@ public sealed class MainViewModel : ObservableObject, IAsyncDisposable
         IsRunning = snapshot.IsRunning;
         _isWheelConnected = snapshot.IsWheelConnected;
         _isTelemetryConnected = snapshot.IsTelemetryConnected;
+        _isRaceOn = snapshot.IsRaceOn;
         _maximumRpm = snapshot.MaximumRpm;
         if (snapshot.Wheel is not null) _activeDefinition = snapshot.Wheel;
         State = snapshot.State;
