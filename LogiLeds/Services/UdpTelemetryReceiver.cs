@@ -8,14 +8,14 @@ public sealed class UdpTelemetryReceiver(TimeProvider? timeProvider = null) : IT
 {
     private readonly SemaphoreSlim _lifecycleGate = new(1, 1);
     private readonly TimeProvider _timeProvider = timeProvider ?? TimeProvider.System;
-    private UdpClient? _client;
+    private readonly List<UdpClient> _clients = [];
     private CancellationTokenSource? _receiveCts;
-    private Task? _receiveTask;
+    private Task[] _receiveTasks = [];
 
-    public event Action<ForzaTelemetryFrame>? FrameReceived;
+    public event Action<TelemetryFrame>? FrameReceived;
     public event Action<string>? ErrorOccurred;
 
-    public bool IsRunning => _receiveTask is { IsCompleted: false };
+    public bool IsRunning => _clients.Count > 0;
 
     public async Task StartAsync(LedProfileSettings settings, CancellationToken cancellationToken = default)
     {
@@ -28,22 +28,29 @@ public sealed class UdpTelemetryReceiver(TimeProvider? timeProvider = null) : IT
         {
             if (IsRunning) return;
 
-            var endpoint = new IPEndPoint(IPAddress.Parse(settings.BindAddress), settings.Port);
-            var client = new UdpClient(AddressFamily.InterNetwork);
+            var configuredGames = settings.TelemetryGames.Where(game =>
+                settings.TelemetryWatch.Watches(game.Game)).ToArray();
+            var clients = new List<(TelemetryGameSettings Game, UdpClient Client)>();
             try
             {
-                client.Client.ExclusiveAddressUse = true;
-                client.Client.Bind(endpoint);
+                foreach (var game in configuredGames)
+                {
+                    var client = new UdpClient(AddressFamily.InterNetwork);
+                    clients.Add((game, client));
+                    client.Client.ExclusiveAddressUse = true;
+                    client.Client.Bind(new IPEndPoint(IPAddress.Parse(game.BindAddress), game.Port));
+                }
             }
             catch
             {
-                client.Dispose();
+                foreach (var (_, client) in clients) client.Dispose();
                 throw;
             }
 
-            _client = client;
-            _receiveCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-            _receiveTask = ReceiveLoopAsync(client, _receiveCts.Token);
+            _receiveCts = new CancellationTokenSource();
+            _clients.AddRange(clients.Select(item => item.Client));
+            _receiveTasks = clients.Select(item => ReceiveLoopAsync(item.Client, item.Game, _receiveCts.Token))
+                .ToArray();
         }
         finally
         {
@@ -57,25 +64,24 @@ public sealed class UdpTelemetryReceiver(TimeProvider? timeProvider = null) : IT
         try
         {
             var cts = _receiveCts;
-            var client = _client;
-            var receiveTask = _receiveTask;
+            var clients = _clients.ToArray();
+            var receiveTasks = _receiveTasks;
             _receiveCts = null;
-            _client = null;
-            _receiveTask = null;
+            _clients.Clear();
+            _receiveTasks = [];
 
             cts?.Cancel();
-            client?.Dispose();
-            if (receiveTask is not null)
-                try
-                {
-                    await receiveTask;
-                }
-                catch (OperationCanceledException)
-                {
-                }
-                catch (ObjectDisposedException)
-                {
-                }
+            foreach (var client in clients) client.Dispose();
+            try
+            {
+                await Task.WhenAll(receiveTasks);
+            }
+            catch (OperationCanceledException)
+            {
+            }
+            catch (ObjectDisposedException)
+            {
+            }
 
             cts?.Dispose();
         }
@@ -91,14 +97,19 @@ public sealed class UdpTelemetryReceiver(TimeProvider? timeProvider = null) : IT
         _lifecycleGate.Dispose();
     }
 
-    private async Task ReceiveLoopAsync(UdpClient client, CancellationToken cancellationToken)
+    private async Task ReceiveLoopAsync(UdpClient client, TelemetryGameSettings game,
+        CancellationToken cancellationToken)
     {
         try
         {
             while (!cancellationToken.IsCancellationRequested)
             {
                 var result = await client.ReceiveAsync(cancellationToken);
-                if (ForzaTelemetryParser.TryParse(result.Buffer, _timeProvider.GetUtcNow(), out var frame))
+                var receivedAt = _timeProvider.GetUtcNow();
+                var parsed = game.Game == TelemetryGame.Forza
+                    ? ForzaTelemetryParser.TryParse(result.Buffer, receivedAt, out var frame)
+                    : BeamNgOutGaugeParser.TryParse(result.Buffer, game.MaxRpm, receivedAt, out frame);
+                if (parsed)
                     FrameReceived?.Invoke(frame);
             }
         }

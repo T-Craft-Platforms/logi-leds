@@ -29,26 +29,39 @@ public sealed class SettingsStore
                     cancellationToken);
             }
 
-            if (settings is not null && settings.SchemaVersion < LedProfileSettings.CurrentSchemaVersion)
+            if (settings is not null && (settings.SchemaVersion < LedProfileSettings.CurrentSchemaVersion ||
+                                         settings.TelemetryGames is not { Length: > 0 }))
             {
-                // Version 2 was the first preview build. Move its provisional
-                // 80/95 defaults to the Forza-like 65/90 curve and make the
-                // Keep the tray-first lifecycle used by the polished desktop UI.
+                if (settings.SchemaVersion < 4)
+                {
+                    settings = settings with
+                    {
+                        FirstLedPercent = LedProfileSettings.DefaultFirstLedPercent,
+                        RedlinePercent = LedProfileSettings.DefaultRedlinePercent,
+                        AdvancedThresholds = LedMath.BuildRecommendedThresholds(5),
+                        CloseToTray = true,
+                        MinimizeToTray = true,
+                        ReadyAnimation = true
+                    };
+                }
+
+                // Existing installations keep their Forza UDP endpoint, even
+                // when the old file did not contain a schema version.
                 settings = settings with
                 {
                     SchemaVersion = LedProfileSettings.CurrentSchemaVersion,
-                    FirstLedPercent = LedProfileSettings.DefaultFirstLedPercent,
-                    RedlinePercent = LedProfileSettings.DefaultRedlinePercent,
-                    AdvancedThresholds = LedMath.BuildRecommendedThresholds(5),
-                    CloseToTray = true,
-                    MinimizeToTray = true,
-                    ReadyAnimation = true
+                    TelemetryGames = settings.TelemetryGames is { Length: > 0 }
+                        ? settings.TelemetryGames
+                        : [TelemetryGameSettings.DefaultForza with
+                        {
+                            BindAddress = settings.BindAddress, Port = settings.Port
+                        }]
                 };
                 try
                 {
                     await SaveAsync(settings, cancellationToken);
                 }
-                catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+                catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException)
                 {
                 }
             }

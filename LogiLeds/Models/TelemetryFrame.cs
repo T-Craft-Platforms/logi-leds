@@ -1,6 +1,6 @@
 namespace LogiLeds.Models;
 
-public readonly record struct ForzaTelemetryFrame(
+public readonly record struct TelemetryFrame(
     bool IsRaceOn,
     uint TimestampMilliseconds,
     float EngineMaxRpm,
@@ -10,4 +10,5 @@ public readonly record struct ForzaTelemetryFrame(
     string ProtocolVariant = "Forza Horizon Dash",
     int? CarOrdinal = null,
     byte? Gear = null,
-    byte? Accelerator = null);
+    byte? Accelerator = null,
+    TelemetryGame Game = TelemetryGame.Forza);

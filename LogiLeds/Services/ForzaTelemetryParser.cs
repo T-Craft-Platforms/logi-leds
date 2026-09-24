@@ -8,7 +8,7 @@ public static class ForzaTelemetryParser
     public const int DashPacketLength = 324;
     public static readonly int[] SupportedPacketLengths = [232, 311, 323, 324, 331];
 
-    public static bool TryParse(ReadOnlySpan<byte> packet, DateTimeOffset receivedAt, out ForzaTelemetryFrame frame)
+    public static bool TryParse(ReadOnlySpan<byte> packet, DateTimeOffset receivedAt, out TelemetryFrame frame)
     {
         frame = default;
         if (!SupportedPacketLengths.Contains(packet.Length)) return false;
@@ -39,7 +39,7 @@ public static class ForzaTelemetryParser
             gear = packet[319];
         }
 
-        frame = new ForzaTelemetryFrame(raceValue == 1, timestamp, maxRpm, idleRpm, currentRpm, receivedAt,
+        frame = new TelemetryFrame(raceValue == 1, timestamp, maxRpm, idleRpm, currentRpm, receivedAt,
             GetVariant(packet.Length), carOrdinal, gear, accelerator);
         return true;
     }

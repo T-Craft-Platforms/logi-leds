@@ -78,7 +78,7 @@ public sealed class SmartRedlineLearner
         }
     }
 
-    public double? Observe(ForzaTelemetryFrame frame, string gameTitle)
+    public double? Observe(TelemetryFrame frame, string gameTitle)
     {
         if (!frame.IsRaceOn || frame.EngineMaxRpm <= 0 || frame.CarOrdinal is null ||
             !float.IsFinite(frame.CurrentEngineRpm) || frame.Gear is not byte gear || gear is < 1 or > 10 ||
@@ -128,13 +128,13 @@ public sealed class SmartRedlineLearner
         return learned;
     }
 
-    public double? Get(ForzaTelemetryFrame frame, string gameTitle)
+    public double? Get(TelemetryFrame frame, string gameTitle)
     {
         lock (_gate)
             return _trainings.TryGetValue(BuildKey(frame, gameTitle), out var data) ? Estimate(data.Candidates) : null;
     }
 
-    public bool IsCurrentCar(CarTrainingMapping mapping, ForzaTelemetryFrame frame, string gameTitle) =>
+    public bool IsCurrentCar(CarTrainingMapping mapping, TelemetryFrame frame, string gameTitle) =>
         string.Equals(BuildKey(frame, gameTitle), BuildKey(mapping), StringComparison.OrdinalIgnoreCase);
 
     public async Task ClearAsync()
@@ -177,7 +177,7 @@ public sealed class SmartRedlineLearner
         .ThenBy(cluster => cluster.Max() - cluster.Min())
         .FirstOrDefault() ?? [];
 
-    private static string BuildKey(ForzaTelemetryFrame frame, string gameTitle) =>
+    private static string BuildKey(TelemetryFrame frame, string gameTitle) =>
         $"{gameTitle}|{frame.ProtocolVariant}|{frame.CarOrdinal}|{Math.Round(frame.EngineMaxRpm / 50f) * 50:0}";
 
     private static string BuildKey(CarTrainingMapping mapping) =>

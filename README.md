@@ -1,6 +1,6 @@
 # LogiLeds
 
-LogiLeds is a polished Windows wheel companion that drives Logitech RPM/shift LEDs from Forza Data Out telemetry. It uses managed HID communication, contains no Logitech SDK binaries, and keeps all model-specific behavior in validated JSON wheel definitions.
+LogiLeds is a Windows wheel companion that drives Logitech RPM/shift LEDs from Forza Data Out and BeamNG.drive OutGauge telemetry. It uses managed HID communication, contains no Logitech SDK binaries, and keeps all model-specific behavior in validated JSON wheel definitions.
 
 ## Supported wheels
 
@@ -22,7 +22,11 @@ LogiLeds accepts the common RPM prefix from these Forza Data Out formats:
 - Forza Horizon 4, 5, and 6 (`Dash`)
 - Forza Motorsport (2023) (`Sled` and `Dash`)
 
-New installations listen on all IPv4 interfaces at UDP port `1024`, which supports games on this PC as well as Xbox or another PC. Configure the game's Data Out target to this PC's LAN address and the same port. Use `127.0.0.1` only when the game and LogiLeds run on the same PC and that game version supports localhost.
+BeamNG.drive is supported through its built-in OutGauge UDP protocol.
+
+In Settings → Telemetry, choose Auto to listen for every configured game, or select one game. Use Add game and Manage to set a separate bind address and UDP port for each game. New installations include Forza at `0.0.0.0:1024`; BeamNG.drive defaults to `0.0.0.0:4444` when added. The ports must differ. Configure each game's telemetry target to this PC's LAN address and its matching port. Use `127.0.0.1` only when the game and LogiLeds run on the same PC and the game supports localhost.
+
+For BeamNG.drive, enable **OutGauge UDP protocol** under **Options → Other → Protocols** and set its target port to the BeamNG port shown in LogiLeds. [BeamNG's OutGauge format](https://documentation.beamng.com/modding/protocols/) sends current RPM but no maximum RPM, so enter the current vehicle's maximum RPM in BeamNG's Manage dialog. Update it when switching to a vehicle with a different engine limit.
 
 ## Profiles and app behavior
 

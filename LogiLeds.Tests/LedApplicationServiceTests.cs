@@ -16,7 +16,7 @@ public sealed class LedApplicationServiceTests
         await service.LoadSettingsAsync();
         service.InitializeWindow(1);
         await service.StartAsync();
-        receiver.Emit(new ForzaTelemetryFrame(true, 10, 10_000, 900, 8_500, DateTimeOffset.UtcNow));
+        receiver.Emit(new TelemetryFrame(true, 10, 10_000, 900, 8_500, DateTimeOffset.UtcNow));
         await WaitUntilAsync(() => wheel.SetCalls > 0);
         Assert.IsTrue(wheel.LastLevel is >= 1 and <= 5);
         await service.StopAsync();
@@ -33,7 +33,7 @@ public sealed class LedApplicationServiceTests
         await service.LoadSettingsAsync();
         service.InitializeWindow(1);
         await service.StartAsync();
-        receiver.Emit(new ForzaTelemetryFrame(true, 10, 9_000, 900, 8_000, DateTimeOffset.UtcNow));
+        receiver.Emit(new TelemetryFrame(true, 10, 9_000, 900, 8_000, DateTimeOffset.UtcNow));
         await WaitUntilAsync(() => wheel.SetCalls > 0);
         wheel.ClearCalls = 0;
         await WaitUntilAsync(() => wheel.ClearCalls > 0, TimeSpan.FromSeconds(2));
@@ -52,7 +52,7 @@ public sealed class LedApplicationServiceTests
         service.InitializeWindow(1);
         service.SetPreviewWheel("fake");
         await service.StartAsync();
-        receiver.Emit(new ForzaTelemetryFrame(true, 10, 10_000, 900, 8_500, DateTimeOffset.UtcNow));
+        receiver.Emit(new TelemetryFrame(true, 10, 10_000, 900, 8_500, DateTimeOffset.UtcNow));
 
         await WaitUntilAsync(() => snapshot?.PreviewWheel?.Id == "fake" && snapshot.IlluminatedLedCount > 0);
         Assert.IsFalse(snapshot!.IsWheelConnected);
@@ -75,7 +75,7 @@ public sealed class LedApplicationServiceTests
 
     private sealed class FakeTelemetryReceiver : ITelemetryReceiver
     {
-        public event Action<ForzaTelemetryFrame>? FrameReceived;
+        public event Action<TelemetryFrame>? FrameReceived;
 
         public event Action<string>? ErrorOccurred
         {
@@ -103,7 +103,7 @@ public sealed class LedApplicationServiceTests
             return ValueTask.CompletedTask;
         }
 
-        public void Emit(ForzaTelemetryFrame frame)
+        public void Emit(TelemetryFrame frame)
         {
             FrameReceived?.Invoke(frame);
         }

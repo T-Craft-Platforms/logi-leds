@@ -1,6 +1,5 @@
 using System.Collections.Specialized;
 using System.ComponentModel;
-using System.Globalization;
 using System.Windows.Input;
 using LogiLeds.Commands;
 using LogiLeds.Models;
@@ -30,6 +29,7 @@ public sealed class MainViewModel : ObservableObject, IAsyncDisposable
         Dashboard = new DashboardViewModel(service, SetStatusMessage);
         RpmProfile = new RpmProfileViewModel(service, _draft, SetStatusMessage);
         Settings = new SettingsViewModel(service, _draft, SetStatusMessage);
+        Settings.TelemetryChanged += OnTelemetryChanged;
         _draft.PropertyChanged += OnDraftPropertyChanged;
         RpmProfile.Thresholds.CollectionChanged += OnThresholdsCollectionChanged;
         ExitCommand = new RelayCommand(() => ExitRequested?.Invoke(this, EventArgs.Empty));
@@ -126,6 +126,7 @@ public sealed class MainViewModel : ObservableObject, IAsyncDisposable
         _settingsLoaded = false;
         _settingsSaveDelay?.Cancel();
         _draft.PropertyChanged -= OnDraftPropertyChanged;
+        Settings.TelemetryChanged -= OnTelemetryChanged;
         RpmProfile.Thresholds.CollectionChanged -= OnThresholdsCollectionChanged;
         foreach (var threshold in _observedThresholds) threshold.PropertyChanged -= OnThresholdValueChanged;
         _observedThresholds.Clear();
@@ -179,6 +180,8 @@ public sealed class MainViewModel : ObservableObject, IAsyncDisposable
         ScheduleSettingsSave();
     }
 
+    private void OnTelemetryChanged(object? sender, EventArgs e) => ScheduleSettingsSave();
+
     private void ScheduleSettingsSave()
     {
         if (!_settingsLoaded) return;
@@ -229,8 +232,6 @@ public sealed class MainViewModel : ObservableObject, IAsyncDisposable
     public async Task InitializeAsync(nint windowHandle)
     {
         var settings = await _service.LoadSettingsAsync();
-        _draft.BindAddress = settings.BindAddress;
-        _draft.Port = settings.Port.ToString(CultureInfo.InvariantCulture);
         _draft.FirstLedPercent = settings.FirstLedPercent;
         _draft.RedlinePercent = settings.RedlinePercent;
         _draft.BlinkAtRedline = settings.BlinkAtRedline;
@@ -270,15 +271,12 @@ public sealed class MainViewModel : ObservableObject, IAsyncDisposable
 
     private async Task SaveSettingsAsync()
     {
-        if (!int.TryParse(_draft.Port, NumberStyles.Integer, CultureInfo.InvariantCulture, out var port))
-        {
-            StatusMessage = "Enter a valid UDP port.";
-            return;
-        }
-
+        var forza = Settings.TelemetryGames.FirstOrDefault(game => game.Game == TelemetryGame.Forza);
         var settings = _service.Settings with
         {
-            BindAddress = _draft.BindAddress.Trim(), Port = port,
+            BindAddress = forza?.BindAddress ?? _service.Settings.BindAddress,
+            Port = forza?.Port ?? _service.Settings.Port,
+            TelemetryWatch = Settings.WatchMode, TelemetryGames = Settings.TelemetryGames.ToArray(),
             FirstLedPercent = _draft.FirstLedPercent, RedlinePercent = _draft.RedlinePercent,
             BlinkAtRedline = _draft.BlinkAtRedline, AutoStartControl = _draft.AutoStartControl,
             MinimizeToTray = _draft.CloseToTray, CloseToTray = _draft.CloseToTray, ReadyAnimation = true,

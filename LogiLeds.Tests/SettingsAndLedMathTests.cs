@@ -20,6 +20,8 @@ public sealed class SettingsAndLedMathTests
         Assert.IsTrue(settings.MinimizeToTray);
         Assert.IsTrue(settings.CloseToTray);
         Assert.IsTrue(settings.BlinkAtRedline);
+        Assert.AreEqual(TelemetryWatchMode.Auto, settings.TelemetryWatch);
+        Assert.AreEqual(TelemetryGame.Forza, settings.TelemetryGames.Single().Game);
     }
 
     [TestMethod]
@@ -27,6 +29,12 @@ public sealed class SettingsAndLedMathTests
     {
         Assert.IsFalse((LedProfileSettings.Defaults with { BindAddress = "not-an-ip" }).TryValidate(out _));
         Assert.IsFalse((LedProfileSettings.Defaults with { Port = 0 }).TryValidate(out _));
+        Assert.IsFalse((LedProfileSettings.Defaults with
+        {
+            TelemetryGames = [TelemetryGameSettings.DefaultForza, TelemetryGameSettings.DefaultBeamNg with { Port = 1024 }]
+        }).TryValidate(out _));
+        Assert.IsFalse((LedProfileSettings.Defaults with { TelemetryWatch = TelemetryWatchMode.BeamNg })
+            .TryValidate(out _));
         Assert.IsFalse(
             (LedProfileSettings.Defaults with { FirstLedPercent = 96, RedlinePercent = 95 }).TryValidate(out _));
         Assert.IsFalse((LedProfileSettings.Defaults with { AdvancedThresholds = [90, 85] }).TryValidate(out _));

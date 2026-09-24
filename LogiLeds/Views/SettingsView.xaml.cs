@@ -1,6 +1,8 @@
 using System.Collections.Specialized;
 using System.Globalization;
 using System.Windows.Media;
+using LogiLeds.Models;
+using LogiLeds.ViewModels;
 using ComboBox = System.Windows.Controls.ComboBox;
 using UserControl = System.Windows.Controls.UserControl;
 
@@ -26,6 +28,18 @@ public partial class SettingsView : UserControl
     private void WheelOptions_OnCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
     {
         SizeSelectorToContent(WheelSelector);
+    }
+
+    private void AddGame_OnClick(object sender, System.Windows.RoutedEventArgs e)
+    {
+        if (DataContext is SettingsViewModel viewModel) viewModel.AddGame();
+    }
+
+    private void ManageGame_OnClick(object sender, System.Windows.RoutedEventArgs e)
+    {
+        if (DataContext is SettingsViewModel viewModel &&
+            sender is System.Windows.Controls.Button { Tag: TelemetryGameSettings game })
+            viewModel.ManageGame(game);
     }
 
     private static void SizeSelectorToContent(ComboBox selector)

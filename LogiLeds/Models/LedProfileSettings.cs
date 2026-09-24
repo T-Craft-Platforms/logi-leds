@@ -18,7 +18,7 @@ public enum RpmProfileMode
 
 public sealed record LedProfileSettings
 {
-    public const int CurrentSchemaVersion = 4;
+    public const int CurrentSchemaVersion = 5;
     public const string DefaultBindAddress = "0.0.0.0";
     public const int DefaultPort = 1024;
     public const double DefaultFirstLedPercent = 65;
@@ -39,6 +39,8 @@ public sealed record LedProfileSettings
     public AppTheme Theme { get; init; } = AppTheme.System;
     public RpmProfileMode ProfileMode { get; init; } = RpmProfileMode.Easy;
     public string GameTitle { get; init; } = "Auto";
+    public TelemetryWatchMode TelemetryWatch { get; init; } = TelemetryWatchMode.Auto;
+    public TelemetryGameSettings[] TelemetryGames { get; init; } = [];
     public string? PreferredWheelId { get; init; }
     public double[] AdvancedThresholds { get; init; } = [];
     public double WindowWidth { get; init; } = 1180;
@@ -47,7 +49,7 @@ public sealed record LedProfileSettings
     public double? WindowTop { get; init; }
     public bool WindowMaximized { get; init; }
 
-    public static LedProfileSettings Defaults => new();
+    public static LedProfileSettings Defaults => new() { TelemetryGames = [TelemetryGameSettings.DefaultForza] };
 
     public bool TryValidate(out string error)
     {
@@ -60,6 +62,25 @@ public sealed record LedProfileSettings
         if (Port is < 1 or > 65535)
         {
             error = "UDP port must be between 1 and 65535.";
+            return false;
+        }
+
+        if (!Enum.IsDefined(TelemetryWatch) || TelemetryGames is null || TelemetryGames.Length == 0 ||
+            TelemetryGames.Any(game => game is null || !Enum.IsDefined(game.Game)) ||
+            TelemetryGames.Select(game => game.Game).Distinct().Count() != TelemetryGames.Length ||
+            TelemetryGames.Select(game => game.Port).Distinct().Count() != TelemetryGames.Length)
+        {
+            error = "Configure at least one game with a distinct UDP port.";
+            return false;
+        }
+
+        foreach (var game in TelemetryGames)
+            if (!game.TryValidate(out error)) return false;
+
+        if (TelemetryWatch != TelemetryWatchMode.Auto &&
+            !TelemetryGames.Any(game => TelemetryWatch.Watches(game.Game)))
+        {
+            error = "Choose a configured game to watch, or select Auto.";
             return false;
         }
 

@@ -47,6 +47,8 @@ public sealed class ConfigurationAndLearningTests
         var settings = await new SettingsStore(path).LoadAsync();
         Assert.AreEqual("127.0.0.1", settings.BindAddress);
         Assert.AreEqual(5000, settings.Port);
+        Assert.AreEqual(5000, settings.TelemetryGames.Single().Port);
+        Assert.AreEqual("127.0.0.1", settings.TelemetryGames.Single().BindAddress);
         Assert.AreEqual(65d, settings.FirstLedPercent);
         Assert.IsTrue(settings.AutoStartControl);
         Assert.IsTrue(settings.MinimizeToTray);
@@ -60,12 +62,37 @@ public sealed class ConfigurationAndLearningTests
         await File.WriteAllTextAsync(path,
             "{\"SchemaVersion\":2,\"FirstLedPercent\":80,\"RedlinePercent\":97.5,\"CloseToTray\":true}");
         var settings = await new SettingsStore(path).LoadAsync();
-        Assert.AreEqual(4, settings.SchemaVersion);
+        Assert.AreEqual(5, settings.SchemaVersion);
         Assert.AreEqual(65d, settings.FirstLedPercent);
         Assert.AreEqual(90d, settings.RedlinePercent);
         Assert.IsTrue(settings.CloseToTray);
         var persisted = await File.ReadAllTextAsync(path);
-        StringAssert.Contains(persisted, "\"SchemaVersion\": 4");
+        StringAssert.Contains(persisted, "\"SchemaVersion\": 5");
+        File.Delete(path);
+    }
+
+    [TestMethod]
+    public async Task SettingsStore_PreservesGameEndpointsAndWatchSelection()
+    {
+        var path = Path.Combine(Path.GetTempPath(), "LogiLeds.Tests", Guid.NewGuid() + ".json");
+        var store = new SettingsStore(path);
+        var configured = LedProfileSettings.Defaults with
+        {
+            TelemetryWatch = TelemetryWatchMode.BeamNg,
+            TelemetryGames =
+            [
+                TelemetryGameSettings.DefaultForza with { BindAddress = "127.0.0.1", Port = 5000 },
+                TelemetryGameSettings.DefaultBeamNg with { Port = 6000, MaxRpm = 9200 }
+            ]
+        };
+
+        await store.SaveAsync(configured);
+        var loaded = await store.LoadAsync();
+
+        Assert.AreEqual(TelemetryWatchMode.BeamNg, loaded.TelemetryWatch);
+        Assert.AreEqual(2, loaded.TelemetryGames.Length);
+        Assert.AreEqual(5000, loaded.TelemetryGames[0].Port);
+        Assert.AreEqual(9200, loaded.TelemetryGames[1].MaxRpm);
         File.Delete(path);
     }
 
@@ -149,9 +176,9 @@ public sealed class ConfigurationAndLearningTests
         Assert.IsTrue(mapping.ConfidencePercent < 60);
     }
 
-    private static ForzaTelemetryFrame Frame(float rpm, byte gear, byte throttle, DateTimeOffset at)
+    private static TelemetryFrame Frame(float rpm, byte gear, byte throttle, DateTimeOffset at)
     {
-        return new ForzaTelemetryFrame(true, 1, 10_000, 900, rpm, at,
+        return new TelemetryFrame(true, 1, 10_000, 900, rpm, at,
             "Forza Horizon Dash", 42, gear, throttle);
     }
 }

@@ -16,7 +16,7 @@ public sealed class LedApplicationService : IAsyncDisposable
     private readonly TimeProvider _timeProvider;
     private readonly IWheelLedController _wheelController;
     private CancellationTokenSource? _animationCts;
-    private ForzaTelemetryFrame? _latestFrame;
+    private TelemetryFrame? _latestFrame;
     private double? _learnedRedlinePercent;
     private bool _manualOutput;
     private Task? _monitorTask;
@@ -131,7 +131,7 @@ public sealed class LedApplicationService : IAsyncDisposable
             }
             catch (SocketException ex)
             {
-                _runtimeError = $"Cannot listen on {Settings.BindAddress}:{Settings.Port}: {ex.Message}";
+                _runtimeError = $"Cannot start telemetry listener: {ex.Message}";
                 PublishSnapshot();
                 throw;
             }
@@ -143,8 +143,13 @@ public sealed class LedApplicationService : IAsyncDisposable
             _wheelController.ClearLeds();
             _runtimeError = null;
             IsRunning = true;
-            _readyAnimationPlayed = false;
+            _readyAnimationPlayed = Settings.ReadyAnimation && _wheelController.IsConnected;
             PublishSnapshot();
+            if (_readyAnimationPlayed)
+            {
+                _animationCts = CancellationTokenSource.CreateLinkedTokenSource(_lifetimeCts.Token);
+                _ = RunReadyAnimationGuardedAsync(_animationCts);
+            }
         }
         finally
         {
@@ -182,13 +187,16 @@ public sealed class LedApplicationService : IAsyncDisposable
         try
         {
             var old = Settings;
-            var endpointChanged = old.BindAddress != settings.BindAddress || old.Port != settings.Port;
-            if (IsRunning && endpointChanged)
+            var telemetryChanged = old.TelemetryWatch != settings.TelemetryWatch ||
+                                   !old.TelemetryGames.SequenceEqual(settings.TelemetryGames);
+            if (IsRunning && telemetryChanged)
             {
                 await _telemetryReceiver.StopAsync();
                 try
                 {
                     await _telemetryReceiver.StartAsync(settings, cancellationToken);
+                    lock (_frameLock) _latestFrame = null;
+                    _learnedRedlinePercent = null;
                 }
                 catch
                 {
@@ -240,9 +248,10 @@ public sealed class LedApplicationService : IAsyncDisposable
 
     public CarTrainingOverview GetCarTrainingOverview()
     {
-        ForzaTelemetryFrame? frame;
+        TelemetryFrame? frame;
         lock (_frameLock) frame = _latestFrame;
-        var live = IsRunning && frame is { IsRaceOn: true, CarOrdinal: not null, EngineMaxRpm: > 0 } &&
+        var live = IsRunning && frame is { Game: TelemetryGame.Forza, IsRaceOn: true,
+            CarOrdinal: not null, EngineMaxRpm: > 0 } &&
                    _timeProvider.GetUtcNow() - frame.Value.ReceivedAt <= TelemetryTimeout;
         var enabled = Settings.LearnPerCarShift && Settings.ProfileMode == RpmProfileMode.Easy;
         var sampling = live && enabled && frame!.Value.Gear is >= 1 and <= 10 &&
@@ -312,7 +321,7 @@ public sealed class LedApplicationService : IAsyncDisposable
         while (await timer.WaitForNextTickAsync(cancellationToken))
         {
             _wheelController.Refresh();
-            ForzaTelemetryFrame? frame;
+            TelemetryFrame? frame;
             lock (_frameLock)
             {
                 frame = _latestFrame;
@@ -325,7 +334,7 @@ public sealed class LedApplicationService : IAsyncDisposable
             if (driving)
             {
                 var activeFrame = frame!.Value;
-                CancelAnimation();
+                if (!_manualOutput) CancelAnimation();
                 if (!_manualOutput)
                 {
                     var definition = _wheelController.CurrentDefinition ?? GetPreviewDefinition();
@@ -394,14 +403,17 @@ public sealed class LedApplicationService : IAsyncDisposable
         }
     }
 
-    private void OnFrameReceived(ForzaTelemetryFrame frame)
+    private void OnFrameReceived(TelemetryFrame frame)
     {
         lock (_frameLock)
         {
+            if (_latestFrame is { } current && current.Game != frame.Game &&
+                frame.ReceivedAt - current.ReceivedAt <= TelemetryTimeout) return;
             _latestFrame = frame;
         }
 
-        if (Settings.LearnPerCarShift && Settings.ProfileMode == RpmProfileMode.Easy)
+        if (frame.Game == TelemetryGame.Forza && Settings.LearnPerCarShift &&
+            Settings.ProfileMode == RpmProfileMode.Easy)
             _learnedRedlinePercent = _redlineLearner.Observe(frame, Settings.GameTitle) ??
                                      _redlineLearner.Get(frame, Settings.GameTitle);
         else
@@ -423,7 +435,7 @@ public sealed class LedApplicationService : IAsyncDisposable
 
     private void PublishSnapshot(string? transientMessage = null)
     {
-        ForzaTelemetryFrame? frame;
+        TelemetryFrame? frame;
         lock (_frameLock)
         {
             frame = _latestFrame;
@@ -446,12 +458,12 @@ public sealed class LedApplicationService : IAsyncDisposable
         var state = GetState(frame, fresh);
         var currentVehicle = frame is { } vehicleFrame && vehicleFrame.CarOrdinal is int carOrdinal
             ? $"Car #{carOrdinal}"
-            : "No vehicle data";
+            : frame is { Game: TelemetryGame.BeamNg } ? "BeamNG vehicle" : "No vehicle data";
         var message = transientMessage ?? _runtimeError ?? state switch
         {
             ReadinessState.ControlPaused => "App control is paused",
             ReadinessState.SearchingForWheel => _wheelController.StatusMessage,
-            ReadinessState.WaitingForTelemetry => $"Listening on {Settings.BindAddress}:{Settings.Port}",
+            ReadinessState.WaitingForTelemetry => "Listening for game telemetry",
             ReadinessState.TelemetryStale => "Telemetry stream stopped",
             ReadinessState.Ready => "Game detected — ready to drive",
             ReadinessState.Driving => "Live RPM control active",
@@ -474,7 +486,7 @@ public sealed class LedApplicationService : IAsyncDisposable
                ?? _wheelController.AvailableDefinitions.FirstOrDefault();
     }
 
-    private ReadinessState GetState(ForzaTelemetryFrame? frame, bool fresh)
+    private ReadinessState GetState(TelemetryFrame? frame, bool fresh)
     {
         if (_runtimeError is not null) return ReadinessState.NeedsAttention;
         if (!IsRunning) return ReadinessState.ControlPaused;

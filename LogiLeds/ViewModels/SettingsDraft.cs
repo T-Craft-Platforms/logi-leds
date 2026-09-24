@@ -1,4 +1,3 @@
-using System.Globalization;
 using LogiLeds.Models;
 using LogiLeds.Services;
 
@@ -7,27 +6,13 @@ namespace LogiLeds.ViewModels;
 /// <summary>Shared editable settings so Save on either configuration page applies the complete draft.</summary>
 public sealed class SettingsDraft : ObservableObject
 {
-    private string _bindAddress = LedProfileSettings.DefaultBindAddress;
     private bool _blinkAtRedline = true, _learnPerCarShift = true, _autoStartControl = true, _closeToTray = true;
     private double _firstLedPercent = LedProfileSettings.DefaultFirstLedPercent;
-    private string _port = LedProfileSettings.DefaultPort.ToString(CultureInfo.InvariantCulture);
     private RpmProfileMode _profileMode;
     private double _redlinePercent = LedProfileSettings.DefaultRedlinePercent;
     private WheelOption? _selectedWheel;
     private AppTheme _theme = AppTheme.System;
     private bool _usePointerCursors;
-
-    public string BindAddress
-    {
-        get => _bindAddress;
-        set => SetField(ref _bindAddress, value);
-    }
-
-    public string Port
-    {
-        get => _port;
-        set => SetField(ref _port, value);
-    }
 
     public double FirstLedPercent
     {
