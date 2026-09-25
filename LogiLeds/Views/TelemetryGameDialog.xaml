@@ -2,6 +2,8 @@
     x:Class="LogiLeds.Views.TelemetryGameDialog"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:controls="clr-namespace:LogiLeds.Controls"
+    xmlns:shell="clr-namespace:System.Windows.Shell;assembly=PresentationFramework"
     Title="Game telemetry"
     Width="450"
     Background="{DynamicResource WindowBrush}"
@@ -9,61 +11,80 @@
     ResizeMode="NoResize"
     SizeToContent="Height"
     WindowStartupLocation="CenterOwner">
-    <StackPanel Margin="24">
-        <TextBlock
-            x:Name="Heading"
-            FontSize="21"
-            FontWeight="SemiBold" />
-        <TextBlock
-            Margin="0,5,0,20"
-            Foreground="{DynamicResource MutedBrush}"
-            Text="Set the address and port LogiLeds listens on. Send game telemetry to this PC at the same port."
-            TextWrapping="Wrap" />
-        <TextBlock Margin="0,15,0,6" Text="Bind address" />
-        <TextBox
-            x:Name="AddressInput"
-            MinHeight="36"
-            Padding="10,7"
-            VerticalContentAlignment="Center" />
-        <TextBlock Margin="0,15,0,6" Text="UDP port" />
-        <TextBox
-            x:Name="PortInput"
-            MinHeight="36"
-            Padding="10,7"
-            VerticalContentAlignment="Center" />
-        <StackPanel x:Name="MaxRpmRow">
-            <TextBlock Margin="0,15,0,6" Text="Maximum engine RPM" />
-            <TextBox
-                x:Name="MaxRpmInput"
-                MinHeight="36"
-                Padding="10,7"
-                VerticalContentAlignment="Center" />
-            <TextBlock
-                Margin="0,5,0,0"
-                FontSize="12"
-                Foreground="{DynamicResource MutedBrush}"
-                Text="BeamNG OutGauge does not send max RPM. Set this for the vehicle you're driving."
-                TextWrapping="Wrap" />
-        </StackPanel>
-        <TextBlock
-            x:Name="ErrorText"
-            Margin="0,10,0,0"
-            Foreground="{DynamicResource DangerBrush}"
-            TextWrapping="Wrap" />
-        <Grid Margin="0,20,0,0">
-            <StackPanel HorizontalAlignment="Right" Orientation="Horizontal">
-                <Button
-                    MinWidth="80"
-                    Margin="0,0,8,0"
-                    Content="Cancel"
-                    IsCancel="True"
-                    Style="{StaticResource GhostButton}" />
-                <Button
-                    MinWidth="80"
-                    Click="Save_OnClick"
-                    Content="Apply"
-                    IsDefault="True" />
+    <shell:WindowChrome.WindowChrome>
+        <shell:WindowChrome
+            CaptionHeight="0"
+            CornerRadius="0"
+            GlassFrameThickness="0"
+            ResizeBorderThickness="0" />
+    </shell:WindowChrome.WindowChrome>
+    <Border
+        Background="{DynamicResource WindowBrush}"
+        BorderBrush="{DynamicResource BorderBrush}"
+        BorderThickness="1">
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="54" />
+                <RowDefinition Height="*" />
+            </Grid.RowDefinitions>
+            <controls:DialogTitleBar Title="Game telemetry" Grid.Row="0" />
+            <StackPanel Grid.Row="1" Margin="24">
+                <TextBlock
+                    x:Name="Heading"
+                    FontSize="21"
+                    FontWeight="SemiBold" />
+                <TextBlock
+                    Margin="0,5,0,20"
+                    Foreground="{DynamicResource MutedBrush}"
+                    Text="Set the address and port LogiLeds listens on. Send game telemetry to this PC at the same port."
+                    TextWrapping="Wrap" />
+                <TextBlock Margin="0,15,0,6" Text="Bind address" />
+                <TextBox
+                    x:Name="AddressInput"
+                    MinHeight="36"
+                    Padding="10,7"
+                    VerticalContentAlignment="Center" />
+                <TextBlock Margin="0,15,0,6" Text="UDP port" />
+                <TextBox
+                    x:Name="PortInput"
+                    MinHeight="36"
+                    Padding="10,7"
+                    VerticalContentAlignment="Center" />
+                <StackPanel x:Name="MaxRpmRow">
+                    <TextBlock Margin="0,15,0,6" Text="Maximum engine RPM" />
+                    <TextBox
+                        x:Name="MaxRpmInput"
+                        MinHeight="36"
+                        Padding="10,7"
+                        VerticalContentAlignment="Center" />
+                    <TextBlock
+                        Margin="0,5,0,0"
+                        FontSize="12"
+                        Foreground="{DynamicResource MutedBrush}"
+                        Text="BeamNG OutGauge does not send max RPM. Set this for the vehicle you're driving."
+                        TextWrapping="Wrap" />
+                </StackPanel>
+                <TextBlock
+                    x:Name="ErrorText"
+                    Margin="0,10,0,0"
+                    Foreground="{DynamicResource DangerBrush}"
+                    TextWrapping="Wrap" />
+                <Grid Margin="0,20,0,0">
+                    <StackPanel HorizontalAlignment="Right" Orientation="Horizontal">
+                        <Button
+                            MinWidth="80"
+                            Margin="0,0,8,0"
+                            Content="Cancel"
+                            IsCancel="True"
+                            Style="{StaticResource GhostButton}" />
+                        <Button
+                            MinWidth="80"
+                            Click="Save_OnClick"
+                            Content="Apply"
+                            IsDefault="True" />
+                    </StackPanel>
+                </Grid>
             </StackPanel>
         </Grid>
-    </StackPanel>
+    </Border>
 </Window>
