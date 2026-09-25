@@ -4,13 +4,65 @@ on:
   push:
     tags:
       - 'v*.*.*'
+  workflow_dispatch:
 
 permissions:
   contents: read
 
 jobs:
+  version:
+    name: Resolve release version
+    runs-on: windows-latest
+    outputs:
+      version: ${{ steps.release_version.outputs.version }}
+      tag: ${{ steps.release_version.outputs.tag }}
+    steps:
+      - name: Check out full history
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up GitVersion
+        if: github.event_name == 'workflow_dispatch'
+        uses: gittools/actions/gitversion/setup@v3
+        with:
+          versionSpec: 6.x
+
+      - name: Calculate next version
+        if: github.event_name == 'workflow_dispatch'
+        id: gitversion
+        uses: gittools/actions/gitversion/execute@v3
+
+      - name: Resolve version and tag
+        id: release_version
+        shell: pwsh
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          REF_NAME: ${{ github.ref_name }}
+          GITVERSION: ${{ steps.gitversion.outputs.majorMinorPatch }}
+        run: |
+          if ($env:EVENT_NAME -eq 'push') {
+            if ($env:REF_NAME -notmatch '^v(?<version>\d+\.\d+\.\d+)$') {
+              throw "Release tags must use the vX.Y.Z format; received '$env:REF_NAME'."
+            }
+            $version = $Matches.version
+          }
+          else {
+            if ($env:REF_NAME -ne 'main') {
+              throw 'Manual releases must be dispatched from main.'
+            }
+            if ($env:GITVERSION -notmatch '^\d+\.\d+\.\d+$') {
+              throw "GitVersion returned an invalid release version: '$env:GITVERSION'."
+            }
+            $version = $env:GITVERSION
+          }
+
+          "version=$version" >> $env:GITHUB_OUTPUT
+          "tag=v$version" >> $env:GITHUB_OUTPUT
+
   validate:
     name: Validate and package
+    needs: version
     runs-on: windows-latest
     steps:
       - name: Check out source
@@ -22,6 +74,7 @@ jobs:
           dotnet-version: 10.0.x
 
       - name: Validate release tag
+        if: github.event_name == 'push'
         shell: pwsh
         run: |
           if ($env:GITHUB_REF_NAME -notmatch '^v\d+\.\d+\.\d+$') {
@@ -36,13 +89,14 @@ jobs:
 
       - name: Publish Windows x64 application
         shell: pwsh
+        env:
+          RELEASE_VERSION: ${{ needs.version.outputs.version }}
         run: |
-          $version = $env:GITHUB_REF_NAME.Substring(1)
           dotnet publish .\LogiLeds\LogiLeds.csproj `
             -c Release `
             -r win-x64 `
             --self-contained true `
-            -p:Version=$version `
+            -p:Version=$env:RELEASE_VERSION `
             -o .\artifacts\publish
 
           if ($LASTEXITCODE -ne 0) {
@@ -52,7 +106,7 @@ jobs:
           New-Item -ItemType Directory -Path .\artifacts\release -Force | Out-Null
           Compress-Archive `
             -Path .\artifacts\publish\* `
-            -DestinationPath ".\artifacts\release\LogiLeds-$env:GITHUB_REF_NAME-win-x64.zip" `
+            -DestinationPath ".\artifacts\release\LogiLeds-v$env:RELEASE_VERSION-win-x64.zip" `
             -CompressionLevel Optimal
 
       - name: Upload release package
@@ -65,8 +119,11 @@ jobs:
 
   release:
     name: Create GitHub release
-    needs: validate
+    needs: [version, validate]
     runs-on: windows-latest
+    concurrency:
+      group: release-${{ needs.version.outputs.tag }}
+      cancel-in-progress: false
     permissions:
       contents: write
     steps:
@@ -81,10 +138,34 @@ jobs:
           name: release-package
           path: artifacts/release
 
+      - name: Create and push computed tag
+        if: github.event_name == 'workflow_dispatch'
+        shell: pwsh
+        env:
+          TAG_NAME: ${{ needs.version.outputs.tag }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          git ls-remote --exit-code --tags origin "refs/tags/$env:TAG_NAME" 2>$null | Out-Null
+          if ($LASTEXITCODE -eq 0) {
+            throw "Tag '$env:TAG_NAME' already exists. GitVersion did not produce a new release version."
+          }
+
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git tag --annotate $env:TAG_NAME --message "Release $env:TAG_NAME" $env:GITHUB_SHA
+          if ($LASTEXITCODE -ne 0) {
+            throw "Failed to create tag '$env:TAG_NAME'."
+          }
+
+          git push origin $env:TAG_NAME
+          if ($LASTEXITCODE -ne 0) {
+            throw "Failed to push tag '$env:TAG_NAME'."
+          }
+
       - name: Generate release notes
         shell: pwsh
         env:
-          TAG_NAME: ${{ github.ref_name }}
+          TAG_NAME: ${{ needs.version.outputs.tag }}
           REPOSITORY: ${{ github.repository }}
         run: |
           .\.github\scripts\Generate-ReleaseNotes.ps1 `
@@ -96,7 +177,7 @@ jobs:
         shell: pwsh
         env:
           GH_TOKEN: ${{ github.token }}
-          TAG_NAME: ${{ github.ref_name }}
+          TAG_NAME: ${{ needs.version.outputs.tag }}
         run: |
           $ErrorActionPreference = 'Stop'
           $asset = "artifacts/release/LogiLeds-$env:TAG_NAME-win-x64.zip"
