@@ -46,7 +46,10 @@
                 <RowDefinition Height="*" />
             </Grid.RowDefinitions>
             <controls:WindowTitleBar Grid.Row="0" />
-            <ContentControl Grid.Row="1" Content="{Binding SelectedPage}" />
+            <ContentPresenter
+                x:Name="PageTransitionPresenter"
+                Grid.Row="1"
+                Content="{Binding SelectedPage}" />
         </Grid>
     </Border>
 </Window>

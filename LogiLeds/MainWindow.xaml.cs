@@ -4,6 +4,7 @@ using System.IO;
 using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Interop;
+using System.Windows.Threading;
 using LogiLeds.Controls;
 using LogiLeds.ViewModels;
 using Application = System.Windows.Application;
@@ -19,6 +20,7 @@ public partial class MainWindow : Window
     private readonly NotifyIcon _trayIcon;
     private readonly MainViewModel _viewModel;
     private bool _allowClose, _shownTrayHint, _exiting, _trayDisposed, _startupComplete;
+    private int _lastSelectedTab;
 
     public MainWindow(MainViewModel viewModel)
     {
@@ -26,6 +28,7 @@ public partial class MainWindow : Window
         OwnedWindowDimmer.Attach(this);
         UpdateWindowChromeMetrics();
         _viewModel = viewModel;
+        _lastSelectedTab = viewModel.SelectedTab;
         DataContext = viewModel;
         _viewModel.ExitRequested += async (_, _) => await ExitAsync();
         _viewModel.PropertyChanged += OnMainViewModelPropertyChanged;
@@ -109,6 +112,16 @@ public partial class MainWindow : Window
 
     private void OnMainViewModelPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
+        if (e.PropertyName == nameof(MainViewModel.SelectedTab))
+        {
+            var selectedTab = _viewModel.SelectedTab;
+            var direction = Math.Sign(selectedTab - _lastSelectedTab);
+            _lastSelectedTab = selectedTab;
+            if (direction != 0)
+                Dispatcher.BeginInvoke(DispatcherPriority.Render,
+                    new Action(() => TransitionAnimator.Play(PageTransitionPresenter, direction)));
+        }
+
         if (e.PropertyName == nameof(MainViewModel.CloseToTray)) UpdateTrayIconVisibility();
     }
 

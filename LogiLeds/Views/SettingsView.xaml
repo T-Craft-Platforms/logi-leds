@@ -1,7 +1,8 @@
 <UserControl
     x:Class="LogiLeds.Views.SettingsView"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:controls="clr-namespace:LogiLeds.Controls">
     <UserControl.Resources>
         <Style x:Key="SettingsTabsStyle" TargetType="TabControl">
             <Setter Property="Template">
@@ -22,7 +23,11 @@
                                 VerticalContentAlignment="Top"
                                 HorizontalScrollBarVisibility="Disabled"
                                 VerticalScrollBarVisibility="Auto">
-                                <ContentPresenter VerticalAlignment="Top" ContentSource="SelectedContent" />
+                                <ContentPresenter
+                                    VerticalAlignment="Top"
+                                    controls:TransitionAnimator.Index="{Binding SelectedIndex, RelativeSource={RelativeSource AncestorType={x:Type TabControl}}}"
+                                    controls:TransitionAnimator.IsEnabled="True"
+                                    ContentSource="SelectedContent" />
                             </ScrollViewer>
                         </Grid>
                     </ControlTemplate>

@@ -105,7 +105,7 @@
                                 </Button>
                             </StackPanel>
                         </Grid>
-                        <Grid>
+                        <Grid controls:TransitionAnimator.Index="0" controls:TransitionAnimator.IsActive="{Binding IsEasyMode}">
                             <Grid.Style>
                                 <Style TargetType="Grid">
                                     <Setter Property="Visibility" Value="Collapsed" />
@@ -160,7 +160,7 @@
                                 </Grid>
                             </StackPanel>
                         </Grid>
-                        <Grid>
+                        <Grid controls:TransitionAnimator.Index="1" controls:TransitionAnimator.IsActive="{Binding IsAdvancedMode}">
                             <Grid.Style>
                                 <Style TargetType="Grid">
                                     <Setter Property="Visibility" Value="Collapsed" />
