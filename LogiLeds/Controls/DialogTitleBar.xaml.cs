@@ -25,7 +25,12 @@ public partial class DialogTitleBar : UserControl
         {
             if (Window.GetWindow(this) is { } window)
             {
-                window.StateChanged += (_, _) => UpdateMaximizeIcon(window);
+                window.StateChanged += (_, _) =>
+                {
+                    if (window.WindowState == WindowState.Minimized)
+                        window.WindowState = WindowState.Normal;
+                    UpdateMaximizeIcon(window);
+                };
                 UpdateMaximizeIcon(window);
             }
         };
@@ -66,7 +71,7 @@ public partial class DialogTitleBar : UserControl
 
     private void TitleBar_OnMouseRightButtonUp(object sender, MouseButtonEventArgs e)
     {
-        if (Window.GetWindow(this) is { } window)
+        if (ShowMinimizeButton && Window.GetWindow(this) is { } window)
             SystemCommands.ShowSystemMenu(window, window.PointToScreen(e.GetPosition(this)));
     }
 

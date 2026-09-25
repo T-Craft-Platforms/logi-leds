@@ -16,14 +16,9 @@
         </Grid.ColumnDefinitions>
         <StackPanel
             Grid.Column="0"
-            Margin="16,0"
+            Margin="20,0"
             VerticalAlignment="Center"
             Orientation="Horizontal">
-            <ContentControl
-                Width="24"
-                Height="24"
-                Margin="0,0,10,0"
-                Template="{StaticResource BrandMarkTemplate}" />
             <TextBlock
                 VerticalAlignment="Center"
                 FontWeight="SemiBold"

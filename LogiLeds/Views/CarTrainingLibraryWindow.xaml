@@ -54,8 +54,7 @@
             <controls:DialogTitleBar
                 Title="Car trainings"
                 Grid.Row="0"
-                ShowMaximizeButton="True"
-                ShowMinimizeButton="True" />
+                ShowMaximizeButton="True" />
             <Grid Grid.Row="1" Margin="24">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto" />
