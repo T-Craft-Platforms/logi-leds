@@ -1,5 +1,8 @@
-mode: Mainline
+workflow: GitHubFlow/v1
 next-version: 1.0.0
+strategies:
+  - ConfiguredNextVersion
+  - Mainline
 branches:
   main:
     regex: ^main$
