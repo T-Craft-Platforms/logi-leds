@@ -1,0 +1,131 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: Validate and package
+    runs-on: windows-latest
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Validate release tag
+        shell: pwsh
+        run: |
+          if ($env:GITHUB_REF_NAME -notmatch '^v\d+\.\d+\.\d+$') {
+            throw "Release tags must use the vX.Y.Z format; received '$env:GITHUB_REF_NAME'."
+          }
+
+      - name: Build
+        run: dotnet build .\LogiLeds.sln -c Release
+
+      - name: Test
+        run: dotnet test .\LogiLeds.Tests\LogiLeds.Tests.csproj -c Release --no-build
+
+      - name: Publish Windows x64 application
+        shell: pwsh
+        run: |
+          $version = $env:GITHUB_REF_NAME.Substring(1)
+          dotnet publish .\LogiLeds\LogiLeds.csproj `
+            -c Release `
+            -r win-x64 `
+            --self-contained true `
+            -p:Version=$version `
+            -o .\artifacts\publish
+
+          if ($LASTEXITCODE -ne 0) {
+            throw 'dotnet publish failed.'
+          }
+
+          New-Item -ItemType Directory -Path .\artifacts\release -Force | Out-Null
+          Compress-Archive `
+            -Path .\artifacts\publish\* `
+            -DestinationPath ".\artifacts\release\LogiLeds-$env:GITHUB_REF_NAME-win-x64.zip" `
+            -CompressionLevel Optimal
+
+      - name: Upload release package
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-package
+          path: artifacts/release/LogiLeds-*-win-x64.zip
+          if-no-files-found: error
+          retention-days: 1
+
+  release:
+    name: Create GitHub release
+    needs: validate
+    runs-on: windows-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Check out full history
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Download release package
+        uses: actions/download-artifact@v4
+        with:
+          name: release-package
+          path: artifacts/release
+
+      - name: Generate release notes
+        shell: pwsh
+        env:
+          TAG_NAME: ${{ github.ref_name }}
+          REPOSITORY: ${{ github.repository }}
+        run: |
+          .\.github\scripts\Generate-ReleaseNotes.ps1 `
+            -Tag $env:TAG_NAME `
+            -Repository $env:REPOSITORY `
+            -OutputPath "$env:RUNNER_TEMP\release-notes.md"
+
+      - name: Create or complete GitHub release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG_NAME: ${{ github.ref_name }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $asset = "artifacts/release/LogiLeds-$env:TAG_NAME-win-x64.zip"
+          $notes = "$env:RUNNER_TEMP\release-notes.md"
+
+          if (-not (Test-Path -LiteralPath $asset)) {
+            throw "Release package not found: $asset"
+          }
+
+          $existingRelease = gh release view $env:TAG_NAME --json tagName,assets 2>$null
+          $releaseExists = $LASTEXITCODE -eq 0
+
+          if (-not $releaseExists) {
+            gh release create $env:TAG_NAME $asset `
+              --title "LogiLeds $env:TAG_NAME" `
+              --notes-file $notes `
+              --verify-tag
+
+            if ($LASTEXITCODE -ne 0) {
+              throw 'Failed to create the GitHub release.'
+            }
+          }
+          else {
+            $release = $existingRelease | ConvertFrom-Json
+            $assetExists = $release.assets | Where-Object name -eq (Split-Path -Leaf $asset)
+            if (-not $assetExists) {
+              gh release upload $env:TAG_NAME $asset
+              if ($LASTEXITCODE -ne 0) {
+                throw 'Failed to upload the release package.'
+              }
+            }
+          }

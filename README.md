@@ -46,4 +46,15 @@ dotnet test .\LogiLeds.Tests\LogiLeds.Tests.csproj -c Release
 dotnet publish .\LogiLeds\LogiLeds.csproj -c Release -r win-x64 --self-contained true -o .\artifacts\publish
 ```
 
+## Releases
+
+Releases are created from version tags on `main`. After the validation workflow passes, create and push a `vX.Y.Z` tag to run the release workflow:
+
+```powershell
+git tag v1.2.3
+git push origin v1.2.3
+```
+
+The release workflow builds and tests the tagged commit, publishes a self-contained Windows x64 ZIP, and creates the matching GitHub release if one does not already exist. Release notes follow the format in `.github/RELEASE_NOTES_TEMPLATE.md` and are generated from commits since the previous version tag.
+
 Logitech G HUB or Logitech's current wheel driver should remain installed for normal device/force-feedback operation. LogiLeds opens only the LED-capable HID interface and does not configure steering, force feedback, pedals, firmware, or onboard profiles.
