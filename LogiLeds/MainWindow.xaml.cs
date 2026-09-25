@@ -4,6 +4,7 @@ using System.IO;
 using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Interop;
+using LogiLeds.Controls;
 using LogiLeds.ViewModels;
 using Application = System.Windows.Application;
 using Icon = System.Drawing.Icon;
@@ -22,6 +23,7 @@ public partial class MainWindow : Window
     public MainWindow(MainViewModel viewModel)
     {
         InitializeComponent();
+        OwnedWindowDimmer.Attach(this);
         UpdateWindowChromeMetrics();
         _viewModel = viewModel;
         DataContext = viewModel;

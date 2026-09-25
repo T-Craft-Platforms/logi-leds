@@ -1,6 +1,7 @@
 using System.Collections.ObjectModel;
 using System.Windows;
 using System.Windows.Threading;
+using LogiLeds.Controls;
 using LogiLeds.ViewModels;
 using Brush = System.Windows.Media.Brush;
 
@@ -15,6 +16,7 @@ public partial class CarTrainingLibraryWindow : Window
     public CarTrainingLibraryWindow(RpmProfileViewModel profile)
     {
         InitializeComponent();
+        OwnedWindowDimmer.Attach(this);
         _profile = profile;
         DataContext = this;
         Refresh();
