@@ -103,7 +103,6 @@ public partial class MainWindow : Window
     private void OnStateChanged(object? sender, EventArgs e)
     {
         UpdateWindowChromeMetrics();
-        if (_startupComplete && WindowState == WindowState.Minimized && _viewModel.MinimizeToTray) HideToTray();
     }
 
     private void OnMainViewModelPropertyChanged(object? sender, PropertyChangedEventArgs e)
