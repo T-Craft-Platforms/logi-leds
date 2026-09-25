@@ -31,9 +31,12 @@ internal static class OwnedWindowDimmer
         var overlay = new Border
         {
             Background = new SolidColorBrush(Color.FromArgb(0xAA, 0, 0, 0)),
-            IsHitTestVisible = false,
+            IsHitTestVisible = true,
             Visibility = Visibility.Collapsed
         };
+        overlay.PreviewMouseDown += (_, args) => args.Handled = true;
+        overlay.PreviewMouseUp += (_, args) => args.Handled = true;
+        overlay.PreviewMouseWheel += (_, args) => args.Handled = true;
         Panel.SetZIndex(overlay, 1);
         root.Children.Add(overlay);
         window.SetValue(OverlayProperty, overlay);
@@ -44,7 +47,7 @@ internal static class OwnedWindowDimmer
     {
         if (window.GetValue(OverlayProperty) is not FrameworkElement overlay) return;
 
-        overlay.Visibility = !window.IsActive && window.OwnedWindows
+        overlay.Visibility = window.OwnedWindows
             .Cast<Window>()
             .Any(owned => owned.IsVisible && owned.WindowState != WindowState.Minimized)
             ? Visibility.Visible
