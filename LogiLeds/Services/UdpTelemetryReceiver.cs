@@ -6,9 +6,9 @@ namespace LogiLeds.Services;
 
 public sealed class UdpTelemetryReceiver(TimeProvider? timeProvider = null) : ITelemetryReceiver
 {
+    private readonly List<UdpClient> _clients = [];
     private readonly SemaphoreSlim _lifecycleGate = new(1, 1);
     private readonly TimeProvider _timeProvider = timeProvider ?? TimeProvider.System;
-    private readonly List<UdpClient> _clients = [];
     private CancellationTokenSource? _receiveCts;
     private Task[] _receiveTasks = [];
 
@@ -29,7 +29,7 @@ public sealed class UdpTelemetryReceiver(TimeProvider? timeProvider = null) : IT
             if (IsRunning) return;
 
             var configuredGames = settings.TelemetryGames.Where(game =>
-                settings.TelemetryWatch.Watches(game.Game)).ToArray();
+                game.Enabled && settings.TelemetryWatch.Watches(game.Game)).ToArray();
             var clients = new List<(TelemetryGameSettings Game, UdpClient Client)>();
             try
             {

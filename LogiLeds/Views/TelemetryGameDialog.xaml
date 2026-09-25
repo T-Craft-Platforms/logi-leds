@@ -19,17 +19,6 @@
             Foreground="{DynamicResource MutedBrush}"
             Text="Set the address and port LogiLeds listens on. Send game telemetry to this PC at the same port."
             TextWrapping="Wrap" />
-        <TextBlock Margin="0,0,0,6" Text="Game" />
-        <ComboBox
-            x:Name="GameSelector"
-            MinHeight="36"
-            SelectionChanged="GameSelector_OnSelectionChanged">
-            <ComboBox.ItemTemplate>
-                <DataTemplate>
-                    <TextBlock Text="{Binding Name}" />
-                </DataTemplate>
-            </ComboBox.ItemTemplate>
-        </ComboBox>
         <TextBlock Margin="0,15,0,6" Text="Bind address" />
         <TextBox
             x:Name="AddressInput"
@@ -62,18 +51,7 @@
             Foreground="{DynamicResource DangerBrush}"
             TextWrapping="Wrap" />
         <Grid Margin="0,20,0,0">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition />
-                <ColumnDefinition Width="Auto" />
-            </Grid.ColumnDefinitions>
-            <Button
-                x:Name="RemoveButton"
-                Grid.Column="0"
-                HorizontalAlignment="Left"
-                Click="Remove_OnClick"
-                Content="Remove game"
-                Style="{StaticResource GhostButton}" />
-            <StackPanel Grid.Column="1" Orientation="Horizontal">
+            <StackPanel HorizontalAlignment="Right" Orientation="Horizontal">
                 <Button
                     MinWidth="80"
                     Margin="0,0,8,0"
@@ -83,7 +61,7 @@
                 <Button
                     MinWidth="80"
                     Click="Save_OnClick"
-                    Content="Save"
+                    Content="Apply"
                     IsDefault="True" />
             </StackPanel>
         </Grid>

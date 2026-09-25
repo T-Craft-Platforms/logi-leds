@@ -31,15 +31,13 @@ public static class TelemetryWatchModeExtensions
 public sealed record TelemetryGameSettings
 {
     public TelemetryGame Game { get; init; }
+    public bool Enabled { get; set; } = true;
     public string BindAddress { get; init; } = "0.0.0.0";
     public int Port { get; init; }
     public int MaxRpm { get; init; } = 7000;
 
     [JsonIgnore] public string Name => Game == TelemetryGame.Forza ? "Forza" : "BeamNG.drive";
     [JsonIgnore] public string Endpoint => $"{BindAddress}:{Port}";
-    [JsonIgnore] public string Detail => Game == TelemetryGame.BeamNg
-        ? $"OutGauge · {Endpoint} · {MaxRpm:N0} max RPM"
-        : $"Data Out · {Endpoint}";
 
     public static TelemetryGameSettings DefaultForza => new() { Game = TelemetryGame.Forza, Port = 1024 };
     public static TelemetryGameSettings DefaultBeamNg => new() { Game = TelemetryGame.BeamNg, Port = 4444 };

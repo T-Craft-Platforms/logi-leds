@@ -37,7 +37,6 @@ public sealed class SettingsViewModel : ObservableObject, IDisposable
     public ObservableCollection<TelemetryGameSettings> TelemetryGames { get; } = [];
     public ObservableCollection<TelemetryWatchOption> WatchOptions { get; } = [];
     public IReadOnlyList<AppTheme> Themes { get; } = Enum.GetValues<AppTheme>();
-    public event EventHandler? TelemetryChanged;
     public ICommand TestCommand => _testCommand;
     public ICommand StartStopCommand => _startStopCommand;
 
@@ -52,8 +51,6 @@ public sealed class SettingsViewModel : ObservableObject, IDisposable
     }
 
     public TelemetryWatchMode WatchMode => SelectedWatch?.Mode ?? TelemetryWatchMode.Auto;
-
-    public bool CanAddGame => TelemetryGames.Count < Enum.GetValues<TelemetryGame>().Length;
 
     public bool AutoStartControl
     {
@@ -96,6 +93,8 @@ public sealed class SettingsViewModel : ObservableObject, IDisposable
         _service.SnapshotChanged -= OnSnapshotChanged;
     }
 
+    public event EventHandler? TelemetryChanged;
+
     public void Initialize(LedProfileSettings settings, IReadOnlyList<WheelDefinition> wheels)
     {
         WheelOptions.Clear();
@@ -103,53 +102,58 @@ public sealed class SettingsViewModel : ObservableObject, IDisposable
         foreach (var wheel in wheels) WheelOptions.Add(new WheelOption(wheel.Id, wheel.DisplayName));
         SelectedWheel = WheelOptions.FirstOrDefault(x => x.Id == settings.PreferredWheelId) ?? WheelOptions[0];
         TelemetryGames.Clear();
-        foreach (var game in settings.TelemetryGames) TelemetryGames.Add(game);
+        var usedPorts = settings.TelemetryGames.Select(item => item.Port).ToHashSet();
+        foreach (var game in Enum.GetValues<TelemetryGame>())
+        {
+            var configured = settings.TelemetryGames.FirstOrDefault(item => item.Game == game);
+            var fallback = CreateFallbackGame(game, usedPorts);
+            TelemetryGames.Add(configured ?? fallback);
+            if (configured is null) usedPorts.Add(fallback.Port);
+        }
+
+        if (!TelemetryGames.Any(game => game.Enabled)) TelemetryGames[0].Enabled = true;
         RefreshWatchOptions(settings.TelemetryWatch);
-        OnPropertyChanged(nameof(CanAddGame));
     }
 
-    public void AddGame()
+    private static TelemetryGameSettings CreateFallbackGame(TelemetryGame game, ISet<int> usedPorts)
     {
-        var available = Enum.GetValues<TelemetryGame>()
-            .Where(game => TelemetryGames.All(existing => existing.Game != game)).ToArray();
-        if (available.Length == 0) return;
-        var result = TelemetryGameDialog.Show(Application.Current?.MainWindow, null, available,
-            TelemetryGames.Select(game => game.Port));
-        if (result?.Game is not { } game) return;
-        TelemetryGames.Add(game);
+        var fallback = game == TelemetryGame.Forza
+            ? TelemetryGameSettings.DefaultForza
+            : TelemetryGameSettings.DefaultBeamNg with { Enabled = false };
+        while (usedPorts.Contains(fallback.Port)) fallback = fallback with { Port = fallback.Port + 1 };
+        return fallback;
+    }
+
+    public bool SetGameEnabled(TelemetryGameSettings game, bool enabled)
+    {
+        if (!TelemetryGames.Contains(game)) return false;
+        if (!enabled && TelemetryGames.All(item => ReferenceEquals(item, game) || !item.Enabled)) return false;
+        game.Enabled = enabled;
         RefreshWatchOptions(WatchMode);
-        OnPropertyChanged(nameof(CanAddGame));
         TelemetryChanged?.Invoke(this, EventArgs.Empty);
+        return true;
     }
 
-    public void ManageGame(TelemetryGameSettings game)
+    public void ConfigureGame(TelemetryGameSettings game)
     {
-        var result = TelemetryGameDialog.Show(Application.Current?.MainWindow, game, [game.Game],
-            TelemetryGames.Where(other => other != game).Select(other => other.Port), TelemetryGames.Count > 1);
+        var result = TelemetryGameDialog.Show(Application.Current?.MainWindow, game,
+            TelemetryGames.Where(other => other != game).Select(other => other.Port));
         if (result is null) return;
         var index = TelemetryGames.IndexOf(game);
         if (index < 0) return;
-        if (result.Remove)
-        {
-            if (TelemetryGames.Count == 1) return;
-            TelemetryGames.RemoveAt(index);
-            RefreshWatchOptions(WatchMode);
-            OnPropertyChanged(nameof(CanAddGame));
-        }
-        else if (result.Game is { } updated)
-        {
-            TelemetryGames[index] = updated;
-        }
+        if (result.Game is not { } updated) return;
+        TelemetryGames[index] = updated with { Enabled = game.Enabled };
         TelemetryChanged?.Invoke(this, EventArgs.Empty);
     }
 
     private void RefreshWatchOptions(TelemetryWatchMode preferred)
     {
         WatchOptions.Clear();
-        WatchOptions.Add(new TelemetryWatchOption(TelemetryWatchMode.Auto, "Auto · first active game"));
-        foreach (var game in TelemetryGames)
+        WatchOptions.Add(new TelemetryWatchOption(TelemetryWatchMode.Auto, "Auto-detect (recommended)"));
+        foreach (var game in TelemetryGames.Where(game => game.Enabled))
             WatchOptions.Add(new TelemetryWatchOption(game.Game == TelemetryGame.Forza
-                ? TelemetryWatchMode.Forza : TelemetryWatchMode.BeamNg, game.Name));
+                ? TelemetryWatchMode.Forza
+                : TelemetryWatchMode.BeamNg, game.Name));
         SelectedWatch = WatchOptions.FirstOrDefault(option => option.Mode == preferred) ?? WatchOptions[0];
     }
 

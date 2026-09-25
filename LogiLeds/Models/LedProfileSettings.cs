@@ -66,6 +66,7 @@ public sealed record LedProfileSettings
         }
 
         if (!Enum.IsDefined(TelemetryWatch) || TelemetryGames is null || TelemetryGames.Length == 0 ||
+            !TelemetryGames.Any(game => game is not null && game.Enabled) ||
             TelemetryGames.Any(game => game is null || !Enum.IsDefined(game.Game)) ||
             TelemetryGames.Select(game => game.Game).Distinct().Count() != TelemetryGames.Length ||
             TelemetryGames.Select(game => game.Port).Distinct().Count() != TelemetryGames.Length)
@@ -75,10 +76,11 @@ public sealed record LedProfileSettings
         }
 
         foreach (var game in TelemetryGames)
-            if (!game.TryValidate(out error)) return false;
+            if (!game.TryValidate(out error))
+                return false;
 
         if (TelemetryWatch != TelemetryWatchMode.Auto &&
-            !TelemetryGames.Any(game => TelemetryWatch.Watches(game.Game)))
+            !TelemetryGames.Any(game => game.Enabled && TelemetryWatch.Watches(game.Game)))
         {
             error = "Choose a configured game to watch, or select Auto.";
             return false;
