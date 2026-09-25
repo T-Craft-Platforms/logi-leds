@@ -66,7 +66,7 @@ public partial class DialogTitleBar : UserControl
             return;
         }
 
-        window.DragMove();
+        WindowDragHelper.BeginDrag(window);
     }
 
     private void TitleBar_OnMouseRightButtonUp(object sender, MouseButtonEventArgs e)

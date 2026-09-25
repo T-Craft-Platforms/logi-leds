@@ -33,23 +33,7 @@ public partial class WindowTitleBar : UserControl
             window.WindowState =
                 window.WindowState == WindowState.Maximized ? WindowState.Normal : WindowState.Maximized;
         }
-        else
-        {
-            if (window.WindowState == WindowState.Maximized)
-            {
-                var pointer = e.GetPosition(window);
-                var screenPointer = window.PointToScreen(pointer);
-                var restoreWidth = window.RestoreBounds.Width;
-                var horizontalRatio = window.ActualWidth <= 0
-                    ? 0.5
-                    : Math.Clamp(pointer.X / window.ActualWidth, 0.05, 0.95);
-                window.WindowState = WindowState.Normal;
-                window.Left = screenPointer.X - restoreWidth * horizontalRatio;
-                window.Top = screenPointer.Y - pointer.Y;
-            }
-
-            window.DragMove();
-        }
+        else WindowDragHelper.BeginDrag(window);
     }
 
     private void TitleBar_OnMouseRightButtonUp(object sender, MouseButtonEventArgs e)
