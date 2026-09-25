@@ -56,30 +56,9 @@
                                         </Style.Triggers>
                                     </Style>
                                 </StackPanel.Style>
-                                <Button
-                                    Margin="0,0,8,0"
-                                    Command="{Binding ResetProfileCommand}"
-                                    Content="Reset"
-                                    Style="{StaticResource GhostButton}" />
-                                <Button
-                                    Margin="0,0,6,0"
-                                    Command="{Binding DeleteProfileCommand}"
-                                    Content="Delete"
-                                    ToolTip="Delete the selected profile">
-                                    <Button.Style>
-                                        <Style BasedOn="{StaticResource {x:Type Button}}" TargetType="Button">
-                                            <Setter Property="Visibility" Value="Collapsed" />
-                                            <Style.Triggers>
-                                                <DataTrigger Binding="{Binding HasSelectedSavedProfile}" Value="True">
-                                                    <Setter Property="Visibility" Value="Visible" />
-                                                </DataTrigger>
-                                            </Style.Triggers>
-                                        </Style>
-                                    </Button.Style>
-                                </Button>
                                 <ComboBox
-                                    Width="180"
-                                    Margin="0,0,6,0"
+                                    Width="220"
+                                    Margin="0,0,8,0"
                                     ItemsSource="{Binding SavedProfiles}"
                                     SelectedItem="{Binding SelectedSavedProfile}"
                                     TextSearch.TextPath="Name"
@@ -90,12 +69,40 @@
                                         </DataTemplate>
                                     </ComboBox.ItemTemplate>
                                 </ComboBox>
-                                <Button Command="{Binding LoadProfileCommand}" Content="Load" />
                                 <Button
-                                    Margin="6,0,0,0"
-                                    Command="{Binding SaveProfileCommand}"
-                                    Content="Save"
-                                    ToolTip="Save changes to the selected profile" />
+                                    Width="88"
+                                    MinWidth="0"
+                                    Command="{Binding PrimaryProfileCommand}"
+                                    Content="{Binding PrimaryProfileActionText}">
+                                    <Button.Style>
+                                        <Style BasedOn="{StaticResource {x:Type Button}}" TargetType="Button">
+                                            <Setter Property="Background" Value="{DynamicResource AccentBrush}" />
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding ShowLoadProfile}" Value="True">
+                                                    <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
+                                                    <Setter Property="Background" Value="{DynamicResource ElevatedBrush}" />
+                                                    <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}" />
+                                                    <Setter Property="BorderThickness" Value="1" />
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </Button.Style>
+                                </Button>
+                                <Button
+                                    x:Name="MoreProfileActionsButton"
+                                    Width="72"
+                                    MinWidth="0"
+                                    Margin="8,0,0,0"
+                                    Click="MoreProfileActions_OnClick"
+                                    Content="Manage"
+                                    Style="{StaticResource GhostButton}">
+                                    <Button.ContextMenu>
+                                        <ContextMenu DataContext="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource Self}}">
+                                            <MenuItem Command="{Binding ResetProfileCommand}" Header="Reset profile" />
+                                            <MenuItem Command="{Binding DeleteProfileCommand}" Header="Delete profile" />
+                                        </ContextMenu>
+                                    </Button.ContextMenu>
+                                </Button>
                             </StackPanel>
                         </Grid>
                         <Grid>

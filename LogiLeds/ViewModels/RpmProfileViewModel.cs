@@ -13,6 +13,8 @@ namespace LogiLeds.ViewModels;
 public sealed class RpmProfileViewModel : ObservableObject, IDisposable
 {
     private readonly SettingsDraft _draft;
+    private readonly HashSet<ThresholdViewModel> _observedThresholds = [];
+    private readonly AsyncRelayCommand _primaryProfileCommand;
     private readonly LedApplicationService _service;
     private readonly Action<string> _setStatus;
     private WheelDefinition? _activeDefinition;
@@ -27,6 +29,8 @@ public sealed class RpmProfileViewModel : ObservableObject, IDisposable
         _service = service;
         _draft = draft;
         _setStatus = setStatus;
+        _primaryProfileCommand = new AsyncRelayCommand(ExecutePrimaryProfileActionAsync,
+            () => ShowSaveProfile || ShowLoadProfile, ex => _setStatus(ex.Message));
         ResetProfileCommand = new RelayCommand(ResetProfile);
         SaveProfileCommand = new AsyncRelayCommand(SaveSelectedProfileAsync, () => SelectedSavedProfile is not null,
             ex => _setStatus(ex.Message));
@@ -43,6 +47,7 @@ public sealed class RpmProfileViewModel : ObservableObject, IDisposable
     public ICommand SaveProfileCommand { get; }
     public ICommand LoadProfileCommand { get; }
     public ICommand DeleteProfileCommand { get; }
+    public ICommand PrimaryProfileCommand => _primaryProfileCommand;
     public ObservableCollection<WheelProfile> SavedProfiles { get; } = [];
 
     public WheelProfile? SelectedSavedProfile
@@ -53,10 +58,21 @@ public sealed class RpmProfileViewModel : ObservableObject, IDisposable
             if (!SetField(ref _selectedSavedProfile, value)) return;
             OnPropertyChanged(nameof(HasSelectedSavedProfile));
             RefreshProfileCommandStates();
+            NotifyPrimaryProfileState();
         }
     }
 
     public bool HasSelectedSavedProfile => SelectedSavedProfile?.ProfileId is not null;
+
+    public bool IsNewProfileSelected => SelectedSavedProfile is { ProfileId: null };
+
+    public bool HasUnsavedProfileChanges => SelectedSavedProfile?.ProfileId is not null && IsCurrentProfileDirty();
+
+    public bool ShowSaveProfile => IsNewProfileSelected || HasUnsavedProfileChanges;
+
+    public bool ShowLoadProfile => SelectedSavedProfile?.ProfileId is not null && !HasUnsavedProfileChanges;
+
+    public string PrimaryProfileActionText => ShowSaveProfile ? "Save" : "Load";
 
     public string ProfileWheelName => _draft.SelectedWheel?.Id is null
         ? _activeDefinition?.DisplayName ?? _service.Wheels.FirstOrDefault()?.DisplayName ?? "Selected wheel"
@@ -120,6 +136,7 @@ public sealed class RpmProfileViewModel : ObservableObject, IDisposable
 
     public void Dispose()
     {
+        foreach (var threshold in _observedThresholds) threshold.PropertyChanged -= OnThresholdChanged;
         _draft.PropertyChanged -= OnDraftPropertyChanged;
         _service.SnapshotChanged -= OnSnapshotChanged;
     }
@@ -195,6 +212,8 @@ public sealed class RpmProfileViewModel : ObservableObject, IDisposable
             OnPropertyChanged(nameof(IsEasyMode));
             OnPropertyChanged(nameof(IsAdvancedMode));
         }
+
+        NotifyPrimaryProfileState();
     }
 
     private void OnSnapshotChanged(object? sender, AppSnapshot snapshot)
@@ -225,6 +244,13 @@ public sealed class RpmProfileViewModel : ObservableObject, IDisposable
         RedlinePercent = _activeDefinition?.DefaultRedlinePercent ?? LedProfileSettings.DefaultRedlinePercent;
         BlinkAtRedline = true;
         ConfigureThresholds(_activeDefinition, []);
+        NotifyPrimaryProfileState();
+    }
+
+    private async Task ExecutePrimaryProfileActionAsync()
+    {
+        if (ShowSaveProfile) await SaveSelectedProfileAsync();
+        else if (ShowLoadProfile) await LoadSelectedProfileAsync();
     }
 
     private WheelProfile CaptureProfile(string? profileId = null, string? name = null)
@@ -313,6 +339,34 @@ public sealed class RpmProfileViewModel : ObservableObject, IDisposable
         (DeleteProfileCommand as AsyncRelayCommand)?.RaiseCanExecuteChanged();
     }
 
+    private void NotifyPrimaryProfileState()
+    {
+        OnPropertyChanged(nameof(IsNewProfileSelected));
+        OnPropertyChanged(nameof(HasUnsavedProfileChanges));
+        OnPropertyChanged(nameof(ShowSaveProfile));
+        OnPropertyChanged(nameof(ShowLoadProfile));
+        OnPropertyChanged(nameof(PrimaryProfileActionText));
+        _primaryProfileCommand.RaiseCanExecuteChanged();
+    }
+
+    private bool IsCurrentProfileDirty()
+    {
+        var profile = SelectedSavedProfile;
+        var wheel = SelectedDefinition;
+        if (profile?.ProfileId is null || wheel is null) return false;
+
+        return profile.WheelId != wheel.Id || profile.Mode != ProfileMode ||
+               Math.Abs(profile.FirstLedPercent - FirstLedPercent) > .01 ||
+               Math.Abs(profile.RedlinePercent - RedlinePercent) > .01 ||
+               profile.BlinkAtRedline != BlinkAtRedline ||
+               !profile.AdvancedThresholds.SequenceEqual(Thresholds.Select(threshold => threshold.Value));
+    }
+
+    private void OnThresholdChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(ThresholdViewModel.Value)) NotifyPrimaryProfileState();
+    }
+
     private void ConfigureThresholds(WheelDefinition? definition, IReadOnlyList<double> saved)
     {
         var wheel = definition ?? _service.Wheels.FirstOrDefault();
@@ -332,6 +386,16 @@ public sealed class RpmProfileViewModel : ObservableObject, IDisposable
                     colors[Math.Min(i, colors.Length - 1)])!,
                 Value = values[i]
             });
+
+        foreach (var threshold in _observedThresholds) threshold.PropertyChanged -= OnThresholdChanged;
+        _observedThresholds.Clear();
+        foreach (var threshold in Thresholds)
+        {
+            threshold.PropertyChanged += OnThresholdChanged;
+            _observedThresholds.Add(threshold);
+        }
+
+        NotifyPrimaryProfileState();
     }
 
     private async Task LoadWheelProfileAsync(WheelDefinition wheel, bool applyToService)

@@ -1,5 +1,6 @@
 using System.Windows;
 using LogiLeds.ViewModels;
+using Button = System.Windows.Controls.Button;
 using UserControl = System.Windows.Controls.UserControl;
 
 namespace LogiLeds.Views;
@@ -20,5 +21,12 @@ public partial class RpmProfileView : UserControl
         _carTrainingWindow = new CarTrainingLibraryWindow(viewModel) { Owner = Window.GetWindow(this) };
         _carTrainingWindow.Closed += (_, _) => _carTrainingWindow = null;
         _carTrainingWindow.Show();
+    }
+
+    private void MoreProfileActions_OnClick(object sender, RoutedEventArgs e)
+    {
+        if (sender is not Button button || button.ContextMenu is not { } menu) return;
+        menu.PlacementTarget = button;
+        menu.IsOpen = true;
     }
 }
