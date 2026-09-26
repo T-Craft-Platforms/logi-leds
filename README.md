@@ -2,6 +2,10 @@
 
 LogiLeds is a Windows wheel companion that drives Logitech RPM/shift LEDs from Forza Data Out and BeamNG.drive OutGauge telemetry. It uses managed HID communication, contains no Logitech SDK binaries, and keeps all model-specific behavior in validated JSON wheel definitions.
 
+## Disclaimer
+
+LogiLeds is an independent project and is not affiliated with, endorsed, sponsored, or approved by Logitech International S.A. or its Logi brand, or by the developers or publishers of any supported games. The name “LogiLeds” describes the project's purpose: enabling LED support for compatible Logitech wheels. It does not indicate an official Logitech product. Logitech, Logi, the supported game names, and other trademarks belong to their respective owners.
+
 ## Supported wheels
 
 - Logitech G27

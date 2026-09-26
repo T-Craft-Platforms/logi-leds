@@ -16,3 +16,6 @@ Download `LogiLeds-{{VERSION}}-win-x64.zip` from the assets below, extract it to
 
 ## Changes Since Previous Release
 {{COMPARE_LINK}}
+
+## Disclaimer
+LogiLeds is an independent project and is not affiliated with, endorsed, sponsored, or approved by Logitech International S.A. or its Logi brand, or by the developers or publishers of any supported games. The name “LogiLeds” describes the project's purpose: enabling LED support for compatible Logitech wheels. It does not indicate an official Logitech product. All trademarks belong to their respective owners.
