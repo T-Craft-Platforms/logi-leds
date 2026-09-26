@@ -16,6 +16,7 @@ if ($Tag -notmatch '^v(?<version>\d+\.\d+\.\d+)$') {
 }
 
 $version = $Matches.version
+$maxCommitsPerCategory = 5
 $templatePath = Join-Path $PSScriptRoot '..\RELEASE_NOTES_TEMPLATE.md'
 $template = Get-Content -LiteralPath $templatePath -Raw
 $tags = @(git tag --merged $Tag --list 'v[0-9]*' --sort=-version:refname)
@@ -46,12 +47,12 @@ if ($LASTEXITCODE -ne 0) {
 }
 
 $groups = @{
-    HIGHLIGHTS = [System.Collections.Generic.List[string]]::new()
-    IMPROVEMENTS = [System.Collections.Generic.List[string]]::new()
-    FIXES = [System.Collections.Generic.List[string]]::new()
-    OTHER_CHANGES = [System.Collections.Generic.List[string]]::new()
+    FEATURES = [System.Collections.Generic.List[object]]::new()
+    FIXES = [System.Collections.Generic.List[object]]::new()
+    OTHER_CHANGES = [System.Collections.Generic.List[object]]::new()
 }
 
+$commitOrder = 0
 foreach ($commit in $commits) {
     $parts = $commit -split "`t", 3
     if ($parts.Count -ne 3) {
@@ -63,31 +64,64 @@ foreach ($commit in $commits) {
     $sha = $parts[2].Trim()
     $line = "- [$subject](https://github.com/$Repository/commit/$sha) ($shortSha)"
 
+    $numstat = @(git diff-tree --no-commit-id --numstat -r --root $sha)
+    if ($LASTEXITCODE -ne 0) {
+        throw "Failed to calculate changed lines for commit '$sha'."
+    }
+
+    $changedLines = 0
+    foreach ($fileStat in $numstat) {
+        $statParts = $fileStat -split "`t", 3
+        if ($statParts.Count -eq 3) {
+            $added = 0
+            $deleted = 0
+            if ([int]::TryParse($statParts[0], [ref] $added)) { $changedLines += $added }
+            if ([int]::TryParse($statParts[1], [ref] $deleted)) { $changedLines += $deleted }
+        }
+    }
+
+    $entry = [pscustomobject]@{
+        Line = $line
+        ChangedLines = $changedLines
+        CommitOrder = $commitOrder
+    }
+    $commitOrder++
+
     if ($subject -match '^(feat|feature)(\([^)]*\))?!?:\s*') {
-        $groups.HIGHLIGHTS.Add($line)
+        $groups.FEATURES.Add($entry)
     }
     elseif ($subject -match '^(fix|bugfix)(\([^)]*\))?!?:\s*') {
-        $groups.FIXES.Add($line)
-    }
-    elseif ($subject -match '^(perf|refactor|improve|improvement)(\([^)]*\))?!?:\s*') {
-        $groups.IMPROVEMENTS.Add($line)
+        $groups.FIXES.Add($entry)
     }
     else {
-        $groups.OTHER_CHANGES.Add($line)
+        $groups.OTHER_CHANGES.Add($entry)
     }
 }
 
-foreach ($name in @('HIGHLIGHTS', 'IMPROVEMENTS', 'FIXES', 'OTHER_CHANGES')) {
-    if ($groups[$name].Count -eq 0) {
+foreach ($name in @('FEATURES', 'FIXES', 'OTHER_CHANGES')) {
+    $sortedEntries = @($groups[$name] | Sort-Object -Property @{ Expression = 'ChangedLines'; Descending = $true }, @{ Expression = 'CommitOrder'; Descending = $false })
+    $selectedEntries = @($sortedEntries | Select-Object -First $maxCommitsPerCategory)
+    $groups[$name] = [System.Collections.Generic.List[string]]::new()
+
+    if ($selectedEntries.Count -eq 0) {
         $groups[$name].Add('- No changes in this category.')
+    }
+    else {
+        foreach ($entry in $selectedEntries) {
+            $groups[$name].Add($entry.Line)
+        }
+
+        $omittedCount = $sortedEntries.Count - $selectedEntries.Count
+        if ($omittedCount -gt 0) {
+            $groups[$name].Add("- $omittedCount additional commit(s) omitted (limit: $maxCommitsPerCategory).")
+        }
     }
 }
 
 $replacements = @{
     VERSION = $Tag
     RELEASE_DATE = [DateTime]::UtcNow.ToString('yyyy-MM-dd')
-    HIGHLIGHTS = $groups.HIGHLIGHTS -join "`n"
-    IMPROVEMENTS = $groups.IMPROVEMENTS -join "`n"
+    FEATURES = $groups.FEATURES -join "`n"
     FIXES = $groups.FIXES -join "`n"
     OTHER_CHANGES = $groups.OTHER_CHANGES -join "`n"
     COMPARE_LINK = "[View the full comparison]($compareUrl)"

@@ -2,11 +2,8 @@
 
 Released {{RELEASE_DATE}} for Windows x64.
 
-## Highlights
-{{HIGHLIGHTS}}
-
-## Improvements
-{{IMPROVEMENTS}}
+## Features
+{{FEATURES}}
 
 ## Fixes
 {{FIXES}}
