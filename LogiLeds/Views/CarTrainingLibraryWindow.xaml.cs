@@ -4,6 +4,7 @@ using System.Windows.Threading;
 using LogiLeds.Controls;
 using LogiLeds.ViewModels;
 using Brush = System.Windows.Media.Brush;
+using MessageBox = System.Windows.MessageBox;
 
 namespace LogiLeds.Views;
 
@@ -65,6 +66,11 @@ public partial class CarTrainingLibraryWindow : Window
 
     private async void ResetTrainings_OnClick(object sender, RoutedEventArgs e)
     {
+        var confirmation = MessageBox.Show(this,
+            "Delete all learned shift data for every car? This cannot be undone.",
+            "Reset car trainings", MessageBoxButton.YesNo, MessageBoxImage.Warning, MessageBoxResult.No);
+        if (confirmation != MessageBoxResult.Yes) return;
+
         _resetting = true;
         ResetTrainingsButton.IsEnabled = false;
         string? error = null;

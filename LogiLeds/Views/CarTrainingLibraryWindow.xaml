@@ -107,17 +107,13 @@
                                             CornerRadius="12">
                                             <Border.Style>
                                                 <Style TargetType="Border">
-                                                    <Setter Property="Background"
-                                                            Value="{DynamicResource SurfaceBrush}" />
-                                                    <Setter Property="BorderBrush"
-                                                            Value="{DynamicResource BorderBrush}" />
+                                                    <Setter Property="Background" Value="{DynamicResource SurfaceBrush}" />
+                                                    <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}" />
                                                     <Setter Property="BorderThickness" Value="1" />
                                                     <Style.Triggers>
                                                         <DataTrigger Binding="{Binding IsCurrent}" Value="True">
-                                                            <Setter Property="Background"
-                                                                    Value="{DynamicResource ElevatedBrush}" />
-                                                            <Setter Property="BorderBrush"
-                                                                    Value="{DynamicResource AccentBrush}" />
+                                                            <Setter Property="Background" Value="{DynamicResource ElevatedBrush}" />
+                                                            <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
                                                             <Setter Property="BorderThickness" Value="2" />
                                                         </DataTrigger>
                                                     </Style.Triggers>
@@ -142,8 +138,7 @@
                                                             <Style TargetType="Border">
                                                                 <Setter Property="Visibility" Value="Collapsed" />
                                                                 <Style.Triggers>
-                                                                    <DataTrigger Binding="{Binding IsCurrent}"
-                                                                            Value="True">
+                                                                    <DataTrigger Binding="{Binding IsCurrent}" Value="True">
                                                                         <Setter Property="Visibility" Value="Visible" />
                                                                     </DataTrigger>
                                                                 </Style.Triggers>
@@ -178,21 +173,17 @@
                                                     Value="{Binding ProgressPercent, Mode=OneWay}" />
                                                 <Expander Margin="0,10,0,0">
                                                     <Expander.Style>
-                                                        <Style TargetType="Expander">
+                                                        <Style BasedOn="{StaticResource {x:Type Expander}}" TargetType="Expander">
                                                             <Setter Property="Visibility" Value="Collapsed" />
                                                             <Style.Triggers>
-                                                                <DataTrigger Binding="{Binding HasMapping}"
-                                                                             Value="True">
+                                                                <DataTrigger Binding="{Binding HasMapping}" Value="True">
                                                                     <Setter Property="Visibility" Value="Visible" />
                                                                 </DataTrigger>
                                                             </Style.Triggers>
                                                         </Style>
                                                     </Expander.Style>
                                                     <Expander.Header>
-                                                        <TextBlock
-                                                            FontWeight="SemiBold"
-                                                            Foreground="{DynamicResource AccentBrush}"
-                                                            Text="{Binding ShiftPointLabel}" />
+                                                        <TextBlock FontWeight="SemiBold" Text="{Binding ShiftPointLabel}" />
                                                     </Expander.Header>
                                                     <controls:RpmRangeEditor Margin="0,10,0,0" IsReadOnly="True" />
                                                 </Expander>
@@ -207,7 +198,7 @@
                                 HorizontalAlignment="Right"
                                 Click="ResetTrainings_OnClick"
                                 Content="Reset trainings"
-                                Style="{StaticResource GhostButton}" />
+                                Style="{StaticResource DangerButton}" />
                         </StackPanel>
                     </ScrollViewer>
                     <StackPanel
