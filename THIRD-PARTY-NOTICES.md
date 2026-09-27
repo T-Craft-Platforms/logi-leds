@@ -2,7 +2,7 @@
 
 ## HidSharp 2.6.4
 
-LogiLeds uses HidSharp through a pinned NuGet package for managed HID device discovery and report transport.
+LogiWheel Forge uses HidSharp through a pinned NuGet package for managed HID device discovery and report transport.
 
 - Project: https://github.com/IntergatedCircuits/HidSharp
 - Package: https://www.nuget.org/packages/HidSharp/2.6.4
@@ -12,7 +12,7 @@ No HidSharp or Logitech SDK binary is committed to this repository. NuGet restor
 
 ## Logitech protocol references
 
-The LED-only protocol adapters were implemented from public protocol documentation and open-source driver research. LogiLeds does not redistribute Logitech drivers, firmware, SDK libraries, or G HUB components.
+The LED-only protocol adapters were implemented from public protocol documentation and open-source driver research. LogiWheel Forge does not redistribute Logitech drivers, firmware, SDK libraries, or G HUB components.
 
 - Logitech G29 command reference: https://github.com/nightmode/logitech-g29/blob/main/docs/api.md
 - Logitech TrueForce wheel protocol research: https://github.com/mescon/logitech-trueforce-linux-driver/blob/master/docs/PROTOCOL_SPECIFICATION.md

@@ -3,7 +3,7 @@ name: Release
 on:
   push:
     tags:
-      - 'v*.*.*'
+      - "v*.*.*"
   workflow_dispatch:
 
 permissions:
@@ -84,17 +84,17 @@ jobs:
           }
 
       - name: Build
-        run: dotnet build .\LogiLeds.sln -c Release
+        run: dotnet build .\LogiWheelForge.sln -c Release
 
       - name: Test
-        run: dotnet test .\LogiLeds.Tests\LogiLeds.Tests.csproj -c Release --no-build
+        run: dotnet test .\LogiWheelForge.Tests\LogiWheelForge.Tests.csproj -c Release --no-build
 
       - name: Publish Windows x64 application
         shell: pwsh
         env:
           RELEASE_VERSION: ${{ needs.version.outputs.version }}
         run: |
-          dotnet publish .\LogiLeds\LogiLeds.csproj `
+          dotnet publish .\LogiWheelForge\LogiWheelForge.csproj `
             -c Release `
             -r win-x64 `
             --self-contained true `
@@ -108,14 +108,14 @@ jobs:
           New-Item -ItemType Directory -Path .\artifacts\release -Force | Out-Null
           Compress-Archive `
             -Path .\artifacts\publish\* `
-            -DestinationPath ".\artifacts\release\LogiLeds-v$env:RELEASE_VERSION-win-x64.zip" `
+            -DestinationPath ".\artifacts\release\LogiWheelForge-v$env:RELEASE_VERSION-win-x64.zip" `
             -CompressionLevel Optimal
 
       - name: Upload release package
         uses: actions/upload-artifact@v7
         with:
           name: release-package
-          path: artifacts/release/LogiLeds-*-win-x64.zip
+          path: artifacts/release/LogiWheelForge-*-win-x64.zip
           if-no-files-found: error
           retention-days: 1
 
@@ -182,7 +182,7 @@ jobs:
           TAG_NAME: ${{ needs.version.outputs.tag }}
         run: |
           $ErrorActionPreference = 'Stop'
-          $asset = "artifacts/release/LogiLeds-$env:TAG_NAME-win-x64.zip"
+          $asset = "artifacts/release/LogiWheelForge-$env:TAG_NAME-win-x64.zip"
           $notes = "$env:RUNNER_TEMP\release-notes.md"
 
           if (-not (Test-Path -LiteralPath $asset)) {
@@ -194,7 +194,7 @@ jobs:
 
           if (-not $releaseExists) {
             gh release create $env:TAG_NAME $asset `
-              --title "LogiLeds $env:TAG_NAME" `
+              --title "LogiWheel Forge $env:TAG_NAME" `
               --notes-file $notes `
               --verify-tag
 

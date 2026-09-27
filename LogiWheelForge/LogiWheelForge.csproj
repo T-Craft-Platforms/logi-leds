@@ -1,0 +1,31 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <OutputType>WinExe</OutputType>
+        <TargetFramework>net10.0-windows</TargetFramework>
+        <UseWPF>true</UseWPF>
+        <UseWindowsForms>true</UseWindowsForms>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <PlatformTarget>x64</PlatformTarget>
+        <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+        <AssemblyName>LogiWheelForge</AssemblyName>
+        <AssemblyTitle>LogiWheel Forge</AssemblyTitle>
+        <Product>LogiWheel Forge</Product>
+        <RootNamespace>LogiWheelForge</RootNamespace>
+        <ApplicationIcon>Assets\LogiWheelForge.ico</ApplicationIcon>
+        <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="HidSharp" Version="2.6.4"/>
+        <PackageReference Include="FontAwesome.Sharp" Version="6.6.0"/>
+        <Content Include="WheelDefinitions\*.json" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest"/>
+        <Content Include="Assets\LogiWheelForge.ico" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest"/>
+        <None Include="Assets\LogiWheelForgeMark.svg"/>
+        <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleToAttribute">
+            <_Parameter1>LogiWheelForge.Tests</_Parameter1>
+        </AssemblyAttribute>
+    </ItemGroup>
+
+</Project>

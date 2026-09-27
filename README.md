@@ -1,10 +1,10 @@
-# LogiLeds
+# LogiWheel Forge
 
-LogiLeds is a Windows wheel companion that drives Logitech RPM/shift LEDs from Forza Data Out and BeamNG.drive OutGauge telemetry. It uses managed HID communication, contains no Logitech SDK binaries, and keeps all model-specific behavior in validated JSON wheel definitions.
+LogiWheel Forge is a Windows toolkit of enhancement tools for compatible Logitech wheels. Its current feature, **LED Indicator**, drives wheel RPM/shift LEDs from Forza Data Out and BeamNG.drive OutGauge telemetry. Future features will map wheel and other device inputs to simulated keyboard keys and mouse clicks for specific games. LogiWheel Forge uses managed HID communication, contains no Logitech SDK binaries, and keeps all model-specific behavior in validated JSON wheel definitions.
 
 ## Disclaimer
 
-LogiLeds is an independent project and is not affiliated with, endorsed, sponsored, or approved by Logitech International S.A. or its Logi brand, or by the developers or publishers of any supported games. The name “LogiLeds” describes the project's purpose: enabling LED support for compatible Logitech wheels. It does not indicate an official Logitech product. Logitech, Logi, the supported game names, and other trademarks belong to their respective owners.
+LogiWheel Forge is an independent project and is not affiliated with, endorsed, sponsored, or approved by Logitech International S.A. or its Logi brand, or by the developers or publishers of any supported games. Logitech, Logi, the supported game names, and other trademarks belong to their respective owners.
 
 ## Supported wheels
 
@@ -16,11 +16,11 @@ LogiLeds is an independent project and is not affiliated with, endorsed, sponsor
 
 G29 has received a real-hardware verification pass. Other listed models use protocol-backed definitions and are marked as compatibility targets in the app until a real-device smoke test is recorded.
 
-Additional Logitech RPM wheels can be added without recompiling by placing a unique, schema-compatible JSON file in `%LOCALAPPDATA%\LogiLeds\Wheels`. Definitions are data-only and may select only the built-in `classic-bitmask` or `hidpp-level` transports.
+Additional Logitech RPM wheels can be added without recompiling by placing a unique, schema-compatible JSON file in `%LOCALAPPDATA%\LogiWheelForge\Wheels`. Definitions are data-only and may select only the built-in `classic-bitmask` or `hidpp-level` transports.
 
 ## Supported telemetry
 
-LogiLeds accepts the common RPM prefix from these Forza Data Out formats:
+LogiWheel Forge's LED Indicator accepts the common RPM prefix from these Forza Data Out formats:
 
 - Forza Motorsport 7 (`Sled` and `Dash`)
 - Forza Horizon 4, 5, and 6 (`Dash`)
@@ -28,9 +28,9 @@ LogiLeds accepts the common RPM prefix from these Forza Data Out formats:
 
 BeamNG.drive is supported through its built-in OutGauge UDP protocol.
 
-In Settings → Telemetry, choose Auto to listen for every configured game, or select one game. Use Add game and Manage to set a separate bind address and UDP port for each game. New installations include Forza at `0.0.0.0:1024`; BeamNG.drive defaults to `0.0.0.0:4444` when added. The ports must differ. Configure each game's telemetry target to this PC's LAN address and its matching port. Use `127.0.0.1` only when the game and LogiLeds run on the same PC and the game supports localhost.
+In Settings → Telemetry, choose Auto to listen for every configured game, or select one game. Use Add game and Manage to set a separate bind address and UDP port for each game. New installations include Forza at `0.0.0.0:1024`; BeamNG.drive defaults to `0.0.0.0:4444` when added. The ports must differ. Configure each game's telemetry target to this PC's LAN address and its matching port. Use `127.0.0.1` only when the game and LogiWheel Forge run on the same PC and the game supports localhost.
 
-For BeamNG.drive, enable **OutGauge UDP protocol** under **Options → Other → Protocols** and set its target port to the BeamNG port shown in LogiLeds. [BeamNG's OutGauge format](https://documentation.beamng.com/modding/protocols/) sends current RPM but no maximum RPM, so enter the current vehicle's maximum RPM in BeamNG's Manage dialog. Update it when switching to a vehicle with a different engine limit.
+For BeamNG.drive, enable **OutGauge UDP protocol** under **Options → Other → Protocols** and set its target port to the BeamNG port shown in LogiWheel Forge. [BeamNG's OutGauge format](https://documentation.beamng.com/modding/protocols/) sends current RPM but no maximum RPM, so enter the current vehicle's maximum RPM in BeamNG's Manage dialog. Update it when switching to a vehicle with a different engine limit.
 
 ## Profiles and app behavior
 
@@ -38,16 +38,16 @@ For BeamNG.drive, enable **OutGauge UDP protocol** under **Options → Other →
 - Advanced mode exposes one ordered activation threshold per controllable LED group plus a separate redline.
 - Whole-strip redline blinking, automatic control startup, ready animation, minimize-to-tray, and close-to-tray are enabled by default.
 - Light, dark, and Windows-following themes are available from Settings.
-- Per-wheel profiles are stored in `%LOCALAPPDATA%\LogiLeds\profiles`; learned car calibration is stored separately in `calibrations.json`.
+- Per-wheel profiles are stored in `%LOCALAPPDATA%\LogiWheelForge\profiles`; learned car calibration is stored separately in `calibrations.json`.
 
 ## Build and test
 
 Requirements: Windows 10/11 x64 and the .NET 10 SDK.
 
 ```powershell
-dotnet build .\LogiLeds.sln -c Release
-dotnet test .\LogiLeds.Tests\LogiLeds.Tests.csproj -c Release
-dotnet publish .\LogiLeds\LogiLeds.csproj -c Release -r win-x64 --self-contained true -o .\artifacts\publish
+dotnet build .\LogiWheelForge.sln -c Release
+dotnet test .\LogiWheelForge.Tests\LogiWheelForge.Tests.csproj -c Release
+dotnet publish .\LogiWheelForge\LogiWheelForge.csproj -c Release -r win-x64 --self-contained true -o .\artifacts\publish
 ```
 
 ## Releases
@@ -64,4 +64,4 @@ Or run **Release** from the Actions tab using **Run workflow**. No version input
 
 Both paths publish a self-contained Windows x64 ZIP and create the matching GitHub release if one does not already exist. Release notes follow `.github/RELEASE_NOTES_TEMPLATE.md` and are generated from commits since the previous version tag. The workflow requires repository Actions permissions to allow `GITHUB_TOKEN` to write contents so it can push the calculated tag and create the release.
 
-Logitech G HUB or Logitech's current wheel driver should remain installed for normal device/force-feedback operation. LogiLeds opens only the LED-capable HID interface and does not configure steering, force feedback, pedals, firmware, or onboard profiles.
+Logitech G HUB or Logitech's current wheel driver should remain installed for normal device/force-feedback operation. LogiWheel Forge's LED Indicator opens only the LED-capable HID interface and does not configure steering, force feedback, pedals, firmware, or onboard profiles.

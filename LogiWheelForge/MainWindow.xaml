@@ -1,0 +1,55 @@
+<Window
+    x:Class="LogiWheelForge.MainWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:controls="clr-namespace:LogiWheelForge.Controls"
+    xmlns:shell="clr-namespace:System.Windows.Shell;assembly=PresentationFramework"
+    xmlns:views="clr-namespace:LogiWheelForge.Views"
+    xmlns:vm="clr-namespace:LogiWheelForge.ViewModels"
+    Title="LogiWheel Forge"
+    Width="1180"
+    Height="760"
+    MinWidth="900"
+    MinHeight="620"
+    Background="{DynamicResource WindowBrush}"
+    Icon="Assets/LogiWheelForge.ico"
+    ResizeMode="CanResize"
+    WindowStartupLocation="CenterScreen">
+    <Window.Resources>
+        <DataTemplate DataType="{x:Type vm:DashboardViewModel}">
+            <views:DashboardView />
+        </DataTemplate>
+        <DataTemplate DataType="{x:Type vm:RpmProfileViewModel}">
+            <views:RpmProfileView />
+        </DataTemplate>
+        <DataTemplate DataType="{x:Type vm:SettingsViewModel}">
+            <views:SettingsView />
+        </DataTemplate>
+    </Window.Resources>
+    <shell:WindowChrome.WindowChrome>
+        <shell:WindowChrome
+            x:Name="WindowChrome"
+            CaptionHeight="0"
+            CornerRadius="0"
+            GlassFrameThickness="0"
+            ResizeBorderThickness="4" />
+    </shell:WindowChrome.WindowChrome>
+    <Border
+        x:Name="WindowFrame"
+        Background="{DynamicResource WindowBrush}"
+        BorderBrush="{DynamicResource BorderBrush}"
+        BorderThickness="1"
+        CornerRadius="0">
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="54" />
+                <RowDefinition Height="*" />
+            </Grid.RowDefinitions>
+            <controls:WindowTitleBar Grid.Row="0" />
+            <ContentPresenter
+                x:Name="PageTransitionPresenter"
+                Grid.Row="1"
+                Content="{Binding SelectedPage}" />
+        </Grid>
+    </Border>
+</Window>

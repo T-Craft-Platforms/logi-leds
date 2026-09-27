@@ -1,0 +1,55 @@
+using LogiWheelForge.Models;
+using LogiWheelForge.Services;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
+
+namespace LogiWheelForge.Tests;
+
+[TestClass]
+public sealed class SettingsAndLedMathTests
+{
+    [TestMethod]
+    public void Defaults_ArePremiumSafeDefaults()
+    {
+        var settings = LedProfileSettings.Defaults;
+        Assert.IsTrue(settings.TryValidate(out _));
+        Assert.AreEqual("0.0.0.0", settings.BindAddress);
+        Assert.AreEqual(1024, settings.Port);
+        Assert.AreEqual(65d, settings.FirstLedPercent);
+        Assert.AreEqual(90d, settings.RedlinePercent);
+        Assert.IsTrue(settings.AutoStartControl);
+        Assert.IsTrue(settings.MinimizeToTray);
+        Assert.IsTrue(settings.CloseToTray);
+        Assert.IsTrue(settings.BlinkAtRedline);
+        Assert.AreEqual(TelemetryWatchMode.Auto, settings.TelemetryWatch);
+        Assert.AreEqual(TelemetryGame.Forza, settings.TelemetryGames.Single().Game);
+    }
+
+    [TestMethod]
+    public void Validation_RejectsBadEndpointAndThresholdOrder()
+    {
+        Assert.IsFalse((LedProfileSettings.Defaults with { BindAddress = "not-an-ip" }).TryValidate(out _));
+        Assert.IsFalse((LedProfileSettings.Defaults with { Port = 0 }).TryValidate(out _));
+        Assert.IsFalse((LedProfileSettings.Defaults with
+        {
+            TelemetryGames = [TelemetryGameSettings.DefaultForza, TelemetryGameSettings.DefaultBeamNg with { Port = 1024 }]
+        }).TryValidate(out _));
+        Assert.IsFalse((LedProfileSettings.Defaults with { TelemetryWatch = TelemetryWatchMode.BeamNg })
+            .TryValidate(out _));
+        Assert.IsFalse(
+            (LedProfileSettings.Defaults with { FirstLedPercent = 96, RedlinePercent = 95 }).TryValidate(out _));
+        Assert.IsFalse((LedProfileSettings.Defaults with { AdvancedThresholds = [90, 85] }).TryValidate(out _));
+    }
+
+    [TestMethod]
+    public void LedMath_MapsFiveAndTenStageProfiles()
+    {
+        Assert.AreEqual((0, false), LedMath.CalculatePreview(7_900, 10_000, 80, 95));
+        Assert.AreEqual((1, false), LedMath.CalculatePreview(8_000, 10_000, 80, 95));
+        Assert.AreEqual((5, true), LedMath.CalculatePreview(9_500, 10_000, 80, 95));
+        var ten = LedMath.BuildRecommendedThresholds(10);
+        Assert.AreEqual(10, ten.Length);
+        Assert.AreEqual(65d, ten[0]);
+        Assert.AreEqual(85d, ten[^1]);
+        Assert.AreEqual((9, false), LedMath.CalculatePreview(8_400, 10_000, 80, 95, 10, ten));
+    }
+}
