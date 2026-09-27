@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Windows;
+using LogiLeds.Controls;
 using LogiLeds.Models;
 
 namespace LogiLeds.Views;
@@ -14,6 +15,7 @@ public partial class TelemetryGameDialog : Window
     private TelemetryGameDialog(Window? owner, TelemetryGameSettings current, IEnumerable<int> usedPorts)
     {
         InitializeComponent();
+        OwnedWindowDimmer.Attach(this);
         if (owner is not null) Owner = owner;
         _current = current;
         _usedPorts = usedPorts.ToHashSet();

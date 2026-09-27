@@ -55,40 +55,14 @@
                 Title="Car trainings"
                 Grid.Row="0"
                 ShowMaximizeButton="True" />
-            <Grid Grid.Row="1" Margin="24">
+            <Grid Grid.Row="1" Margin="20">
                 <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto" />
                     <RowDefinition Height="Auto" />
                     <RowDefinition Height="*" />
                 </Grid.RowDefinitions>
-                <Grid Margin="0,0,0,18">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition />
-                        <ColumnDefinition Width="Auto" />
-                    </Grid.ColumnDefinitions>
-                    <StackPanel>
-                        <TextBlock
-                            FontSize="26"
-                            FontWeight="Bold"
-                            Text="Car trainings" />
-                        <TextBlock
-                            Margin="0,5,0,0"
-                            Foreground="{DynamicResource MutedBrush}"
-                            Text="Each valid full-throttle upshift adds a sample. Three matching shifts activate learning; more samples can improve confidence." />
-                    </StackPanel>
-                    <Button
-                        x:Name="ResetTrainingsButton"
-                        Grid.Column="1"
-                        Margin="16,0,0,0"
-                        VerticalAlignment="Center"
-                        Click="ResetTrainings_OnClick"
-                        Content="Reset trainings"
-                        Style="{StaticResource GhostButton}" />
-                </Grid>
                 <Border
-                    Grid.Row="1"
-                    Margin="0,0,0,18"
-                    Padding="16"
+                    Margin="0,0,0,14"
+                    Padding="12,10"
                     Background="{DynamicResource ElevatedBrush}"
                     BorderBrush="{DynamicResource BorderBrush}"
                     BorderThickness="1"
@@ -96,146 +70,160 @@
                     <Grid>
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="Auto" />
-                            <ColumnDefinition />
+                            <ColumnDefinition Width="*" />
                             <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
                         <Ellipse
                             x:Name="TrainingIndicator"
-                            Width="11"
-                            Height="11"
-                            Margin="0,0,13,0"
+                            Width="9"
+                            Height="9"
+                            Margin="0,0,10,0"
                             VerticalAlignment="Center"
                             Fill="{DynamicResource MutedBrush}" />
-                        <StackPanel Grid.Column="1">
-                            <TextBlock FontWeight="SemiBold" Text="Live training status" />
-                            <TextBlock
-                                x:Name="TrainingStatusText"
-                                Margin="0,3,0,0"
-                                FontSize="12"
-                                Foreground="{DynamicResource MutedBrush}"
-                                TextWrapping="Wrap" />
-                        </StackPanel>
+                        <TextBlock
+                            x:Name="TrainingStatusText"
+                            Grid.Column="1"
+                            VerticalAlignment="Center"
+                            Foreground="{DynamicResource MutedBrush}"
+                            TextTrimming="CharacterEllipsis" />
                         <TextBlock
                             x:Name="CurrentVehicleText"
                             Grid.Column="2"
-                            Margin="12,0,0,0"
+                            Margin="16,0,0,0"
                             VerticalAlignment="Center"
                             FontWeight="SemiBold"
                             Foreground="{DynamicResource AccentBrush}" />
                     </Grid>
                 </Border>
-                <Grid Grid.Row="2">
+                <Grid Grid.Row="1">
                     <ScrollViewer VerticalScrollBarVisibility="Auto">
-                        <ItemsControl ItemsSource="{Binding Trainings}">
-                            <ItemsControl.ItemTemplate>
-                                <DataTemplate>
-                                    <Border
-                                        Margin="0,0,8,14"
-                                        Padding="18"
-                                        CornerRadius="12">
-                                        <Border.Style>
-                                            <Style TargetType="Border">
-                                                <Setter Property="Background" Value="{DynamicResource SurfaceBrush}" />
-                                                <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}" />
-                                                <Setter Property="BorderThickness" Value="1" />
-                                                <Style.Triggers>
-                                                    <DataTrigger Binding="{Binding IsCurrent}" Value="True">
-                                                        <Setter Property="Background" Value="{DynamicResource ElevatedBrush}" />
-                                                        <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
-                                                        <Setter Property="BorderThickness" Value="2" />
-                                                    </DataTrigger>
-                                                </Style.Triggers>
-                                            </Style>
-                                        </Border.Style>
-                                        <StackPanel>
-                                            <Grid>
-                                                <Grid.ColumnDefinitions>
-                                                    <ColumnDefinition />
-                                                    <ColumnDefinition Width="Auto" />
-                                                </Grid.ColumnDefinitions>
+                        <StackPanel>
+                            <ItemsControl ItemsSource="{Binding Trainings}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Border
+                                            Margin="0,0,8,12"
+                                            Padding="16"
+                                            CornerRadius="12">
+                                            <Border.Style>
+                                                <Style TargetType="Border">
+                                                    <Setter Property="Background"
+                                                            Value="{DynamicResource SurfaceBrush}" />
+                                                    <Setter Property="BorderBrush"
+                                                            Value="{DynamicResource BorderBrush}" />
+                                                    <Setter Property="BorderThickness" Value="1" />
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding IsCurrent}" Value="True">
+                                                            <Setter Property="Background"
+                                                                    Value="{DynamicResource ElevatedBrush}" />
+                                                            <Setter Property="BorderBrush"
+                                                                    Value="{DynamicResource AccentBrush}" />
+                                                            <Setter Property="BorderThickness" Value="2" />
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </Border.Style>
+                                            <StackPanel>
+                                                <Grid>
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition />
+                                                        <ColumnDefinition Width="Auto" />
+                                                    </Grid.ColumnDefinitions>
+                                                    <TextBlock
+                                                        FontSize="16"
+                                                        FontWeight="SemiBold"
+                                                        Text="{Binding VehicleLabel}" />
+                                                    <Border
+                                                        Grid.Column="1"
+                                                        Padding="8,3"
+                                                        Background="{DynamicResource AccentBrush}"
+                                                        CornerRadius="7">
+                                                        <Border.Style>
+                                                            <Style TargetType="Border">
+                                                                <Setter Property="Visibility" Value="Collapsed" />
+                                                                <Style.Triggers>
+                                                                    <DataTrigger Binding="{Binding IsCurrent}"
+                                                                            Value="True">
+                                                                        <Setter Property="Visibility" Value="Visible" />
+                                                                    </DataTrigger>
+                                                                </Style.Triggers>
+                                                            </Style>
+                                                        </Border.Style>
+                                                        <TextBlock
+                                                            FontSize="10"
+                                                            FontWeight="Bold"
+                                                            Foreground="White"
+                                                            Text="LIVE" />
+                                                    </Border>
+                                                </Grid>
                                                 <TextBlock
-                                                    FontSize="17"
-                                                    FontWeight="Bold"
-                                                    Text="{Binding VehicleLabel}" />
-                                                <Border
-                                                    Grid.Column="1"
-                                                    Padding="9,4"
-                                                    Background="{DynamicResource AccentBrush}"
-                                                    CornerRadius="7">
-                                                    <Border.Style>
-                                                        <Style TargetType="Border">
+                                                    Margin="0,3,0,12"
+                                                    FontSize="12"
+                                                    Foreground="{DynamicResource MutedBrush}"
+                                                    Text="{Binding MappingDetails}" />
+                                                <Grid Margin="0,0,0,7">
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition />
+                                                        <ColumnDefinition Width="Auto" />
+                                                    </Grid.ColumnDefinitions>
+                                                    <TextBlock FontWeight="SemiBold" Text="{Binding ProgressLabel}" />
+                                                    <TextBlock
+                                                        Grid.Column="1"
+                                                        Foreground="{DynamicResource MutedBrush}"
+                                                        Text="{Binding ConfidenceLabel}" />
+                                                </Grid>
+                                                <ProgressBar
+                                                    Maximum="100"
+                                                    Style="{StaticResource TrainingProgress}"
+                                                    Value="{Binding ProgressPercent, Mode=OneWay}" />
+                                                <Expander Margin="0,10,0,0">
+                                                    <Expander.Style>
+                                                        <Style TargetType="Expander">
                                                             <Setter Property="Visibility" Value="Collapsed" />
                                                             <Style.Triggers>
-                                                                <DataTrigger Binding="{Binding IsCurrent}" Value="True">
+                                                                <DataTrigger Binding="{Binding HasMapping}"
+                                                                             Value="True">
                                                                     <Setter Property="Visibility" Value="Visible" />
                                                                 </DataTrigger>
                                                             </Style.Triggers>
                                                         </Style>
-                                                    </Border.Style>
-                                                    <TextBlock
-                                                        FontSize="11"
-                                                        FontWeight="Bold"
-                                                        Foreground="White"
-                                                        Text="CURRENT CAR · LIVE" />
-                                                </Border>
-                                            </Grid>
-                                            <TextBlock
-                                                Margin="0,4,0,15"
-                                                FontSize="12"
-                                                Foreground="{DynamicResource MutedBrush}"
-                                                Text="{Binding MappingDetails}" />
-                                            <Grid Margin="0,0,0,7">
-                                                <Grid.ColumnDefinitions>
-                                                    <ColumnDefinition />
-                                                    <ColumnDefinition Width="Auto" />
-                                                </Grid.ColumnDefinitions>
-                                                <TextBlock FontWeight="SemiBold" Text="{Binding ProgressLabel}" />
-                                                <TextBlock
-                                                    Grid.Column="1"
-                                                    Foreground="{DynamicResource MutedBrush}"
-                                                    Text="{Binding ConfidenceLabel}" />
-                                            </Grid>
-                                            <ProgressBar
-                                                Maximum="100"
-                                                Style="{StaticResource TrainingProgress}"
-                                                Value="{Binding ProgressPercent, Mode=OneWay}" />
-                                            <TextBlock
-                                                Margin="0,12,0,0"
-                                                FontWeight="SemiBold"
-                                                Foreground="{DynamicResource AccentBrush}"
-                                                Text="{Binding ShiftPointLabel}" />
-                                            <controls:RpmRangeEditor Margin="0,17,0,0" IsReadOnly="True">
-                                                <controls:RpmRangeEditor.Style>
-                                                    <Style TargetType="controls:RpmRangeEditor">
-                                                        <Setter Property="Visibility" Value="Collapsed" />
-                                                        <Style.Triggers>
-                                                            <DataTrigger Binding="{Binding HasMapping}" Value="True">
-                                                                <Setter Property="Visibility" Value="Visible" />
-                                                            </DataTrigger>
-                                                        </Style.Triggers>
-                                                    </Style>
-                                                </controls:RpmRangeEditor.Style>
-                                            </controls:RpmRangeEditor>
-                                        </StackPanel>
-                                    </Border>
-                                </DataTemplate>
-                            </ItemsControl.ItemTemplate>
-                        </ItemsControl>
+                                                    </Expander.Style>
+                                                    <Expander.Header>
+                                                        <TextBlock
+                                                            FontWeight="SemiBold"
+                                                            Foreground="{DynamicResource AccentBrush}"
+                                                            Text="{Binding ShiftPointLabel}" />
+                                                    </Expander.Header>
+                                                    <controls:RpmRangeEditor Margin="0,10,0,0" IsReadOnly="True" />
+                                                </Expander>
+                                            </StackPanel>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                            <Button
+                                x:Name="ResetTrainingsButton"
+                                Margin="0,4,8,8"
+                                HorizontalAlignment="Right"
+                                Click="ResetTrainings_OnClick"
+                                Content="Reset trainings"
+                                Style="{StaticResource GhostButton}" />
+                        </StackPanel>
                     </ScrollViewer>
                     <StackPanel
                         x:Name="EmptyState"
-                        MaxWidth="430"
+                        MaxWidth="360"
                         HorizontalAlignment="Center"
                         VerticalAlignment="Center">
                         <TextBlock
                             HorizontalAlignment="Center"
-                            FontSize="19"
+                            FontSize="18"
                             FontWeight="SemiBold"
-                            Text="No shift samples yet" />
+                            Text="No training data yet" />
                         <TextBlock
-                            Margin="0,9,0,0"
+                            Margin="0,6,0,0"
                             Foreground="{DynamicResource MutedBrush}"
-                            Text="Drive in Smart mode with per-car learning enabled. Hold full throttle near the top of a gear, then upshift. The first valid shift appears here."
+                            Text="Use Smart mode with per-car learning enabled, then upshift at full throttle."
                             TextAlignment="Center"
                             TextWrapping="Wrap" />
                     </StackPanel>

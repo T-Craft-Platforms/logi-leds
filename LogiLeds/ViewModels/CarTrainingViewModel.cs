@@ -37,18 +37,18 @@ public sealed class CarTrainingViewModel : ObservableObject
     public int ProgressPercent => Math.Min(100, _shiftCount * 20);
 
     public string ProgressLabel => _learnedRedlinePercent is null
-        ? $"{_shiftCount} valid shift sample{(_shiftCount == 1 ? "" : "s")} · learning activates after 3 matching shifts"
-        : $"Learning active · {_shiftCount} valid shift samples";
+        ? $"{_shiftCount} samples · needs 3 matching shifts"
+        : $"{_shiftCount} samples";
 
     public string ConfidenceLabel => _learnedRedlinePercent is null
-        ? "Waiting for matching shifts"
+        ? "Not learned yet"
         : $"{_confidencePercent}% confidence";
 
     public string ShiftPointLabel => _learnedRedlinePercent is double value
         ? $"Learned shift point  {value:0.0}%"
         : "Shift point pending";
 
-    public string MappingDetails => $"{GameTitle} · {ProtocolVariant} · {EngineMaxRpm:N0} RPM engine";
+    public string MappingDetails => $"{GameTitle} · {EngineMaxRpm:N0} RPM";
     public bool HasMapping => _learnedRedlinePercent is not null;
 
     public bool IsCurrent

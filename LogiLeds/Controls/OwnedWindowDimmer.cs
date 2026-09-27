@@ -17,6 +17,10 @@ internal static class OwnedWindowDimmer
         window.Activated += (_, _) => Update(window);
         window.Deactivated += (_, _) => Update(window);
         window.LocationChanged += (_, _) => Update(window);
+        window.Closed += (_, _) =>
+        {
+            if (window.Owner is Window owner) Update(owner);
+        };
     }
 
     private static void EnsureOverlay(Window window)

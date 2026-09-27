@@ -52,10 +52,10 @@ public partial class CarTrainingLibraryWindow : Window
         EmptyState.Visibility = Trainings.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
         ResetTrainingsButton.IsEnabled = !_resetting && Trainings.Count > 0;
         CurrentVehicleText.Text = overview.CurrentVehicle;
-        TrainingStatusText.Text = !overview.IsEnabled ? "Training paused · enable Learn per-car shift in Smart mode"
-            : !overview.IsLive ? "Waiting for live vehicle telemetry"
-            : overview.IsSampling ? "Collecting full-throttle shift data now"
-            : "Monitoring live vehicle · accelerate and upshift to collect a sample";
+        TrainingStatusText.Text = !overview.IsEnabled ? "Learning off · enable it in Smart mode"
+            : !overview.IsLive ? "Waiting for Forza telemetry"
+            : overview.IsSampling ? "Collecting shift sample"
+            : "Ready · upshift at full throttle";
         TrainingIndicator.Fill = overview.IsSampling
             ? (Brush)FindResource("SuccessBrush")
             : overview.IsLive && overview.IsEnabled

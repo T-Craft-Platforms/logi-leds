@@ -61,7 +61,9 @@
                             <Slider.Style>
                                 <Style BasedOn="{StaticResource {x:Type Slider}}" TargetType="Slider">
                                     <Style.Triggers>
-                                        <DataTrigger Binding="{Binding IsReadOnly, RelativeSource={RelativeSource AncestorType=UserControl}}" Value="True">
+                                        <DataTrigger
+                                            Binding="{Binding IsReadOnly, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                            Value="True">
                                             <Setter Property="IsEnabled" Value="False" />
                                             <Setter Property="Opacity" Value="0.65" />
                                         </DataTrigger>
@@ -80,7 +82,9 @@
                             <TextBox.Style>
                                 <Style BasedOn="{StaticResource {x:Type TextBox}}" TargetType="TextBox">
                                     <Style.Triggers>
-                                        <DataTrigger Binding="{Binding IsReadOnly, RelativeSource={RelativeSource AncestorType=UserControl}}" Value="True">
+                                        <DataTrigger
+                                            Binding="{Binding IsReadOnly, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                            Value="True">
                                             <Setter Property="Visibility" Value="Collapsed" />
                                         </DataTrigger>
                                     </Style.Triggers>
@@ -92,12 +96,15 @@
                             HorizontalAlignment="Center"
                             VerticalAlignment="Center"
                             FontWeight="SemiBold"
+                            Foreground="{DynamicResource TextBrush}"
                             Text="{Binding Value, StringFormat={}{0:0.0}%}">
                             <TextBlock.Style>
                                 <Style TargetType="TextBlock">
                                     <Setter Property="Visibility" Value="Collapsed" />
                                     <Style.Triggers>
-                                        <DataTrigger Binding="{Binding IsReadOnly, RelativeSource={RelativeSource AncestorType=UserControl}}" Value="True">
+                                        <DataTrigger
+                                            Binding="{Binding IsReadOnly, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                            Value="True">
                                             <Setter Property="Visibility" Value="Visible" />
                                         </DataTrigger>
                                     </Style.Triggers>
@@ -133,7 +140,9 @@
                 <Slider.Style>
                     <Style BasedOn="{StaticResource {x:Type Slider}}" TargetType="Slider">
                         <Style.Triggers>
-                            <DataTrigger Binding="{Binding IsReadOnly, RelativeSource={RelativeSource AncestorType=UserControl}}" Value="True">
+                            <DataTrigger
+                                Binding="{Binding IsReadOnly, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                Value="True">
                                 <Setter Property="IsEnabled" Value="False" />
                                 <Setter Property="Opacity" Value="0.65" />
                             </DataTrigger>
@@ -153,7 +162,9 @@
                 <TextBox.Style>
                     <Style BasedOn="{StaticResource {x:Type TextBox}}" TargetType="TextBox">
                         <Style.Triggers>
-                            <DataTrigger Binding="{Binding IsReadOnly, RelativeSource={RelativeSource AncestorType=UserControl}}" Value="True">
+                            <DataTrigger
+                                Binding="{Binding IsReadOnly, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                Value="True">
                                 <Setter Property="Visibility" Value="Collapsed" />
                             </DataTrigger>
                         </Style.Triggers>
@@ -165,12 +176,15 @@
                 HorizontalAlignment="Center"
                 VerticalAlignment="Center"
                 FontWeight="SemiBold"
+                Foreground="{DynamicResource TextBrush}"
                 Text="{Binding RedlinePercent, StringFormat={}{0:0.0}%}">
                 <TextBlock.Style>
                     <Style TargetType="TextBlock">
                         <Setter Property="Visibility" Value="Collapsed" />
                         <Style.Triggers>
-                            <DataTrigger Binding="{Binding IsReadOnly, RelativeSource={RelativeSource AncestorType=UserControl}}" Value="True">
+                            <DataTrigger
+                                Binding="{Binding IsReadOnly, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                Value="True">
                                 <Setter Property="Visibility" Value="Visible" />
                             </DataTrigger>
                         </Style.Triggers>

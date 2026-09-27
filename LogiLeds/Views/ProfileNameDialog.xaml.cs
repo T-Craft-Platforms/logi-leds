@@ -1,4 +1,5 @@
 using System.Windows;
+using LogiLeds.Controls;
 
 namespace LogiLeds.Views;
 
@@ -7,6 +8,7 @@ public partial class ProfileNameDialog : Window
     private ProfileNameDialog(Window? owner)
     {
         InitializeComponent();
+        OwnedWindowDimmer.Attach(this);
         if (owner is not null) Owner = owner;
         Loaded += (_, _) =>
         {
