@@ -21,10 +21,14 @@ public sealed record WheelDefinition
     public double DefaultFirstPercent { get; init; } = 65;
     public double DefaultRedlinePercent { get; init; } = 90;
     public bool HardwareVerified { get; init; }
+    // Optional logical controls supplement descriptor discovery. These are HID usages,
+    // not arbitrary report offsets or executable device commands.
+    public WheelInputControl[] InputControls { get; init; } = [];
+    public WheelForceCapabilities ForceFeedback { get; init; } = new();
 
     public bool TryValidate(out string error)
     {
-        if (SchemaVersion != 1 || string.IsNullOrWhiteSpace(Id) || string.IsNullOrWhiteSpace(DisplayName))
+        if (SchemaVersion is not (1 or 2) || string.IsNullOrWhiteSpace(Id) || string.IsNullOrWhiteSpace(DisplayName))
         {
             error = "Definition identity or schema is invalid.";
             return false;
@@ -72,9 +76,35 @@ public sealed record WheelDefinition
             return false;
         }
 
+        if (InputControls is null || ForceFeedback is null ||
+            InputControls.Any(control => !control.TryValidate()) ||
+            InputControls.Select(control => control.Name).Distinct(StringComparer.OrdinalIgnoreCase).Count() != InputControls.Length)
+        {
+            error = "Input control declarations are invalid.";
+            return false;
+        }
+
         error = string.Empty;
         return true;
     }
+}
+
+public sealed record WheelInputControl
+{
+    public string Name { get; init; } = string.Empty;
+    public int UsagePage { get; init; } = 1;
+    public int Usage { get; init; }
+    public bool IsButton { get; init; }
+    public bool Inverted { get; init; }
+    public bool Centered { get; init; }
+    public bool TryValidate() => !string.IsNullOrWhiteSpace(Name) && Name.Length <= 48 &&
+                                 UsagePage is >= 1 and <= 65535 && Usage is >= 1 and <= 65535;
+}
+
+public sealed record WheelForceCapabilities
+{
+    public bool Spring { get; init; }
+    public bool Damper { get; init; }
 }
 
 public sealed record WheelCatalogResult(IReadOnlyList<WheelDefinition> Definitions, IReadOnlyList<string> Diagnostics);
