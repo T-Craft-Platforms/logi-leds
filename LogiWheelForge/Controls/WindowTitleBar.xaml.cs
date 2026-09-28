@@ -2,7 +2,6 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
-using System.Windows.Media.Animation;
 using FontAwesome.Sharp;
 using UserControl = System.Windows.Controls.UserControl;
 using ButtonBase = System.Windows.Controls.Primitives.ButtonBase;
@@ -36,29 +35,8 @@ public partial class WindowTitleBar : UserControl
         var nextState = (isCompact, isOverlayOpen, isNarrow);
         if (_navigationIconState == nextState) return;
         _navigationIconState = nextState;
+        NavigationToggleIcon.Icon = isNarrow && isOverlayOpen ? IconChar.Xmark : IconChar.Bars;
         NavigationIconAnimator.PlayWiggle(NavigationToggleIcon);
-    }
-
-    public void SetNavigationLayoutWidth(double width, bool animate)
-    {
-        var toggleWidth = NavigationToggleButton.ActualWidth > 0
-            ? NavigationToggleButton.ActualWidth
-            : 38;
-        var toggleAreaWidth = NavigationToggleButton.Margin.Left + toggleWidth + NavigationToggleButton.Margin.Right;
-        var targetMargin = new Thickness(Math.Max(0, width - toggleAreaWidth), 0, 0, 0);
-        if (animate)
-        {
-            BrandStack.BeginAnimation(FrameworkElement.MarginProperty,
-                new ThicknessAnimation(BrandStack.Margin, targetMargin, TimeSpan.FromMilliseconds(240))
-                {
-                    EasingFunction = new CubicEase { EasingMode = EasingMode.EaseInOut }
-                }, HandoffBehavior.SnapshotAndReplace);
-        }
-        else
-        {
-            BrandStack.BeginAnimation(FrameworkElement.MarginProperty, null);
-            BrandStack.Margin = targetMargin;
-        }
     }
 
     private void NavigationToggleButton_OnClick(object sender, RoutedEventArgs e)

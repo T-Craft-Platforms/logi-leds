@@ -303,20 +303,14 @@ public partial class MainWindow : Window
         var animateLabels = _navigationLabelsVisible is bool wasVisible && wasVisible != showLabels;
         _navigationLabelsVisible = showLabels;
         var layoutVersion = ++_navigationLayoutVersion;
-        var targetPadding = showLabels ? new Thickness(12, 18, 12, 18) : new Thickness(6, 18, 6, 18);
         var visibleSidebarWidth = _isNavigationOverlayOpen
             ? ExpandedNavigationWidth
             : isCompact ? CompactNavigationWidth : ExpandedNavigationWidth;
-        // Start the top rule where the sidebar's rounded top-right stroke begins,
-        // so the horizontal and curved edges meet as one outside corner.
         var targetDividerMargin = new Thickness(Math.Max(0, visibleSidebarWidth - NavigationCornerRadius), 0, 0, 0);
+        SidebarPanel.BeginAnimation(Border.PaddingProperty, null);
+        SidebarPanel.Padding = new Thickness(12, 18, 12, 18);
         if (animateLabels)
         {
-            SidebarPanel.BeginAnimation(Border.PaddingProperty,
-                new ThicknessAnimation(SidebarPanel.Padding, targetPadding, TimeSpan.FromMilliseconds(240))
-                {
-                    EasingFunction = new CubicEase { EasingMode = EasingMode.EaseInOut }
-                }, HandoffBehavior.SnapshotAndReplace);
             TopBarDivider.BeginAnimation(FrameworkElement.MarginProperty,
                 new ThicknessAnimation(TopBarDivider.Margin, targetDividerMargin, TimeSpan.FromMilliseconds(240))
                 {
@@ -325,8 +319,6 @@ public partial class MainWindow : Window
         }
         else
         {
-            SidebarPanel.BeginAnimation(Border.PaddingProperty, null);
-            SidebarPanel.Padding = targetPadding;
             TopBarDivider.BeginAnimation(FrameworkElement.MarginProperty, null);
             TopBarDivider.Margin = targetDividerMargin;
         }
@@ -335,7 +327,6 @@ public partial class MainWindow : Window
         SetNavigationItemLayout(LedNavigationButton, LedNavigationLabel, LedNavigationIcon, showLabels, animateLabels, layoutVersion);
         SetNavigationItemLayout(MapperNavigationButton, MapperNavigationLabel, MapperNavigationIcon, showLabels, animateLabels, layoutVersion);
         SetNavigationItemLayout(SettingsNavigationButton, SettingsNavigationLabel, SettingsNavigationIcon, showLabels, animateLabels, layoutVersion);
-        TitleBar.SetNavigationLayoutWidth(visibleSidebarWidth, animateLabels);
         TitleBar.SetNavigationIconState(isCompact && !_isNavigationOverlayOpen,
             _isNavigationOverlayOpen, _isNarrowWindow);
     }
@@ -343,9 +334,8 @@ public partial class MainWindow : Window
     private void SetNavigationItemLayout(RadioButton button, TextBlock label, FrameworkElement icon,
         bool showLabel, bool animate, int layoutVersion)
     {
-        // Keep the icon centered on the same sidebar axis in both modes. The compact
-        // button fills the padded rail width so its transform never appears to drift.
-        button.Width = showLabel ? 188 : 60;
+        button.Width = showLabel ? 188 : 47;
+        button.HorizontalAlignment = System.Windows.HorizontalAlignment.Left;
         button.Padding = showLabel ? new Thickness(16, 9, 16, 9) : new Thickness(0);
         button.HorizontalContentAlignment = showLabel
             ? System.Windows.HorizontalAlignment.Left

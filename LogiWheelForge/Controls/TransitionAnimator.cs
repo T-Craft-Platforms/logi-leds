@@ -38,6 +38,9 @@ public static class TransitionAnimator
     public static readonly DependencyProperty DistanceProperty = DependencyProperty.RegisterAttached(
         "Distance", typeof(double), typeof(TransitionAnimator), new PropertyMetadata(28d));
 
+    public static readonly DependencyProperty ReverseDirectionProperty = DependencyProperty.RegisterAttached(
+        "ReverseDirection", typeof(bool), typeof(TransitionAnimator), new PropertyMetadata(false));
+
     public static void SetIsEnabled(DependencyObject element, bool value) => element.SetValue(IsEnabledProperty, value);
     public static bool GetIsEnabled(DependencyObject element) => (bool)element.GetValue(IsEnabledProperty);
     public static void SetIndex(DependencyObject element, int value) => element.SetValue(IndexProperty, value);
@@ -50,13 +53,15 @@ public static class TransitionAnimator
     public static double GetDuration(DependencyObject element) => (double)element.GetValue(DurationProperty);
     public static void SetDistance(DependencyObject element, double value) => element.SetValue(DistanceProperty, value);
     public static double GetDistance(DependencyObject element) => (double)element.GetValue(DistanceProperty);
+    public static void SetReverseDirection(DependencyObject element, bool value) => element.SetValue(ReverseDirectionProperty, value);
+    public static bool GetReverseDirection(DependencyObject element) => (bool)element.GetValue(ReverseDirectionProperty);
 
     public static void Play(FrameworkElement element, int direction) =>
         Play(element, direction, TransitionAxis.Vertical, 420);
 
     public static void Play(FrameworkElement element, int direction, TransitionAxis axis,
-        double durationMilliseconds = 420, double distance = 28) =>
-        Animate(element, Math.Sign(direction), axis, durationMilliseconds, distance);
+        double durationMilliseconds = 420, double distance = 28, bool reverseDirection = false) =>
+        Animate(element, Math.Sign(direction) * (reverseDirection ? -1 : 1), axis, durationMilliseconds, distance);
 
     private static void OnIsActiveChanged(DependencyObject element, DependencyPropertyChangedEventArgs args)
     {
@@ -88,7 +93,11 @@ public static class TransitionAnimator
             var state = ActivePanels.GetValue(parent, _ => new ActivePanelState());
             var currentIndex = GetIndex(element);
             if (state.LastIndex is int previousIndex && previousIndex != currentIndex)
-                Animate(element, Math.Sign(currentIndex - previousIndex), GetAxis(element), GetDuration(element), GetDistance(element));
+            {
+                var direction = Math.Sign(currentIndex - previousIndex);
+                if (GetReverseDirection(element)) direction *= -1;
+                Animate(element, direction, GetAxis(element), GetDuration(element), GetDistance(element));
+            }
             state.LastIndex = currentIndex;
         });
     }
@@ -156,13 +165,15 @@ public static class TransitionAnimator
                 ? 0
                 : Math.Sign(currentIndex - state.LastIndex);
             state.LastIndex = currentIndex;
-            Animate(presenter, direction, GetAxis(presenter), GetDuration(presenter), GetDistance(presenter));
+            Animate(presenter, direction, GetAxis(presenter), GetDuration(presenter), GetDistance(presenter),
+                GetReverseDirection(presenter));
         });
     }
 
     private static void Animate(FrameworkElement element, int direction, TransitionAxis axis,
-        double durationMilliseconds, double distance)
+        double durationMilliseconds, double distance, bool reverseDirection = false)
     {
+        if (reverseDirection) direction *= -1;
         var duration = TimeSpan.FromMilliseconds(Math.Clamp(durationMilliseconds, 180, 1200));
         var offset = new TranslateTransform();
         var offsetProperty = axis == TransitionAxis.Horizontal ? TranslateTransform.XProperty : TranslateTransform.YProperty;

@@ -108,9 +108,9 @@
                                              Style="{StaticResource ModuleNavigationItemStyle}" IsChecked="True"
                                              Click="NavigationButton_OnClick" ToolTip="Dashboard">
                                     <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                        <Path x:Name="DashboardNavigationIcon" Width="18" Height="18" Margin="0,0,12,0"
-                                              Fill="{Binding RelativeSource={RelativeSource AncestorType=RadioButton}, Path=Foreground}"
-                                              Data="M2,2 H7 V7 H2 Z M9,2 H14 V7 H9 Z M2,9 H7 V14 H2 Z M9,9 H14 V14 H9 Z"/>
+                                        <fa:IconImage x:Name="DashboardNavigationIcon" Width="18" Height="18" Margin="0,0,12,0"
+                                                      Foreground="{Binding RelativeSource={RelativeSource AncestorType=RadioButton}, Path=Foreground}"
+                                                      Icon="Gauge"/>
                                         <TextBlock x:Name="DashboardNavigationLabel" Text="Dashboard" VerticalAlignment="Center"/>
                                     </StackPanel>
                                 </RadioButton>
@@ -118,9 +118,9 @@
                                              Style="{StaticResource ModuleNavigationItemStyle}" Click="NavigationButton_OnClick"
                                              ToolTip="LED Indicator">
                                     <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                        <Path x:Name="LedNavigationIcon" Width="18" Height="18" Margin="0,0,12,0"
-                                              Fill="{Binding RelativeSource={RelativeSource AncestorType=RadioButton}, Path=Foreground}"
-                                              Data="M8,1 A7,7 0 1 0 8,15 A7,7 0 1 0 8,1 Z M8,4 A4,4 0 1 1 8,12 A4,4 0 1 1 8,4 Z"/>
+                                        <fa:IconImage x:Name="LedNavigationIcon" Width="18" Height="18" Margin="0,0,12,0"
+                                                      Foreground="{Binding RelativeSource={RelativeSource AncestorType=RadioButton}, Path=Foreground}"
+                                                      Icon="Lightbulb"/>
                                         <TextBlock x:Name="LedNavigationLabel" Text="LED Indicator" VerticalAlignment="Center"/>
                                     </StackPanel>
                                 </RadioButton>
@@ -128,10 +128,9 @@
                                              Style="{StaticResource ModuleNavigationItemStyle}" Click="NavigationButton_OnClick"
                                              ToolTip="Input Mapper">
                                     <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                        <Path x:Name="MapperNavigationIcon" Width="18" Height="18" Margin="0,0,12,0"
-                                              Stroke="{Binding RelativeSource={RelativeSource AncestorType=RadioButton}, Path=Foreground}"
-                                              StrokeThickness="1.6" StrokeStartLineCap="Round" StrokeEndLineCap="Round" StrokeLineJoin="Round"
-                                              Data="M2,5 H14 M11,2 L14,5 L11,8 M14,11 H2 M5,8 L2,11 L5,14"/>
+                                        <fa:IconImage x:Name="MapperNavigationIcon" Width="18" Height="18" Margin="0,0,12,0"
+                                                      Foreground="{Binding RelativeSource={RelativeSource AncestorType=RadioButton}, Path=Foreground}"
+                                                      Icon="ArrowsLeftRight"/>
                                         <TextBlock x:Name="MapperNavigationLabel" Text="Input Mapper" VerticalAlignment="Center"/>
                                     </StackPanel>
                                 </RadioButton>
