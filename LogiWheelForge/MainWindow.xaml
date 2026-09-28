@@ -25,6 +25,26 @@
         <DataTemplate DataType="{x:Type vm:SettingsViewModel}">
             <views:SettingsView />
         </DataTemplate>
+        <DataTemplate DataType="{x:Type vm:InputMapperViewModel}">
+            <views:InputMapperView />
+        </DataTemplate>
+        <Style x:Key="ModuleNavigationStyle" TargetType="TabControl">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="TabStripPlacement" Value="Left"/>
+            <Setter Property="Template">
+                <Setter.Value><ControlTemplate TargetType="TabControl">
+                    <TabPanel IsItemsHost="True" VerticalAlignment="Top"/>
+                </ControlTemplate></Setter.Value>
+            </Setter>
+        </Style>
+        <Style x:Key="ModuleNavigationItemStyle" BasedOn="{StaticResource {x:Type TabItem}}" TargetType="TabItem">
+            <Setter Property="Width" Value="188"/>
+            <Setter Property="Height" Value="46"/>
+            <Setter Property="HorizontalContentAlignment" Value="Left"/>
+            <Setter Property="Margin" Value="0,3"/>
+            <Setter Property="Padding" Value="16,9"/>
+        </Style>
     </Window.Resources>
     <shell:WindowChrome.WindowChrome>
         <shell:WindowChrome
@@ -46,10 +66,24 @@
                 <RowDefinition Height="*" />
             </Grid.RowDefinitions>
             <controls:WindowTitleBar Grid.Row="0" />
-            <ContentPresenter
-                x:Name="PageTransitionPresenter"
-                Grid.Row="1"
-                Content="{Binding SelectedPage}" />
+            <Grid Grid.Row="1">
+                <Grid.ColumnDefinitions><ColumnDefinition Width="216"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                <Border Grid.Column="0" Background="{DynamicResource SurfaceBrush}" BorderBrush="{DynamicResource BorderBrush}"
+                        BorderThickness="0,0,1,0" Padding="12,18">
+                    <DockPanel LastChildFill="True">
+                        <TextBlock DockPanel.Dock="Bottom" Margin="16,0,0,10" FontSize="12"
+                                   Foreground="{DynamicResource MutedBrush}" Text="LOGIWHEEL FORGE"/>
+                        <TabControl Style="{StaticResource ModuleNavigationStyle}" SelectedIndex="{Binding SelectedTab, Mode=TwoWay}"
+                                    ItemContainerStyle="{StaticResource ModuleNavigationItemStyle}">
+                            <TabItem Header="Dashboard"/>
+                            <TabItem Header="LED Indicator"/>
+                            <TabItem Header="Input Mapper"/>
+                            <TabItem Header="Settings"/>
+                        </TabControl>
+                    </DockPanel>
+                </Border>
+                <ContentPresenter x:Name="PageTransitionPresenter" Grid.Column="1" Content="{Binding SelectedPage}" />
+            </Grid>
         </Grid>
     </Border>
 </Window>

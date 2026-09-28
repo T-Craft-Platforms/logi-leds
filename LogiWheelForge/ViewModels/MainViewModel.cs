@@ -13,7 +13,10 @@ public sealed class MainViewModel : ObservableObject, IAsyncDisposable
 {
     private readonly SettingsDraft _draft = new();
     private readonly HashSet<ThresholdViewModel> _observedThresholds = [];
-    private readonly LedApplicationService _service;
+    private readonly LedIndicatorService _service;
+    private readonly InputMapperService _mapperService;
+    private readonly InputMapperSettingsStore _mapperSettingsStore = new();
+    private readonly WheelSelectionService _wheelSelection;
     private readonly SemaphoreSlim _settingsSaveGate = new(1, 1);
     private WheelDefinition? _activeDefinition;
     private bool _isWheelConnected, _isTelemetryConnected, _isRaceOn, _settingsLoaded;
@@ -23,12 +26,17 @@ public sealed class MainViewModel : ObservableObject, IAsyncDisposable
     private ReadinessState _state;
     private string _statusMessage = "Starting LogiWheel Forge", _wheelName = "No Logitech wheel", _telemetryFormat = "—";
 
-    public MainViewModel(LedApplicationService service)
+    public MainViewModel(LedIndicatorService service, InputMapperService mapperService,
+        WheelSelectionService wheelSelection)
     {
         _service = service;
+        _mapperService = mapperService;
+        _wheelSelection = wheelSelection;
+        _wheelSelection.ActiveWheelChanged += OnSelectedWheelChanged;
         Dashboard = new DashboardViewModel(service, SetStatusMessage);
         RpmProfile = new RpmProfileViewModel(service, _draft, SetStatusMessage);
         Settings = new SettingsViewModel(service, _draft, SetStatusMessage);
+        Mapper = new InputMapperViewModel(mapperService);
         Settings.TelemetryChanged += OnTelemetryChanged;
         _draft.PropertyChanged += OnDraftPropertyChanged;
         RpmProfile.Thresholds.CollectionChanged += OnThresholdsCollectionChanged;
@@ -39,6 +47,7 @@ public sealed class MainViewModel : ObservableObject, IAsyncDisposable
     public DashboardViewModel Dashboard { get; }
     public RpmProfileViewModel RpmProfile { get; }
     public SettingsViewModel Settings { get; }
+    public InputMapperViewModel Mapper { get; }
     public ICommand ExitCommand { get; }
     public bool MinimizeToTray => _draft.CloseToTray;
     public bool CloseToTray => _draft.CloseToTray;
@@ -59,7 +68,8 @@ public sealed class MainViewModel : ObservableObject, IAsyncDisposable
     public object SelectedPage => SelectedTab switch
     {
         1 => RpmProfile,
-        2 => Settings,
+        2 => Mapper,
+        3 => Settings,
         _ => Dashboard
     };
 
@@ -105,8 +115,8 @@ public sealed class MainViewModel : ObservableObject, IAsyncDisposable
             ? "Connected"
             : "Standby";
 
-    public string AppControlStatusText => !IsRunning ? "Control is stopped" :
-        State == ReadinessState.Driving ? "RPM control is active" : "Control is ready";
+    public string AppControlStatusText => !IsRunning ? "LED Indicator is stopped" :
+        State == ReadinessState.Driving ? "RPM lights are active" : "LED Indicator is ready";
 
     public string WheelStatusText => _isWheelConnected ? $"{WheelName} connected" : "No wheel detected";
 
@@ -146,6 +156,10 @@ public sealed class MainViewModel : ObservableObject, IAsyncDisposable
         Dashboard.Dispose();
         RpmProfile.Dispose();
         Settings.Dispose();
+        Mapper.Dispose();
+        _mapperService.Dispose();
+        _wheelSelection.ActiveWheelChanged -= OnSelectedWheelChanged;
+        _wheelSelection.Dispose();
         await _service.DisposeAsync();
     }
 
@@ -232,6 +246,7 @@ public sealed class MainViewModel : ObservableObject, IAsyncDisposable
     public async Task InitializeAsync(nint windowHandle)
     {
         var settings = await _service.LoadSettingsAsync();
+        var mapperSettings = await _mapperSettingsStore.LoadAsync();
         _draft.FirstLedPercent = settings.FirstLedPercent;
         _draft.RedlinePercent = settings.RedlinePercent;
         _draft.BlinkAtRedline = settings.BlinkAtRedline;
@@ -243,12 +258,20 @@ public sealed class MainViewModel : ObservableObject, IAsyncDisposable
         ThemeService.UsePointerCursors = settings.UsePointerCursors;
         _draft.Theme = settings.Theme;
         Settings.Initialize(settings, _service.Wheels);
+        Settings.InputMapperAutoStart = mapperSettings.AutoStart;
         RpmProfile.Initialize(_service.Wheels.FirstOrDefault(x => x.Id == settings.PreferredWheelId),
             settings.AdvancedThresholds);
         _service.InitializeWindow(windowHandle);
+        _wheelSelection.SetPreferredWheel(settings.PreferredWheelId);
+        _wheelSelection.Start();
+        await _mapperService.InitializeAsync(windowHandle, _wheelSelection.ActiveWheelId);
+        Mapper.Initialize();
         _settingsLoaded = true;
         UpdateSettingsDraftAutoSaveSubscriptions();
         if (settings.AutoStartControl) await StartServiceWithErrorHandlingAsync();
+        if (mapperSettings.AutoStart)
+            try { _mapperService.Start(); }
+            catch (Exception ex) { StatusMessage = $"Could not start Input Mapper: {ex.Message}"; }
     }
 
     public async Task SaveWindowPlacementAsync(double width, double height, double left, double top, bool maximized)
@@ -294,6 +317,9 @@ public sealed class MainViewModel : ObservableObject, IAsyncDisposable
         try
         {
             await _service.UpdateSettingsAsync(settings);
+            await _mapperSettingsStore.SaveAsync(new InputMapperModuleSettings(Settings.InputMapperAutoStart));
+            _wheelSelection.SetPreferredWheel(settings.PreferredWheelId);
+            _service.SetSelectedWheel(_wheelSelection.ActiveWheelId ?? settings.PreferredWheelId);
             var wheel = _activeDefinition ?? _service.Wheels.FirstOrDefault(x => x.Id == _draft.SelectedWheel?.Id);
             if (wheel is not null)
                 await _service.SaveWheelProfileAsync(new WheelProfile
@@ -325,6 +351,12 @@ public sealed class MainViewModel : ObservableObject, IAsyncDisposable
     private void SetStatusMessage(string value)
     {
         StatusMessage = value;
+    }
+
+    private void OnSelectedWheelChanged(object? sender, string? wheelId)
+    {
+        _service.SetSelectedWheel(wheelId ?? _service.Settings.PreferredWheelId);
+        _mapperService.SetPreferredWheel(wheelId ?? _service.Settings.PreferredWheelId);
     }
 
     private void OnSnapshotChanged(object? sender, AppSnapshot snapshot)

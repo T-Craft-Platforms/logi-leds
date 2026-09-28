@@ -15,7 +15,7 @@ public sealed class RpmProfileViewModel : ObservableObject, IDisposable
     private readonly SettingsDraft _draft;
     private readonly HashSet<ThresholdViewModel> _observedThresholds = [];
     private readonly AsyncRelayCommand _primaryProfileCommand;
-    private readonly LedApplicationService _service;
+    private readonly LedIndicatorService _service;
     private readonly Action<string> _setStatus;
     private WheelDefinition? _activeDefinition;
     private IReadOnlyList<CarTrainingViewModel> _carTrainings = [];
@@ -24,7 +24,7 @@ public sealed class RpmProfileViewModel : ObservableObject, IDisposable
     private string? _loadedProfileWheelId;
     private WheelProfile? _selectedSavedProfile;
 
-    public RpmProfileViewModel(LedApplicationService service, SettingsDraft draft, Action<string> setStatus)
+    public RpmProfileViewModel(LedIndicatorService service, SettingsDraft draft, Action<string> setStatus)
     {
         _service = service;
         _draft = draft;

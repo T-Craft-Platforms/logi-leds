@@ -27,8 +27,10 @@ public partial class App : Application
 
         var receiver = new UdpTelemetryReceiver();
         var wheel = new LogitechWheelLedController();
-        var service = new LedApplicationService(receiver, wheel, new SettingsStore());
-        var window = new MainWindow(new MainViewModel(service));
+        var service = new LedIndicatorService(receiver, wheel, new SettingsStore());
+        var mapper = new InputMapperService(wheel.AvailableDefinitions);
+        var selection = new WheelSelectionService(wheel.AvailableDefinitions);
+        var window = new MainWindow(new MainViewModel(service, mapper, selection));
         MainWindow = window;
         window.Show();
     }

@@ -9,14 +9,14 @@ namespace LogiWheelForge.ViewModels;
 
 public sealed class DashboardViewModel : ObservableObject, IDisposable
 {
-    private readonly LedApplicationService _service;
+    private readonly LedIndicatorService _service;
     private readonly Action<string> _setStatus;
     private readonly AsyncRelayCommand _testCommand;
     private float _currentRpm, _maximumRpm;
     private string _currentVehicle = "No vehicle data", _wheelName = "No Logitech wheel", _telemetryFormat = "—";
     private bool _isFlashing, _isWheelConnected;
 
-    public DashboardViewModel(LedApplicationService service, Action<string> setStatus)
+    public DashboardViewModel(LedIndicatorService service, Action<string> setStatus)
     {
         _service = service;
         _setStatus = setStatus;

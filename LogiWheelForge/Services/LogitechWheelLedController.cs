@@ -80,11 +80,13 @@ public sealed class LogitechWheelLedController : IWheelLedController
             _nextDiscoveryAt = now.AddSeconds(1);
 
             var ordered = _definitions
-                .OrderByDescending(x => string.Equals(x.Id, _preferredWheelId, StringComparison.OrdinalIgnoreCase))
-                .ThenBy(x => x.DisplayName, StringComparer.OrdinalIgnoreCase);
+                .Where(x => _preferredWheelId is null ||
+                            string.Equals(x.Id, _preferredWheelId, StringComparison.OrdinalIgnoreCase))
+                .OrderBy(x => x.DisplayName, StringComparer.OrdinalIgnoreCase);
             foreach (var definition in ordered)
             foreach (var productId in definition.ProductIds)
             {
+                if (!definition.HasLedOutput) continue;
                 var devices = DeviceList.Local.GetHidDevices(definition.VendorId, productId)
                     .OrderBy(device => ReportPreference(device, definition.Transport));
                 foreach (var device in devices)

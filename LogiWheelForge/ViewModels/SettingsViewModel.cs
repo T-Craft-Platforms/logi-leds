@@ -12,15 +12,16 @@ namespace LogiWheelForge.ViewModels;
 public sealed class SettingsViewModel : ObservableObject, IDisposable
 {
     private readonly SettingsDraft _draft;
-    private readonly LedApplicationService _service;
+    private readonly LedIndicatorService _service;
     private readonly Action<string> _setStatus;
     private readonly AsyncRelayCommand _startStopCommand;
     private readonly AsyncRelayCommand _testCommand;
     private WheelDefinition? _activeDefinition;
     private bool _isRunning, _isWheelConnected;
+    private bool _inputMapperAutoStart;
     private TelemetryWatchOption? _selectedWatch;
 
-    public SettingsViewModel(LedApplicationService service, SettingsDraft draft, Action<string> setStatus)
+    public SettingsViewModel(LedIndicatorService service, SettingsDraft draft, Action<string> setStatus)
     {
         _service = service;
         _draft = draft;
@@ -58,6 +59,16 @@ public sealed class SettingsViewModel : ObservableObject, IDisposable
         set => _draft.AutoStartControl = value;
     }
 
+    public bool InputMapperAutoStart
+    {
+        get => _inputMapperAutoStart;
+        set
+        {
+            if (!SetField(ref _inputMapperAutoStart, value)) return;
+            TelemetryChanged?.Invoke(this, EventArgs.Empty);
+        }
+    }
+
     public bool CloseToTray
     {
         get => _draft.CloseToTray;
@@ -82,7 +93,7 @@ public sealed class SettingsViewModel : ObservableObject, IDisposable
         set => _draft.SelectedWheel = value;
     }
 
-    public string StartStopText => _isRunning ? "Stop control" : "Start control";
+    public string StartStopText => _isRunning ? "Stop LEDs" : "Start LEDs";
 
     public string WheelVerification => _activeDefinition is null ? "Waiting for detection" :
         _activeDefinition.HardwareVerified ? "Hardware verified" : "Protocol compatible — hardware validation pending";

@@ -81,7 +81,8 @@
                                 FontSize="19"
                                 FontWeight="SemiBold"
                                 Text="App behavior" />
-                            <CheckBox Content="Start control on launch" IsChecked="{Binding AutoStartControl}" />
+                            <CheckBox Content="Start LED Indicator on launch" IsChecked="{Binding AutoStartControl}" />
+                            <CheckBox Margin="0,10,0,0" Content="Start Input Mapper on launch" IsChecked="{Binding InputMapperAutoStart}" />
                             <Border
                                 Height="1"
                                 Margin="0,14"
@@ -96,7 +97,7 @@
                                     <ColumnDefinition Width="*" />
                                     <ColumnDefinition Width="Auto" />
                                 </Grid.ColumnDefinitions>
-                                <TextBlock VerticalAlignment="Center" Text="Control" />
+                                <TextBlock VerticalAlignment="Center" Text="LED Indicator" />
                                 <Button
                                     Grid.Column="1"
                                     Command="{Binding StartStopCommand}"

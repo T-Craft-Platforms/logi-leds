@@ -29,19 +29,8 @@
                 FontWeight="SemiBold"
                 Text="LogiWheel Forge" />
         </StackPanel>
-        <TabControl
-            x:Name="TopNavigation"
-            Grid.Column="1"
-            Height="54"
-            HorizontalAlignment="Center"
-            Cursor="Arrow"
-            ItemContainerStyle="{StaticResource TopNavigationItemStyle}"
-            SelectedIndex="{Binding SelectedTab, Mode=TwoWay}"
-            Style="{StaticResource TopNavigationStyle}">
-            <TabItem Header="Dashboard" Style="{StaticResource TopNavigationItemStyle}" />
-            <TabItem Header="RPM Profile" Style="{StaticResource TopNavigationItemStyle}" />
-            <TabItem Header="Settings" Style="{StaticResource TopNavigationItemStyle}" />
-        </TabControl>
+        <TextBlock Grid.Column="1" VerticalAlignment="Center" HorizontalAlignment="Center"
+                   Foreground="{DynamicResource MutedBrush}" Text="Wheel tools"/>
         <StackPanel
             Grid.Column="2"
             Margin="0,0,8,0"

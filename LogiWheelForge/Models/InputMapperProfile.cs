@@ -17,7 +17,7 @@ public sealed record MapperRule
     public double MinPercent { get; init; } = 5;
     public double MaxPercent { get; init; } = 100;
     public double HysteresisPercent { get; init; } = 1;
-    public double DeadZonePercent { get; init; } = 1;
+    public double DeadZonePercent { get; init; }
     public double CurveExponent { get; init; } = 1;
     public int Direction { get; init; } = 1;
     public MapperActionKind Action { get; init; } = MapperActionKind.Key;
@@ -25,6 +25,7 @@ public sealed record MapperRule
     public string Output { get; init; } = "D";
     public int DurationMs { get; init; } = 50;
     public double OutputScale { get; init; } = 1;
+    public double ForceStrength { get; init; } = 25;
     public double TargetPercent { get; init; } = 5;
     public MapperForceRelease ForceRelease { get; init; } = MapperForceRelease.RangeExit;
 
@@ -42,12 +43,19 @@ public sealed record MapperRule
                  !double.IsFinite(DeadZonePercent) || DeadZonePercent is < 0 or > 25 ||
                  !double.IsFinite(CurveExponent) || CurveExponent is < .1 or > 5 ||
                  !double.IsFinite(OutputScale) || OutputScale is < -100 or > 100 ||
+                 !double.IsFinite(ForceStrength) || ForceStrength is < 0 or > 100 ||
                  !double.IsFinite(TargetPercent) || TargetPercent is < -100 or > 100 ||
                  DurationMs is < 10 or > 5000)
             error = "Rule percentages, curve, scale, or duration are out of range.";
         else if (Action is not (MapperActionKind.HoldTarget or MapperActionKind.ReleaseTarget) &&
                  string.IsNullOrWhiteSpace(Output))
             error = "Choose an output for the rule.";
+        else if (Trigger == MapperTriggerKind.AxisStep && Mode == MapperActionMode.Hold &&
+                 Action is (MapperActionKind.Key or MapperActionKind.MouseButton))
+            error = "A step rule cannot hold a key or mouse button. Use an axis range.";
+        else if (Trigger == MapperTriggerKind.AxisStep && Action == MapperActionKind.HoldTarget &&
+                 ForceRelease == MapperForceRelease.RangeExit)
+            error = "A step-triggered hold needs an explicit release rule.";
         return error.Length == 0;
     }
 }

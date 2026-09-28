@@ -124,7 +124,7 @@ public sealed class DirectInputResistanceController : IWheelResistanceController
         _lastOffset = offset; _lastStrength = coefficient;
         var condition = new Condition
         {
-            Offset = offset, PositiveCoefficient = coefficient, NegativeCoefficient = coefficient,
+            Offset = offset, PositiveCoefficient = -coefficient, NegativeCoefficient = -coefficient,
             PositiveSaturation = 10000, NegativeSaturation = 10000
         };
         var pointer = Marshal.AllocHGlobal(Marshal.SizeOf<Condition>());
@@ -133,8 +133,16 @@ public sealed class DirectInputResistanceController : IWheelResistanceController
             Marshal.StructureToPtr(condition, pointer, false);
             var effect = new EffectData { Size = (uint)Marshal.SizeOf<EffectData>(), TypeSize =
                 (uint)Marshal.SizeOf<Condition>(), TypeData = pointer };
-            if (_spring.SetParameters(ref effect, 0x00000100) < 0)
-                Status = "Wheel rejected resistance update";
+            try
+            {
+                if (_spring.SetParameters(ref effect, 0x00000100) < 0)
+                    Status = "Wheel rejected resistance update";
+            }
+            catch (COMException)
+            {
+                Status = "Wheel force feedback disconnected";
+                StopDevice();
+            }
         }
         finally { Marshal.FreeHGlobal(pointer); }
     }
@@ -150,8 +158,8 @@ public sealed class DirectInputResistanceController : IWheelResistanceController
             Marshal.WriteInt32(axis, 0); Marshal.WriteInt32(direction, 1);
             Marshal.StructureToPtr(new Condition
             {
-                Offset = offset, PositiveCoefficient = (int)(strength * 100),
-                NegativeCoefficient = (int)(strength * 100), PositiveSaturation = 10000,
+                Offset = offset, PositiveCoefficient = -(int)(strength * 100),
+                NegativeCoefficient = -(int)(strength * 100), PositiveSaturation = 10000,
                 NegativeSaturation = 10000
             }, condition, false);
             var effect = new EffectData
@@ -192,9 +200,12 @@ public sealed class DirectInputResistanceController : IWheelResistanceController
 
     private void StopDevice()
     {
-        if (_spring is not null) { _spring.Stop(); Marshal.ReleaseComObject(_spring); _spring = null; }
-        if (_damper is not null) { _damper.Stop(); Marshal.ReleaseComObject(_damper); _damper = null; }
-        if (_device is not null) { _device.Unacquire(); Marshal.ReleaseComObject(_device); _device = null; }
+        if (_spring is not null)
+        { try { _spring.Stop(); } catch { } Marshal.ReleaseComObject(_spring); _spring = null; }
+        if (_damper is not null)
+        { try { _damper.Stop(); } catch { } Marshal.ReleaseComObject(_damper); _damper = null; }
+        if (_device is not null)
+        { try { _device.Unacquire(); } catch { } Marshal.ReleaseComObject(_device); _device = null; }
         if (_directInput is not null) { Marshal.ReleaseComObject(_directInput); _directInput = null; }
     }
 

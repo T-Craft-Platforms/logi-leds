@@ -20,9 +20,10 @@ public sealed class WheelInputSource : IDisposable
     private HwndSource? _source;
     private string? _preferredWheelId;
     private string? _activeDevicePath;
+    private string? _activePedalPath;
 
     private sealed record ParsedDevice(string Path, string WheelId, ReportDescriptor Descriptor,
-        IReadOnlyList<WheelInputControl> Controls);
+        IReadOnlyList<WheelInputControl> Controls, bool IsPedal);
 
     [StructLayout(LayoutKind.Sequential)]
     private struct RawInputDevice { public ushort UsagePage, Usage; public uint Flags; public nint Target; }
@@ -41,13 +42,19 @@ public sealed class WheelInputSource : IDisposable
             { UsagePage = 1, Usage = (ushort)usage, Flags = RidevInputSink, Target = windowHandle }).ToArray();
         if (!RegisterRawInputDevices(registrations, (uint)registrations.Length,
                 (uint)Marshal.SizeOf<RawInputDevice>()))
+        {
+            _source.RemoveHook(WndProc);
+            _source = null;
             throw new InvalidOperationException($"Could not register wheel input: {Marshal.GetLastWin32Error()}");
+        }
     }
 
     public void SetPreferredWheel(string? wheelId)
     {
+        if (string.Equals(_preferredWheelId, wheelId, StringComparison.OrdinalIgnoreCase)) return;
         _preferredWheelId = wheelId;
         _activeDevicePath = null;
+        _activePedalPath = null;
         ActiveWheelId = null;
         ActiveWheelChanged?.Invoke(this, null);
     }
@@ -65,6 +72,28 @@ public sealed class WheelInputSource : IDisposable
         _devices.Clear();
     }
 
+    public void CheckPresence()
+    {
+        if (_activeDevicePath is null && _activePedalPath is null) return;
+        try
+        {
+            var paths = DeviceList.Local.GetHidDevices(0x046d).Select(device => device.DevicePath)
+                .ToHashSet(StringComparer.OrdinalIgnoreCase);
+            if (_activePedalPath is not null && !paths.Contains(_activePedalPath))
+            {
+                _activePedalPath = null;
+                _devices.Clear();
+                ActiveWheelChanged?.Invoke(this, ActiveWheelId);
+            }
+            if (_activeDevicePath is null || paths.Contains(_activeDevicePath)) return;
+        }
+        catch { return; }
+        _activeDevicePath = null;
+        ActiveWheelId = null;
+        _devices.Clear();
+        ActiveWheelChanged?.Invoke(this, null);
+    }
+
     private nint WndProc(nint hwnd, int msg, nint wParam, nint lParam, ref bool handled)
     {
         if (msg != WmInput) return 0;
@@ -80,7 +109,8 @@ public sealed class WheelInputSource : IDisposable
             if (!_devices.TryGetValue(deviceHandle, out var device))
             {
                 _devices[deviceHandle] = device = ResolveDevice(deviceHandle);
-                if (device is not null && (_preferredWheelId is null || device.WheelId == _preferredWheelId))
+                if (device is { IsPedal: true }) _activePedalPath = device.Path;
+                else if (device is not null && (_preferredWheelId is null || device.WheelId == _preferredWheelId))
                 {
                     _activeDevicePath = device.Path;
                     ActiveWheelId = device.WheelId;
@@ -88,8 +118,9 @@ public sealed class WheelInputSource : IDisposable
                 }
             }
             if (device is null) return 0;
-            if (_preferredWheelId is not null && device.WheelId != _preferredWheelId) return 0;
-            if (_activeDevicePath != device.Path) return 0;
+            if (!device.IsPedal && _preferredWheelId is not null && device.WheelId != _preferredWheelId) return 0;
+            if (device.IsPedal ? _activePedalPath != device.Path || _activeDevicePath is null :
+                _activeDevicePath != device.Path) return 0;
             var reportLength = Marshal.ReadInt32(buffer, 8 + 2 * IntPtr.Size);
             var count = Marshal.ReadInt32(buffer, 12 + 2 * IntPtr.Size);
             if (reportLength <= 0 || count <= 0 || (long)reportLength * count > size - (16 + 2 * IntPtr.Size))
@@ -137,12 +168,18 @@ public sealed class WheelInputSource : IDisposable
                     var descriptor = hid.GetReportDescriptor();
                     if (!descriptor.DeviceItems.Any(item => item.InputReports.Any())) continue;
                     var definition = _definitions.FirstOrDefault(wheel => wheel.ProductIds.Contains(productId));
+                    var productName = hid.GetProductName();
+                    if (definition is null && !productName.Contains("wheel", StringComparison.OrdinalIgnoreCase) &&
+                        !productName.Contains("racing", StringComparison.OrdinalIgnoreCase) &&
+                        !productName.Contains("pedal", StringComparison.OrdinalIgnoreCase)) continue;
                     var wheelId = definition?.Id ?? $"logitech-{productId:x4}";
                     var controls = definition?.InputControls ?? [];
-                    AvailableControls = descriptor.InputReports.SelectMany(report => report.DataItems)
+                    var isPedal = definition?.IsPedalSet == true ||
+                                  productName.Contains("pedal", StringComparison.OrdinalIgnoreCase);
+                    AvailableControls = AvailableControls.Concat(descriptor.InputReports.SelectMany(report => report.DataItems)
                         .SelectMany(item => item.Usages.GetAllValues())
-                        .Select(usage => ResolveName((uint)usage, controls)).Distinct().ToArray();
-                    return new ParsedDevice(hid.DevicePath, wheelId, descriptor, controls);
+                        .Select(usage => ResolveName((uint)usage, controls, isPedal))).Distinct().ToArray();
+                    return new ParsedDevice(hid.DevicePath, wheelId, descriptor, controls, isPedal);
                 }
                 catch { /* A vendor-only interface may have no readable input descriptor. */ }
             }
@@ -157,17 +194,17 @@ public sealed class WheelInputSource : IDisposable
         var report = device.Descriptor.InputReports.FirstOrDefault(candidate => candidate.ReportID == bytes[0]);
         if (report is null) return;
         var seenButtons = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        foreach (var usage in report.DataItems.Where(item => item.IsBoolean)
-                     .SelectMany(item => item.Usages.GetAllValues()))
-            seenButtons.Add(ResolveName((uint)usage, device.Controls));
+        foreach (var usage in report.DataItems.SelectMany(item => item.Usages.GetAllValues())
+                     .Where(usage => (uint)usage >> 16 == 9))
+            seenButtons.Add(ResolveName((uint)usage, device.Controls, device.IsPedal));
         var activeButtons = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         report.Read(bytes, 0, value =>
         {
             if (!value.IsValid || value.IsNull) return;
             foreach (var usage in value.Usages.GetAllValues())
             {
-                var name = ResolveName((uint)usage, device.Controls);
-                if (value.DataItem.IsBoolean)
+                var name = ResolveName((uint)usage, device.Controls, device.IsPedal);
+                if (value.DataItem.IsBoolean || (uint)usage >> 16 == 9)
                 {
                     if (value.GetLogicalValue() != 0) activeButtons.Add(name);
                 }
@@ -188,7 +225,7 @@ public sealed class WheelInputSource : IDisposable
             InputReceived?.Invoke(this, new WheelInputSample(button, activeButtons.Contains(button) ? 100 : 0, true));
     }
 
-    private static string ResolveName(uint usage, IReadOnlyList<WheelInputControl> controls)
+    private static string ResolveName(uint usage, IReadOnlyList<WheelInputControl> controls, bool isPedal)
     {
         var declared = controls.FirstOrDefault(control =>
             usage == ((uint)control.UsagePage << 16 | (uint)control.Usage));
@@ -196,6 +233,10 @@ public sealed class WheelInputSource : IDisposable
         var page = usage >> 16;
         var id = usage & 0xffff;
         if (page == 9) return $"Button{id}";
+        if (page == 1 && isPedal) return id switch
+        {
+            0x30 => "Accelerator", 0x31 => "Brake", 0x32 => "Clutch", _ => $"Pedal axis {id:X2}"
+        };
         if (page == 1) return id switch
         {
             0x30 => "Steering", 0x31 => "Accelerator", 0x32 => "Brake", 0x35 => "Clutch",

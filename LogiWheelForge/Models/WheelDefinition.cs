@@ -21,6 +21,8 @@ public sealed record WheelDefinition
     public double DefaultFirstPercent { get; init; } = 65;
     public double DefaultRedlinePercent { get; init; } = 90;
     public bool HardwareVerified { get; init; }
+    public bool HasLedOutput { get; init; } = true;
+    public bool IsPedalSet { get; init; }
     // Optional logical controls supplement descriptor discovery. These are HID usages,
     // not arbitrary report offsets or executable device commands.
     public WheelInputControl[] InputControls { get; init; } = [];
@@ -40,7 +42,7 @@ public sealed record WheelDefinition
             return false;
         }
 
-        if (Transport is not ("classic-bitmask" or "hidpp-level"))
+        if (HasLedOutput && Transport is not ("classic-bitmask" or "hidpp-level"))
         {
             error = $"Transport '{Transport}' is not allowlisted.";
             return false;
@@ -58,7 +60,8 @@ public sealed record WheelDefinition
             return false;
         }
 
-        if (PhysicalLedCount is < 1 or > 32 || ControlGroupCount is < 1 or > 10 || Colors.Length != PhysicalLedCount)
+        if (HasLedOutput && (PhysicalLedCount is < 1 or > 32 || ControlGroupCount is < 1 or > 10 ||
+                             Colors.Length != PhysicalLedCount))
         {
             error = "LED count, groups, or color map is invalid.";
             return false;
@@ -70,7 +73,8 @@ public sealed record WheelDefinition
             return false;
         }
 
-        if (DefaultFirstPercent < 0 || DefaultFirstPercent >= DefaultRedlinePercent || DefaultRedlinePercent > 100)
+        if (HasLedOutput && (DefaultFirstPercent < 0 || DefaultFirstPercent >= DefaultRedlinePercent ||
+                             DefaultRedlinePercent > 100))
         {
             error = "Recommended RPM thresholds are invalid.";
             return false;

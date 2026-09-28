@@ -12,6 +12,7 @@ public sealed class InputMapperService : IDisposable
     private readonly InputMapperProfileStore _store;
     private readonly WheelInputSource _source;
     private readonly MapperRuleEngine _engine;
+    private readonly IMapperOutput _output;
     private readonly IWheelResistanceController _force;
     private readonly DispatcherTimer _timer;
     private IReadOnlyList<InputMapperProfile> _profiles = [];
@@ -19,6 +20,9 @@ public sealed class InputMapperService : IDisposable
     private nint _ownWindow;
     private string? _status;
     private bool _initialized;
+    private string? _loadError;
+    private string? _lastOutputError;
+    private DateTimeOffset _nextPresenceCheck;
 
     public InputMapperService(IReadOnlyList<WheelDefinition> wheels, InputMapperProfileStore? store = null,
         IWheelResistanceController? force = null, IMapperOutput? output = null,
@@ -27,7 +31,8 @@ public sealed class InputMapperService : IDisposable
         _store = store ?? new InputMapperProfileStore();
         _force = force ?? new DirectInputResistanceController(wheels);
         _source = source ?? new WheelInputSource(wheels);
-        _engine = new MapperRuleEngine(output ?? new WindowsInputEmitter(), _force, clock);
+        _output = output ?? new WindowsInputEmitter();
+        _engine = new MapperRuleEngine(_output, _force, clock);
         _source.InputReceived += OnInput;
         _source.ActiveWheelChanged += (_, _) =>
         {
@@ -37,9 +42,15 @@ public sealed class InputMapperService : IDisposable
         _timer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(16) };
         _timer.Tick += (_, _) =>
         {
+            if (DateTimeOffset.UtcNow >= _nextPresenceCheck)
+            {
+                _nextPresenceCheck = DateTimeOffset.UtcNow.AddSeconds(1);
+                _source.CheckPresence();
+            }
             if (!IsRunning) return;
             RefreshTarget();
             if (_active is not null) _engine.Tick();
+            PublishOutputError();
         };
     }
 
@@ -52,8 +63,14 @@ public sealed class InputMapperService : IDisposable
     public async Task InitializeAsync(nint windowHandle, string? preferredWheelId)
     {
         if (_initialized) return;
-        _profiles = await _store.LoadAsync();
+        try { _profiles = await _store.LoadAsync(); }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or System.Text.Json.JsonException or ArgumentException)
+        {
+            _profiles = [];
+            _loadError = $"Mapper profiles could not be loaded: {ex.Message}";
+        }
         _ownWindow = windowHandle;
+        PreferredWheelId = preferredWheelId;
         if (_force is DirectInputResistanceController directInput) directInput.SetWindowHandle(windowHandle);
         _source.SetPreferredWheel(preferredWheelId);
         _source.Initialize(windowHandle);
@@ -64,15 +81,19 @@ public sealed class InputMapperService : IDisposable
 
     public void SetPreferredWheel(string? wheelId)
     {
+        if (string.Equals(PreferredWheelId, wheelId, StringComparison.OrdinalIgnoreCase)) return;
+        PreferredWheelId = wheelId;
         _source.SetPreferredWheel(wheelId);
         _engine.Deactivate();
         _active = null;
         Publish();
     }
+    public string? PreferredWheelId { get; private set; }
 
     public void Start()
     {
         if (!_initialized) throw new InvalidOperationException("Input Mapper is not initialized.");
+        if (_loadError is not null) throw new InvalidOperationException(_loadError);
         IsRunning = true;
         _status = null;
         RefreshTarget();
@@ -91,6 +112,7 @@ public sealed class InputMapperService : IDisposable
     public async Task SaveProfilesAsync(IReadOnlyList<InputMapperProfile> profiles,
         CancellationToken cancellationToken = default)
     {
+        if (_loadError is not null) throw new InvalidOperationException(_loadError);
         await _store.SaveAsync(profiles, cancellationToken);
         _profiles = profiles.ToArray();
         _active = null;
@@ -113,6 +135,7 @@ public sealed class InputMapperService : IDisposable
         if (!IsRunning) return;
         RefreshTarget();
         if (_active is not null) _engine.Update(sample);
+        PublishOutputError();
     }
 
     private void RefreshTarget()
@@ -136,12 +159,23 @@ public sealed class InputMapperService : IDisposable
             _status = null;
         }
         else if (_active is not null) _status = "Target active; waiting for wheel input";
-        else _status = path is null ? "Waiting for a foreground target" : "No profile for foreground process";
+        else _status = path is null && window != 0 && window != _ownWindow
+            ? "Cannot inspect foreground process" : path is null
+                ? "Waiting for a foreground target" : "No profile for foreground process";
+        Publish();
+    }
+
+    private void PublishOutputError()
+    {
+        if (_lastOutputError == _output.LastError) return;
+        _lastOutputError = _output.LastError;
+        if (_lastOutputError is not null) _status = _lastOutputError;
+        else if (_active is not null) _status = null;
         Publish();
     }
 
     private void Publish() => SnapshotChanged?.Invoke(this, new InputMapperSnapshot(IsRunning,
-        !IsRunning ? "Input Mapper is stopped" : _status ?? "Mapping active",
+        _loadError ?? (!IsRunning ? "Input Mapper is stopped" : _status ?? "Mapping active"),
         _active?.Name, _source.ActiveWheelId, _force.Status, _engine.DroppedPulses));
 
     public static string? GetProcessPath(uint processId)

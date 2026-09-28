@@ -4,6 +4,7 @@ namespace LogiWheelForge.Services;
 
 public interface IMapperOutput
 {
+    string? LastError { get; }
     bool Press(string output, bool mouseButton = false);
     bool Release(string output, bool mouseButton = false);
     void ReleaseAll();
@@ -129,8 +130,9 @@ public sealed class MapperRuleEngine
             if (_output.Press(rule.Output, rule.Action == MapperActionKind.MouseButton))
                 _currentPulse = new Pulse(rule, now.AddMilliseconds(rule.DurationMs));
         }
-        foreach (var rule in _profile.Rules.Where(rule => rule.Action is MapperActionKind.MouseMove or MapperActionKind.MouseScroll &&
-                     rule.Trigger == MapperTriggerKind.AxisRange && _states[rule.Id].Active))
+        foreach (var rule in _profile.Rules.Where(rule =>
+                     rule.Action is (MapperActionKind.MouseMove or MapperActionKind.MouseScroll) &&
+                     rule.Trigger != MapperTriggerKind.AxisStep && _states[rule.Id].Active))
         {
             if (!_values.TryGetValue(rule.Control, out var value)) continue;
             var amount = ApplyCurve(value, rule) / 100 * rule.OutputScale;
@@ -168,9 +170,18 @@ public sealed class MapperRuleEngine
     {
         if (rule.Action == MapperActionKind.HoldTarget)
         {
-            _force.Hold(rule.TargetPercent, Math.Abs(rule.OutputScale)); return;
+            _force.Hold(rule.TargetPercent, rule.ForceStrength); return;
         }
         if (rule.Action == MapperActionKind.ReleaseTarget) { _force.ReleaseHold(); return; }
+        if (rule.Trigger == MapperTriggerKind.AxisStep && rule.Action == MapperActionKind.MouseMove)
+        {
+            var pixels = (int)Math.Round(rule.OutputScale);
+            _output.Move(rule.Output.Equals("Vertical", StringComparison.OrdinalIgnoreCase) ? 0 : pixels,
+                rule.Output.Equals("Vertical", StringComparison.OrdinalIgnoreCase) ? pixels : 0);
+            return;
+        }
+        if (rule.Trigger == MapperTriggerKind.AxisStep && rule.Action == MapperActionKind.MouseScroll)
+        { _output.Scroll((int)Math.Round(rule.OutputScale)); return; }
         if (rule.Action is not (MapperActionKind.Key or MapperActionKind.MouseButton)) return;
         var mouse = rule.Action == MapperActionKind.MouseButton;
         switch (rule.Mode)

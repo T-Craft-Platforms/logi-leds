@@ -61,7 +61,7 @@
                             Icon="PowerOff"
                             Style="{StaticResource AppStatusIconStyle}" />
                         <StackPanel Grid.Column="1">
-                            <TextBlock FontWeight="SemiBold" Text="App control" />
+                            <TextBlock FontWeight="SemiBold" Text="LED Indicator" />
                             <TextBlock
                                 Margin="0,2,0,0"
                                 FontSize="12"

@@ -6,6 +6,7 @@ namespace LogiWheelForge.Services;
 public sealed class WindowsInputEmitter : IMapperOutput
 {
     private readonly Dictionary<string, int> _held = new(StringComparer.OrdinalIgnoreCase);
+    public string? LastError { get; private set; }
 
     [StructLayout(LayoutKind.Sequential)]
     private struct Input { public uint Type; public InputUnion Data; }
@@ -83,6 +84,7 @@ public sealed class WindowsInputEmitter : IMapperOutput
         var parts = output.Split('+', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
         if (parts.Length == 0) return false;
         if (up) Array.Reverse(parts);
+        var events = new List<Input>();
         foreach (var part in parts)
         {
             if (!Enum.TryParse<Key>(part, true, out var key)) return false;
@@ -90,13 +92,31 @@ public sealed class WindowsInputEmitter : IMapperOutput
             if (virtualKey <= 0) return false;
             var scan = MapVirtualKey((uint)virtualKey, 4);
             var flags = 0x0008u | (up ? 0x0002u : 0u) | ((scan & 0xff00) != 0 ? 0x0001u : 0u);
-            if (!SendOne(new Input { Type = 1, Data = new InputUnion { Keyboard = new KeyboardInput
-                { ScanCode = (ushort)(scan & 0xff), Flags = flags } } })) return false;
+            events.Add(new Input { Type = 1, Data = new InputUnion { Keyboard = new KeyboardInput
+                { ScanCode = (ushort)(scan & 0xff), Flags = flags } } });
         }
-        return true;
+        var sent = SendInput((uint)events.Count, events.ToArray(), Marshal.SizeOf<Input>());
+        if (sent == events.Count) { LastError = null; return true; }
+        LastError = $"Windows rejected simulated input (error {Marshal.GetLastWin32Error()})";
+        if (!up && sent > 0)
+        {
+            var releases = events.Take((int)sent).Reverse().Select(input =>
+            {
+                input.Data.Keyboard.Flags |= 0x0002u;
+                return input;
+            }).ToArray();
+            SendInput((uint)releases.Length, releases, Marshal.SizeOf<Input>());
+        }
+        return false;
     }
 
-    private static bool SendOne(Input input) => SendInput(1, [input], Marshal.SizeOf<Input>()) == 1;
+    private bool SendOne(Input input)
+    {
+        if (SendInput(1, [input], Marshal.SizeOf<Input>()) == 1)
+        { LastError = null; return true; }
+        LastError = $"Windows rejected simulated input (error {Marshal.GetLastWin32Error()})";
+        return false;
+    }
 
     [DllImport("user32.dll", SetLastError = true)]
     private static extern uint SendInput(uint count, [In] Input[] inputs, int size);

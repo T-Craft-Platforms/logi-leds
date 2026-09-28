@@ -5,7 +5,7 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 namespace LogiWheelForge.Tests;
 
 [TestClass]
-public sealed class LedApplicationServiceTests
+public sealed class LedIndicatorServiceTests
 {
     [TestMethod]
     public async Task ActiveFrame_DrivesWheelLevel_AndStopClearsLeds()
@@ -59,10 +59,10 @@ public sealed class LedApplicationServiceTests
         Assert.AreEqual("fake", snapshot.PreviewWheel!.Id);
     }
 
-    private static LedApplicationService CreateService(FakeTelemetryReceiver receiver, FakeWheelController wheel)
+    private static LedIndicatorService CreateService(FakeTelemetryReceiver receiver, FakeWheelController wheel)
     {
         var path = Path.Combine(Path.GetTempPath(), "LogiWheelForge.Tests", Guid.NewGuid() + ".json");
-        return new LedApplicationService(receiver, wheel, new SettingsStore(path),
+        return new LedIndicatorService(receiver, wheel, new SettingsStore(path),
             redlineLearner: new SmartRedlineLearner(path + ".calibrations"));
     }
 

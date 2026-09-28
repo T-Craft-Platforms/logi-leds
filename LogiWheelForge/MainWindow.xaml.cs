@@ -17,6 +17,7 @@ public partial class MainWindow : Window
     private const int DwmWindowCornerPreferenceAttribute = 33;
     private const int DwmDoNotRound = 1;
     private readonly ToolStripMenuItem _startStopMenuItem;
+    private readonly ToolStripMenuItem _mapperMenuItem;
     private readonly NotifyIcon _trayIcon;
     private readonly MainViewModel _viewModel;
     private bool _allowClose, _shownTrayHint, _exiting, _trayDisposed, _startupComplete;
@@ -33,8 +34,10 @@ public partial class MainWindow : Window
         _viewModel.ExitRequested += async (_, _) => await ExitAsync();
         _viewModel.PropertyChanged += OnMainViewModelPropertyChanged;
 
-        _startStopMenuItem = new ToolStripMenuItem("Stop control");
+        _startStopMenuItem = new ToolStripMenuItem("Stop LED Indicator");
         _startStopMenuItem.Click += (_, _) => _viewModel.Settings.StartStopCommand.Execute(null);
+        _mapperMenuItem = new ToolStripMenuItem("Start Input Mapper");
+        _mapperMenuItem.Click += (_, _) => _viewModel.Mapper.ToggleCommand.Execute(null);
         var openItem = new ToolStripMenuItem("Open LogiWheel Forge");
         openItem.Click += (_, _) => RestoreWindow();
         var exitItem = new ToolStripMenuItem("Exit LogiWheel Forge");
@@ -42,9 +45,14 @@ public partial class MainWindow : Window
         var menu = new ContextMenuStrip();
         menu.Items.Add(openItem);
         menu.Items.Add(_startStopMenuItem);
+        menu.Items.Add(_mapperMenuItem);
         menu.Items.Add(new ToolStripSeparator());
         menu.Items.Add(exitItem);
-        menu.Opening += (_, _) => _startStopMenuItem.Text = _viewModel.IsRunning ? "Stop control" : "Start control";
+        menu.Opening += (_, _) =>
+        {
+            _startStopMenuItem.Text = _viewModel.IsRunning ? "Stop LED Indicator" : "Start LED Indicator";
+            _mapperMenuItem.Text = _viewModel.Mapper.IsRunning ? "Stop Input Mapper" : "Start Input Mapper";
+        };
         var iconPath = Path.Combine(AppContext.BaseDirectory, "Assets", "LogiWheelForge.ico");
         var icon = File.Exists(iconPath) ? new Icon(iconPath) : null;
         _trayIcon = new NotifyIcon
