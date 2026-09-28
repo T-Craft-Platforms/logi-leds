@@ -258,9 +258,10 @@ public sealed class MainViewModel : ObservableObject, IAsyncDisposable
         _draft.UsePointerCursors = settings.UsePointerCursors;
         ThemeService.UsePointerCursors = settings.UsePointerCursors;
         _draft.Theme = settings.Theme;
-        Settings.Initialize(settings, _service.Wheels);
+        Settings.Initialize(settings, _service.Wheels.Where(wheel => !wheel.IsPedalSet).ToArray());
         Settings.InputMapperAutoStart = mapperSettings.AutoStart;
-        RpmProfile.Initialize(_service.Wheels.FirstOrDefault(x => x.Id == settings.PreferredWheelId),
+        RpmProfile.Initialize(_service.Wheels.FirstOrDefault(x => x.HasLedOutput &&
+                x.Id == settings.PreferredWheelId),
             settings.AdvancedThresholds);
         _service.InitializeWindow(windowHandle);
         _wheelSelection.SetPreferredWheel(settings.PreferredWheelId);
@@ -321,7 +322,8 @@ public sealed class MainViewModel : ObservableObject, IAsyncDisposable
             await _mapperSettingsStore.SaveAsync(new InputMapperModuleSettings(Settings.InputMapperAutoStart));
             _wheelSelection.SetPreferredWheel(settings.PreferredWheelId);
             _service.SetSelectedWheel(_wheelSelection.ActiveWheelId ?? settings.PreferredWheelId);
-            var wheel = _activeDefinition ?? _service.Wheels.FirstOrDefault(x => x.Id == _draft.SelectedWheel?.Id);
+            var wheel = _activeDefinition ?? _service.Wheels.FirstOrDefault(x => x.HasLedOutput &&
+                x.Id == _draft.SelectedWheel?.Id);
             if (wheel is not null)
                 await _service.SaveWheelProfileAsync(new WheelProfile
                 {

@@ -486,11 +486,14 @@ public sealed class LedIndicatorService : IAsyncDisposable
 
     private WheelDefinition? GetPreviewDefinition()
     {
-        return _wheelController.AvailableDefinitions.FirstOrDefault(x =>
+        var selected = _wheelController.AvailableDefinitions.FirstOrDefault(x =>
+            string.Equals(x.Id, _previewWheelId ?? Settings.PreferredWheelId, StringComparison.OrdinalIgnoreCase));
+        if (selected is { HasLedOutput: false }) return null;
+        return _wheelController.AvailableDefinitions.FirstOrDefault(x => x.HasLedOutput &&
                    string.Equals(x.Id, _previewWheelId, StringComparison.OrdinalIgnoreCase))
                ?? _wheelController.AvailableDefinitions.FirstOrDefault(x =>
-                   string.Equals(x.Id, Settings.PreferredWheelId, StringComparison.OrdinalIgnoreCase))
-               ?? _wheelController.AvailableDefinitions.FirstOrDefault();
+                   x.HasLedOutput && string.Equals(x.Id, Settings.PreferredWheelId, StringComparison.OrdinalIgnoreCase))
+               ?? _wheelController.AvailableDefinitions.FirstOrDefault(x => x.HasLedOutput);
     }
 
     private ReadinessState GetState(TelemetryFrame? frame, bool fresh)
