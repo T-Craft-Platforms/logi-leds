@@ -1,3 +1,5 @@
+using System.IO;
+
 namespace LogiWheelForge.Models;
 
 public enum MapperTriggerKind { Button, AxisRange, AxisStep }
@@ -47,7 +49,7 @@ public sealed record MapperRule
                  !double.IsFinite(TargetPercent) || TargetPercent is < -100 or > 100 ||
                  DurationMs is < 10 or > 5000)
             error = "Rule percentages, curve, scale, or duration are out of range.";
-        else if (Action is not (MapperActionKind.HoldTarget or MapperActionKind.ReleaseTarget) &&
+        else if (Action is MapperActionKind.Key or MapperActionKind.MouseButton or MapperActionKind.MouseMove &&
                  string.IsNullOrWhiteSpace(Output))
             error = "Choose an output for the rule.";
         else if (Trigger == MapperTriggerKind.AxisStep && Mode == MapperActionMode.Hold &&
@@ -67,12 +69,15 @@ public sealed record MapperResistance
     public double DampingStrength { get; init; } = 10;
     public bool DetentsEnabled { get; init; }
     public double DetentSpacingPercent { get; init; } = 5;
+    public double DetentHysteresisPercent { get; init; } = .5;
     public double DetentStrength { get; init; } = 25;
 
     public bool TryValidate() =>
         double.IsFinite(CenterStrength) && CenterStrength is >= 0 and <= 100 &&
         double.IsFinite(DampingStrength) && DampingStrength is >= 0 and <= 100 &&
         double.IsFinite(DetentSpacingPercent) && DetentSpacingPercent is > 0 and <= 50 &&
+        double.IsFinite(DetentHysteresisPercent) && DetentHysteresisPercent >= 0 &&
+        DetentHysteresisPercent < DetentSpacingPercent / 2 &&
         double.IsFinite(DetentStrength) && DetentStrength is >= 0 and <= 100;
 }
 
@@ -102,6 +107,9 @@ public sealed record InputMapperProfile
             error = "A mapping rule is invalid or duplicated.";
         else if (Resistance is null || !Resistance.TryValidate())
             error = "Resistance settings are invalid.";
+        else if (Rules.Any(rule => rule.Action is MapperActionKind.HoldTarget or MapperActionKind.ReleaseTarget) &&
+                 !Resistance.Enabled)
+            error = "Enable resistance to use hold or release target rules.";
         return error.Length == 0;
     }
 }

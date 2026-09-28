@@ -10,19 +10,27 @@ namespace LogiWheelForge.ViewModels;
 public sealed class DashboardViewModel : ObservableObject, IDisposable
 {
     private readonly LedIndicatorService _service;
+    private readonly InputMapperService _mapper;
+    private readonly WheelSelectionService _selection;
     private readonly Action<string> _setStatus;
     private readonly AsyncRelayCommand _testCommand;
     private float _currentRpm, _maximumRpm;
     private string _currentVehicle = "No vehicle data", _wheelName = "No Logitech wheel", _telemetryFormat = "—";
+    private string _mapperStatus = "Stopped";
     private bool _isFlashing, _isWheelConnected;
 
-    public DashboardViewModel(LedIndicatorService service, Action<string> setStatus)
+    public DashboardViewModel(LedIndicatorService service, InputMapperService mapper,
+        WheelSelectionService selection, Action<string> setStatus)
     {
         _service = service;
+        _mapper = mapper;
+        _selection = selection;
         _setStatus = setStatus;
         _testCommand = new AsyncRelayCommand(() => _service.TestLedsAsync(), () => _isWheelConnected,
             ex => _setStatus($"LED test failed: {ex.Message}"));
         _service.SnapshotChanged += OnSnapshotChanged;
+        _mapper.SnapshotChanged += OnMapperSnapshot;
+        _selection.ActiveWheelChanged += OnActiveWheelChanged;
     }
 
     public ObservableCollection<LedIndicatorViewModel> Leds { get; } = [];
@@ -33,6 +41,7 @@ public sealed class DashboardViewModel : ObservableObject, IDisposable
         get => _wheelName;
         private set => SetField(ref _wheelName, value);
     }
+    public string MapperStatus { get => _mapperStatus; private set => SetField(ref _mapperStatus, value); }
 
     public string TelemetryFormat
     {
@@ -81,6 +90,8 @@ public sealed class DashboardViewModel : ObservableObject, IDisposable
     public void Dispose()
     {
         _service.SnapshotChanged -= OnSnapshotChanged;
+        _mapper.SnapshotChanged -= OnMapperSnapshot;
+        _selection.ActiveWheelChanged -= OnActiveWheelChanged;
     }
 
     private void OnSnapshotChanged(object? sender, AppSnapshot snapshot)
@@ -94,7 +105,7 @@ public sealed class DashboardViewModel : ObservableObject, IDisposable
     {
         _isWheelConnected = snapshot.IsWheelConnected;
         _testCommand.RaiseCanExecuteChanged();
-        WheelName = snapshot.WheelName;
+        if (_selection.ActiveWheelId is null) WheelName = snapshot.WheelName;
         TelemetryFormat = snapshot.TelemetryFormat;
         CurrentVehicle = snapshot.CurrentVehicle;
         CurrentRpm = snapshot.CurrentRpm;
@@ -104,6 +115,19 @@ public sealed class DashboardViewModel : ObservableObject, IDisposable
         else
             foreach (var led in Leds)
                 led.IsLit = false;
+    }
+
+    private void OnActiveWheelChanged(object? sender, string? wheelId)
+    {
+        WheelName = wheelId is null ? "No Logitech wheel" :
+            _service.Wheels.FirstOrDefault(wheel => wheel.Id == wheelId)?.DisplayName ??
+            $"Logitech wheel ({wheelId})";
+    }
+
+    private void OnMapperSnapshot(object? sender, InputMapperSnapshot snapshot)
+    {
+        MapperStatus = snapshot.ActiveProfile is null ? snapshot.Status :
+            $"{snapshot.ActiveProfile}: {snapshot.Status}";
     }
 
     private void BuildLeds(WheelDefinition definition, int litGroups)

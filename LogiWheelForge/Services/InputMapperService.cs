@@ -1,3 +1,4 @@
+using System.IO;
 using System.Runtime.InteropServices;
 using System.Windows.Threading;
 using LogiWheelForge.Models;
@@ -18,6 +19,8 @@ public sealed class InputMapperService : IDisposable
     private IReadOnlyList<InputMapperProfile> _profiles = [];
     private InputMapperProfile? _active;
     private nint _ownWindow;
+    private nint _cachedForegroundWindow;
+    private string? _cachedForegroundPath;
     private string? _status;
     private bool _initialized;
     private string? _loadError;
@@ -34,6 +37,7 @@ public sealed class InputMapperService : IDisposable
         _output = output ?? new WindowsInputEmitter();
         _engine = new MapperRuleEngine(_output, _force, clock);
         _source.InputReceived += OnInput;
+        _source.ErrorOccurred += OnInputError;
         _source.ActiveWheelChanged += (_, _) =>
         {
             _engine.Deactivate(); _active = null;
@@ -73,7 +77,13 @@ public sealed class InputMapperService : IDisposable
         PreferredWheelId = preferredWheelId;
         if (_force is DirectInputResistanceController directInput) directInput.SetWindowHandle(windowHandle);
         _source.SetPreferredWheel(preferredWheelId);
-        _source.Initialize(windowHandle);
+        try { _source.Initialize(windowHandle); }
+        catch (Exception ex)
+        {
+            _loadError = $"Wheel input could not start: {ex.Message}";
+            Publish();
+            return;
+        }
         _initialized = true;
         _timer.Start();
         Publish();
@@ -138,6 +148,15 @@ public sealed class InputMapperService : IDisposable
         PublishOutputError();
     }
 
+    private void OnInputError(object? sender, string message)
+    {
+        if (_status == message) return;
+        _status = message;
+        _engine.Deactivate();
+        _active = null;
+        Publish();
+    }
+
     private void RefreshTarget()
     {
         if (!IsRunning) return;
@@ -145,11 +164,25 @@ public sealed class InputMapperService : IDisposable
         string? path = null;
         if (window != 0 && window != _ownWindow)
         {
-            GetWindowThreadProcessId(window, out var processId);
-            path = GetProcessPath(processId);
+            if (window != _cachedForegroundWindow)
+            {
+                GetWindowThreadProcessId(window, out var processId);
+                _cachedForegroundWindow = window;
+                _cachedForegroundPath = processId == Environment.ProcessId ? null : GetProcessPath(processId);
+            }
+            path = _cachedForegroundPath;
         }
+        else { _cachedForegroundWindow = 0; _cachedForegroundPath = null; }
         var match = path is null ? null : _profiles.FirstOrDefault(profile => profile.Enabled &&
             profile.ProcessPaths.Contains(path, StringComparer.OrdinalIgnoreCase));
+        if (match is null && _active is null)
+        {
+            var waitingStatus = path is null && window != 0 && window != _ownWindow
+                ? "Cannot inspect foreground process" : path is null
+                    ? "Waiting for a foreground target" : "No profile for foreground process";
+            if (_status != waitingStatus) { _status = waitingStatus; Publish(); }
+            return;
+        }
         if (match?.Id == _active?.Id) return;
         _engine.Deactivate();
         _active = match;

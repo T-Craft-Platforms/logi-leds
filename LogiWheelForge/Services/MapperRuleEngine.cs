@@ -125,10 +125,10 @@ public sealed class MapperRuleEngine
             _output.Release(_currentPulse.Rule.Output, _currentPulse.Rule.Action == MapperActionKind.MouseButton);
             _currentPulse = null;
         }
-        if (_currentPulse is null && _pulses.TryDequeue(out var rule))
+        if (_currentPulse is null && _pulses.TryDequeue(out var pulseRule))
         {
-            if (_output.Press(rule.Output, rule.Action == MapperActionKind.MouseButton))
-                _currentPulse = new Pulse(rule, now.AddMilliseconds(rule.DurationMs));
+            if (_output.Press(pulseRule.Output, pulseRule.Action == MapperActionKind.MouseButton))
+                _currentPulse = new Pulse(pulseRule, now.AddMilliseconds(pulseRule.DurationMs));
         }
         foreach (var rule in _profile.Rules.Where(rule =>
                      rule.Action is (MapperActionKind.MouseMove or MapperActionKind.MouseScroll) &&

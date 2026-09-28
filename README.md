@@ -1,6 +1,6 @@
 # LogiWheel Forge
 
-LogiWheel Forge is a Windows toolkit of enhancement tools for compatible Logitech wheels. Its current feature, **LED Indicator**, drives wheel RPM/shift LEDs from Forza Data Out and BeamNG.drive OutGauge telemetry. Future features will map wheel and other device inputs to simulated keyboard keys and mouse clicks for specific games. LogiWheel Forge uses managed HID communication, contains no Logitech SDK binaries, and keeps all model-specific behavior in validated JSON wheel definitions.
+LogiWheel Forge is a Windows toolkit for Logitech wheels. **LED Indicator** drives RPM/shift LEDs from Forza and BeamNG.drive telemetry. **Input Mapper** maps steering, pedals, and buttons to keyboard and mouse input for selected desktop applications, with optional centering, damping, detents, and hold-target resistance. The modules start and stop independently. The app uses managed HID communication and Windows APIs; it does not ship Logitech SDK binaries.
 
 ## Disclaimer
 
@@ -14,9 +14,21 @@ LogiWheel Forge is an independent project and is not affiliated with, endorsed, 
 - Logitech PRO Racing Wheel PlayStation/PC and Xbox/PC variants
 - Logitech RS50 Base
 
-G29 has received a real-hardware verification pass. Other listed models use protocol-backed definitions and are marked as compatibility targets in the app until a real-device smoke test is recorded.
+G29 has received a real-hardware **LED** verification pass. Input mapping and force feedback require separate hardware verification. Other listed LED models remain compatibility targets until tested on real hardware.
 
 Additional Logitech RPM wheels can be added without recompiling by placing a unique, schema-compatible JSON file in `%LOCALAPPDATA%\LogiWheelForge\Wheels`. Definitions are data-only and may select only the built-in `classic-bitmask` or `hidpp-level` transports.
+
+Definition schema version 2 can also declare logical input controls by HID `usagePage` and `usage`, including inversion and whether an axis is centered. It can declare `forceFeedback.spring` and `forceFeedback.damper` as expected capabilities. Actual controls and effects are checked on the connected device. Set `hasLedOutput` to `false` for an input-only device, and `isPedalSet` to `true` for a separate USB pedal set. Wheels without a JSON definition can use discovered Logitech HID controls; unrecognized axes appear by usage number in the Input Mapper preview.
+
+## Input Mapper
+
+Choose **Input Mapper** in the sidebar, create a profile, then add one or more target executable paths with **Pick window** or manual entry. Each enabled executable can belong to only one profile. Save the profile and start the mapper. Mapping activates only while one of its target processes owns the foreground window. Settings has a separate **Start Input Mapper on launch** option; it is off for new installations.
+
+New profiles include editable starter rules: clockwise steering steps tap `D`, counterclockwise steps tap `A`, accelerator holds `W`, and brake holds `S`. A steering step of 5% means five percentage points of normalized travel. **Movement** follows the direction the wheel moves, including while returning toward center; **AwayFromCenter** ignores return travel. Each tap duration, step size, range, dead zone, curve, and output can be changed. Key chords use WPF key names separated by `+`, such as `LeftCtrl+K`; mouse buttons use `Left`, `Right`, `Middle`, `X1`, or `X2`. Mouse movement uses `Horizontal` or `Vertical` as its output axis.
+
+Resistance is off until enabled on a profile. Center and damper strengths are set per profile. Soft detents repeat at the configured spacing; a hold-target rule pulls toward a chosen steering percentage until its range ends or an explicit release rule fires. Effects stop when the profile loses focus, the wheel disconnects, or the mapper stops. The wheel driver must expose the corresponding DirectInput effects and allow exclusive force-feedback access. Keyboard and mouse injection uses Windows `SendInput`, which follows Windows integrity-level restrictions; an elevated target may reject input from a non-elevated mapper.
+
+Input Mapper profiles and startup preferences are stored separately in `%LOCALAPPDATA%\LogiWheelForge\input-mapper-profiles.json` and `input-mapper-settings.json`.
 
 ## Supported telemetry
 
@@ -64,4 +76,4 @@ Or run **Release** from the Actions tab using **Run workflow**. No version input
 
 Both paths publish a self-contained Windows x64 ZIP and create the matching GitHub release if one does not already exist. Release notes follow `.github/RELEASE_NOTES_TEMPLATE.md` and are generated from commits since the previous version tag. The workflow requires repository Actions permissions to allow `GITHUB_TOKEN` to write contents so it can push the calculated tag and create the release.
 
-Logitech G HUB or Logitech's current wheel driver should remain installed for normal device/force-feedback operation. LogiWheel Forge's LED Indicator opens only the LED-capable HID interface and does not configure steering, force feedback, pedals, firmware, or onboard profiles.
+Logitech G HUB or Logitech's current wheel driver should remain installed for normal device and force-feedback operation. LED Indicator opens only the LED-capable HID interface. Input Mapper reads shared HID input and uses Windows DirectInput for supported resistance effects; it does not alter firmware or onboard profiles.

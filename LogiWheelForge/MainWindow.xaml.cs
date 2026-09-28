@@ -173,6 +173,24 @@ public partial class MainWindow : Window
     {
         if (_exiting) return;
         _exiting = true;
+        if (_viewModel.Mapper.HasUnsavedChanges)
+        {
+            RestoreWindow();
+            var choice = System.Windows.MessageBox.Show(this, "Save Input Mapper profile changes before exiting?",
+                "Unsaved profiles", MessageBoxButton.YesNoCancel, MessageBoxImage.Question);
+            if (choice == MessageBoxResult.Cancel) { _exiting = false; return; }
+            if (choice == MessageBoxResult.Yes)
+            {
+                try { await _viewModel.Mapper.SaveChangesAsync(); }
+                catch (Exception ex)
+                {
+                    System.Windows.MessageBox.Show(this, ex.Message, "Could not save profiles",
+                        MessageBoxButton.OK, MessageBoxImage.Error);
+                    _exiting = false;
+                    return;
+                }
+            }
+        }
         _allowClose = true;
         var bounds = WindowState == WindowState.Maximized ? RestoreBounds : new Rect(Left, Top, Width, Height);
         try

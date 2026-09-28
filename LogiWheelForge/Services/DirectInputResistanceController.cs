@@ -16,10 +16,26 @@ public sealed class DirectInputResistanceController : IWheelResistanceController
     private IDirectInputDevice8? _device;
     private IDirectInputEffect? _spring;
     private IDirectInputEffect? _damper;
+    private EffectAllocation? _springData;
+    private EffectAllocation? _damperData;
     private MapperResistance? _settings;
     private double _position, _target, _holdStrength;
     private bool _holding;
     private int _lastOffset = int.MinValue, _lastStrength = -1;
+    private int? _detentIndex;
+
+    private sealed class EffectAllocation : IDisposable
+    {
+        public nint Axis { get; } = Marshal.AllocHGlobal(4);
+        public nint Direction { get; } = Marshal.AllocHGlobal(4);
+        public nint Condition { get; } = Marshal.AllocHGlobal(Marshal.SizeOf<Condition>());
+        public void Dispose()
+        {
+            Marshal.FreeHGlobal(Axis);
+            Marshal.FreeHGlobal(Direction);
+            Marshal.FreeHGlobal(Condition);
+        }
+    }
 
     public DirectInputResistanceController(IReadOnlyList<WheelDefinition>? definitions = null, nint window = default)
     {
@@ -27,7 +43,7 @@ public sealed class DirectInputResistanceController : IWheelResistanceController
         _window = window;
     }
 
-    public bool IsAvailable => _spring is not null;
+    public bool IsAvailable => _spring is not null || _damper is not null;
     public string Status { get; private set; } = "Resistance is off";
     public void SetWindowHandle(nint window) => _window = window;
 
@@ -63,10 +79,9 @@ public sealed class DirectInputResistanceController : IWheelResistanceController
             if (!SetXAxisFormat(_device) || _device.SetCooperativeLevel(_window, 0x11) < 0 ||
                 _device.Acquire() < 0)
             { Status = "Wheel force feedback is busy or unavailable"; StopDevice(); return false; }
-            if (settings.CenterStrength > 0 || settings.DetentsEnabled)
-                _spring = CreateConditionEffect(_device, Spring, 0, settings.CenterStrength);
+            _spring = CreateConditionEffect(_device, Spring, 0, settings.CenterStrength, out _springData);
             if (settings.DampingStrength > 0)
-                _damper = CreateConditionEffect(_device, Damper, 0, settings.DampingStrength);
+                _damper = CreateConditionEffect(_device, Damper, 0, settings.DampingStrength, out _damperData);
             if (_spring is null && _damper is null)
             { Status = "Spring and damper effects are unsupported"; StopDevice(); return false; }
             Status = _spring is null ? "Damping active; spring is unsupported" :
@@ -75,7 +90,7 @@ public sealed class DirectInputResistanceController : IWheelResistanceController
             UpdateSpring();
             return true;
         }
-        catch (Exception ex) when (ex is COMException or DllNotFoundException or EntryPointNotFoundException)
+        catch (Exception ex)
         {
             StopDevice();
             Status = $"Resistance unavailable: {ex.Message}";
@@ -97,13 +112,14 @@ public sealed class DirectInputResistanceController : IWheelResistanceController
         UpdateSpring();
     }
 
-    public void ReleaseHold() { _holding = false; UpdateSpring(); }
+    public void ReleaseHold() { _holding = false; _detentIndex = null; UpdateSpring(); }
 
     public void Stop()
     {
         StopDevice();
         _settings = null;
         _holding = false;
+        _detentIndex = null;
         _lastOffset = int.MinValue;
         _lastStrength = -1;
         Status = "Resistance is off";
@@ -114,8 +130,7 @@ public sealed class DirectInputResistanceController : IWheelResistanceController
     private void UpdateSpring()
     {
         if (_spring is null || _settings is null) return;
-        var target = _holding ? _target : _settings.DetentsEnabled
-            ? Math.Round(_position / _settings.DetentSpacingPercent) * _settings.DetentSpacingPercent : 0;
+        var target = _holding ? _target : _settings.DetentsEnabled ? DetentTarget() : 0;
         var strength = _holding ? _holdStrength : _settings.DetentsEnabled
             ? _settings.DetentStrength : _settings.CenterStrength;
         var offset = (int)Math.Round(Math.Clamp(target, -100, 100) * 100);
@@ -127,56 +142,66 @@ public sealed class DirectInputResistanceController : IWheelResistanceController
             Offset = offset, PositiveCoefficient = -coefficient, NegativeCoefficient = -coefficient,
             PositiveSaturation = 10000, NegativeSaturation = 10000
         };
-        var pointer = Marshal.AllocHGlobal(Marshal.SizeOf<Condition>());
+        if (_springData is null) return;
+        Marshal.StructureToPtr(condition, _springData.Condition, false);
+        var effect = new EffectData { Size = (uint)Marshal.SizeOf<EffectData>(), TypeSize =
+            (uint)Marshal.SizeOf<Condition>(), TypeData = _springData.Condition };
         try
         {
-            Marshal.StructureToPtr(condition, pointer, false);
-            var effect = new EffectData { Size = (uint)Marshal.SizeOf<EffectData>(), TypeSize =
-                (uint)Marshal.SizeOf<Condition>(), TypeData = pointer };
-            try
+            if (_spring.SetParameters(ref effect, 0x00000100) < 0)
             {
-                if (_spring.SetParameters(ref effect, 0x00000100) < 0)
-                    Status = "Wheel rejected resistance update";
-            }
-            catch (COMException)
-            {
-                Status = "Wheel force feedback disconnected";
-                StopDevice();
+                _lastOffset = int.MinValue;
+                Status = "Wheel rejected resistance update";
             }
         }
-        finally { Marshal.FreeHGlobal(pointer); }
+        catch (COMException)
+        {
+            Status = "Wheel force feedback disconnected";
+            StopDevice();
+        }
+    }
+
+    private double DetentTarget()
+    {
+        var spacing = _settings!.DetentSpacingPercent;
+        _detentIndex ??= (int)Math.Round(_position / spacing);
+        var hysteresis = _settings.DetentHysteresisPercent;
+        while (_position > (_detentIndex.Value + .5) * spacing + hysteresis) _detentIndex++;
+        while (_position < (_detentIndex.Value - .5) * spacing - hysteresis) _detentIndex--;
+        return _detentIndex.Value * spacing;
     }
 
     private static IDirectInputEffect? CreateConditionEffect(IDirectInputDevice8 device, Guid kind,
-        int offset, double strength)
+        int offset, double strength, out EffectAllocation? allocation)
     {
-        var axis = Marshal.AllocHGlobal(4);
-        var direction = Marshal.AllocHGlobal(4);
-        var condition = Marshal.AllocHGlobal(Marshal.SizeOf<Condition>());
+        allocation = new EffectAllocation();
         try
         {
-            Marshal.WriteInt32(axis, 0); Marshal.WriteInt32(direction, 1);
+            Marshal.WriteInt32(allocation.Axis, 0); Marshal.WriteInt32(allocation.Direction, 1);
             Marshal.StructureToPtr(new Condition
             {
                 Offset = offset, PositiveCoefficient = -(int)(strength * 100),
                 NegativeCoefficient = -(int)(strength * 100), PositiveSaturation = 10000,
                 NegativeSaturation = 10000
-            }, condition, false);
+            }, allocation.Condition, false);
             var effect = new EffectData
             {
                 Size = (uint)Marshal.SizeOf<EffectData>(), Flags = 0x12, Duration = uint.MaxValue,
-                Gain = 10000, TriggerButton = uint.MaxValue, AxisCount = 1, Axes = axis,
-                Direction = direction, TypeSize = (uint)Marshal.SizeOf<Condition>(), TypeData = condition
+                Gain = 10000, TriggerButton = uint.MaxValue, AxisCount = 1, Axes = allocation.Axis,
+                Direction = allocation.Direction, TypeSize = (uint)Marshal.SizeOf<Condition>(),
+                TypeData = allocation.Condition
             };
             if (device.CreateEffect(ref kind, ref effect, out var created, 0) < 0 || created is null)
-                return null;
+            { allocation.Dispose(); allocation = null; return null; }
             if (created.Start(1, 0) >= 0) return created;
             Marshal.ReleaseComObject(created);
+            allocation.Dispose(); allocation = null;
             return null;
         }
-        finally
+        catch
         {
-            Marshal.FreeHGlobal(axis); Marshal.FreeHGlobal(direction); Marshal.FreeHGlobal(condition);
+            allocation?.Dispose(); allocation = null;
+            throw;
         }
     }
 
@@ -204,6 +229,8 @@ public sealed class DirectInputResistanceController : IWheelResistanceController
         { try { _spring.Stop(); } catch { } Marshal.ReleaseComObject(_spring); _spring = null; }
         if (_damper is not null)
         { try { _damper.Stop(); } catch { } Marshal.ReleaseComObject(_damper); _damper = null; }
+        _springData?.Dispose(); _springData = null;
+        _damperData?.Dispose(); _damperData = null;
         if (_device is not null)
         { try { _device.Unacquire(); } catch { } Marshal.ReleaseComObject(_device); _device = null; }
         if (_directInput is not null) { Marshal.ReleaseComObject(_directInput); _directInput = null; }

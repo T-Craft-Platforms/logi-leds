@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "id": "logitech-g29",
   "displayName": "Logitech G29 Driving Force",
   "vendorId": 1133,
@@ -26,5 +26,9 @@
   ],
   "defaultFirstPercent": 65,
   "defaultRedlinePercent": 90,
-  "hardwareVerified": true
+  "hardwareVerified": true,
+  "inputControls": [
+    { "name": "Steering", "usagePage": 1, "usage": 48, "centered": true }
+  ],
+  "forceFeedback": { "spring": true, "damper": true }
 }

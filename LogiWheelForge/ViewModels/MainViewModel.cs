@@ -33,7 +33,7 @@ public sealed class MainViewModel : ObservableObject, IAsyncDisposable
         _mapperService = mapperService;
         _wheelSelection = wheelSelection;
         _wheelSelection.ActiveWheelChanged += OnSelectedWheelChanged;
-        Dashboard = new DashboardViewModel(service, SetStatusMessage);
+        Dashboard = new DashboardViewModel(service, mapperService, wheelSelection, SetStatusMessage);
         RpmProfile = new RpmProfileViewModel(service, _draft, SetStatusMessage);
         Settings = new SettingsViewModel(service, _draft, SetStatusMessage);
         Mapper = new InputMapperViewModel(mapperService);
@@ -118,7 +118,8 @@ public sealed class MainViewModel : ObservableObject, IAsyncDisposable
     public string AppControlStatusText => !IsRunning ? "LED Indicator is stopped" :
         State == ReadinessState.Driving ? "RPM lights are active" : "LED Indicator is ready";
 
-    public string WheelStatusText => _isWheelConnected ? $"{WheelName} connected" : "No wheel detected";
+    public string WheelStatusText => _isWheelConnected ? $"{WheelName} LED interface connected" :
+        "No LED-capable wheel detected";
 
     public string TelemetryStatusText => _isTelemetryConnected && _isRaceOn && _maximumRpm > 0
         ? $"{TelemetryFormat} drive data active"

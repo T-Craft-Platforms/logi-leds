@@ -72,6 +72,19 @@ public sealed class InputMapperTests
         Assert.AreEqual(1, output.Presses);
     }
 
+    [TestMethod]
+    public void HoldTarget_RequiresResistanceToBeEnabled()
+    {
+        var profile = new InputMapperProfile
+        {
+            Rules = [new MapperRule { Trigger = MapperTriggerKind.AxisRange,
+                Action = MapperActionKind.HoldTarget }]
+        };
+        Assert.IsFalse(profile.TryValidate(out _));
+        Assert.IsTrue((profile with { Resistance = new MapperResistance { Enabled = true } })
+            .TryValidate(out _));
+    }
+
     private sealed class TestClock : TimeProvider
     {
         private DateTimeOffset _now = DateTimeOffset.UnixEpoch;

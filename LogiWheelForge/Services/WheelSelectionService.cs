@@ -38,7 +38,9 @@ public sealed class WheelSelectionService : IDisposable
                 {
                     var descriptor = device.GetReportDescriptor();
                     var definition = _definitions.FirstOrDefault(item => item.ProductIds.Contains(device.ProductID));
-                    var productName = device.GetProductName();
+                    string productName;
+                    try { productName = device.GetProductName(); }
+                    catch { productName = string.Empty; }
                     if (definition?.IsPedalSet == true ||
                         productName.Contains("pedal", StringComparison.OrdinalIgnoreCase)) continue;
                     if (definition is null && !productName.Contains("wheel", StringComparison.OrdinalIgnoreCase) &&

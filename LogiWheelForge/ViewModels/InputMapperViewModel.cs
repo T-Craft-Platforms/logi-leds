@@ -1,4 +1,7 @@
+using System.IO;
 using System.Collections.ObjectModel;
+using System.Collections.Specialized;
+using System.ComponentModel;
 using System.Windows.Input;
 using LogiWheelForge.Commands;
 using LogiWheelForge.Models;
@@ -30,9 +33,23 @@ public sealed class MapperRuleDraft : ObservableObject
     public double ForceStrength { get => _value.ForceStrength; set => Change(_value with { ForceStrength = value }); }
     public double TargetPercent { get => _value.TargetPercent; set => Change(_value with { TargetPercent = value }); }
     public MapperForceRelease ForceRelease { get => _value.ForceRelease; set => Change(_value with { ForceRelease = value }); }
+    public bool IsStepTrigger => Trigger == MapperTriggerKind.AxisStep;
+    public bool IsRangeTrigger => Trigger == MapperTriggerKind.AxisRange;
+    public bool IsAxisTrigger => Trigger != MapperTriggerKind.Button;
+    public bool IsKeyOrButtonAction => Action is MapperActionKind.Key or MapperActionKind.MouseButton;
+    public bool IsMovementAction => Action is MapperActionKind.MouseMove or MapperActionKind.MouseScroll;
+    public bool IsHoldTargetAction => Action == MapperActionKind.HoldTarget;
+    public bool IsForceAction => Action is MapperActionKind.HoldTarget or MapperActionKind.ReleaseTarget;
+    public bool IsTapAction => IsKeyOrButtonAction && Mode == MapperActionMode.Tap;
+    public bool UsesOutput => IsKeyOrButtonAction || Action == MapperActionKind.MouseMove;
     public string Summary => $"{Control} · {Trigger} → {Action} {Output}";
     public MapperRule Build() => _value;
-    private void Change(MapperRule value) { _value = value; OnPropertyChanged(string.Empty); OnPropertyChanged(nameof(Summary)); }
+    private void Change(MapperRule value)
+    {
+        _value = value;
+        OnPropertyChanged(string.Empty);
+        OnPropertyChanged(nameof(Summary));
+    }
 }
 
 public sealed class MapperProfileDraft : ObservableObject
@@ -40,7 +57,7 @@ public sealed class MapperProfileDraft : ObservableObject
     private string _name;
     private bool _enabled;
     private bool _resistanceEnabled, _detentsEnabled;
-    private double _centerStrength, _dampingStrength, _detentSpacingPercent, _detentStrength;
+    private double _centerStrength, _dampingStrength, _detentSpacingPercent, _detentHysteresisPercent, _detentStrength;
 
     public MapperProfileDraft(InputMapperProfile profile)
     {
@@ -52,8 +69,14 @@ public sealed class MapperProfileDraft : ObservableObject
         _dampingStrength = profile.Resistance.DampingStrength;
         _detentsEnabled = profile.Resistance.DetentsEnabled;
         _detentSpacingPercent = profile.Resistance.DetentSpacingPercent;
+        _detentHysteresisPercent = profile.Resistance.DetentHysteresisPercent;
         _detentStrength = profile.Resistance.DetentStrength;
+        PropertyChanged += (_, _) => Changed?.Invoke(this, EventArgs.Empty);
+        ProcessPaths.CollectionChanged += (_, _) => Changed?.Invoke(this, EventArgs.Empty);
+        foreach (var rule in Rules) rule.PropertyChanged += OnRuleChanged;
+        Rules.CollectionChanged += OnRulesChanged;
     }
+    public event EventHandler? Changed;
     public string Id { get; }
     public string Name { get => _name; set => SetField(ref _name, value); }
     public bool Enabled { get => _enabled; set => SetField(ref _enabled, value); }
@@ -64,6 +87,7 @@ public sealed class MapperProfileDraft : ObservableObject
     public double DampingStrength { get => _dampingStrength; set => SetField(ref _dampingStrength, value); }
     public bool DetentsEnabled { get => _detentsEnabled; set => SetField(ref _detentsEnabled, value); }
     public double DetentSpacingPercent { get => _detentSpacingPercent; set => SetField(ref _detentSpacingPercent, value); }
+    public double DetentHysteresisPercent { get => _detentHysteresisPercent; set => SetField(ref _detentHysteresisPercent, value); }
     public double DetentStrength { get => _detentStrength; set => SetField(ref _detentStrength, value); }
     public InputMapperProfile Build() => new()
     {
@@ -74,9 +98,20 @@ public sealed class MapperProfileDraft : ObservableObject
         {
             Enabled = ResistanceEnabled, CenterStrength = CenterStrength, DampingStrength = DampingStrength,
             DetentsEnabled = DetentsEnabled, DetentSpacingPercent = DetentSpacingPercent,
+            DetentHysteresisPercent = DetentHysteresisPercent,
             DetentStrength = DetentStrength
         }
     };
+
+    private void OnRuleChanged(object? sender, PropertyChangedEventArgs e) => Changed?.Invoke(this, EventArgs.Empty);
+    private void OnRulesChanged(object? sender, NotifyCollectionChangedEventArgs e)
+    {
+        if (e.OldItems is not null)
+            foreach (MapperRuleDraft rule in e.OldItems) rule.PropertyChanged -= OnRuleChanged;
+        if (e.NewItems is not null)
+            foreach (MapperRuleDraft rule in e.NewItems) rule.PropertyChanged += OnRuleChanged;
+        Changed?.Invoke(this, EventArgs.Empty);
+    }
 }
 
 public sealed class InputMapperViewModel : ObservableObject, IDisposable
@@ -88,6 +123,7 @@ public sealed class InputMapperViewModel : ObservableObject, IDisposable
     private string _manualProcessPath = string.Empty;
     private string? _selectedProcessPath;
     private bool _isRunning;
+    private bool _hasUnsavedChanges;
 
     public InputMapperViewModel(InputMapperService service)
     {
@@ -101,7 +137,7 @@ public sealed class InputMapperViewModel : ObservableObject, IDisposable
         AddProcessCommand = new RelayCommand(AddManualProcess);
         RemoveProcessCommand = new RelayCommand(RemoveProcess);
         PickWindowCommand = new RelayCommand(PickWindow);
-        SaveCommand = new AsyncRelayCommand(SaveAsync, onError: ex => Status = $"Could not save: {ex.Message}");
+        SaveCommand = new AsyncRelayCommand(SaveChangesAsync, onError: ex => Status = $"Could not save: {ex.Message}");
         ToggleCommand = new RelayCommand(() =>
         {
             try { if (_service.IsRunning) _service.Stop(); else _service.Start(); }
@@ -138,12 +174,25 @@ public sealed class InputMapperViewModel : ObservableObject, IDisposable
     public string InputPreview { get => _inputPreview; private set => SetField(ref _inputPreview, value); }
     public string ToggleText => _isRunning ? "Stop mapper" : "Start mapper";
     public bool IsRunning => _isRunning;
+    public bool HasUnsavedChanges
+    {
+        get => _hasUnsavedChanges;
+        private set => SetField(ref _hasUnsavedChanges, value);
+    }
+    public string EditStatus => HasUnsavedChanges ? "Unsaved changes" : "All changes saved";
 
     public void Initialize()
     {
         Profiles.Clear();
-        foreach (var profile in _service.Profiles) Profiles.Add(new MapperProfileDraft(profile));
+        foreach (var profile in _service.Profiles)
+        {
+            var draft = new MapperProfileDraft(profile);
+            draft.Changed += OnDraftChanged;
+            Profiles.Add(draft);
+        }
         SelectedProfile = Profiles.FirstOrDefault();
+        HasUnsavedChanges = false;
+        OnPropertyChanged(nameof(EditStatus));
     }
 
     public void Dispose()
@@ -168,14 +217,18 @@ public sealed class InputMapperViewModel : ObservableObject, IDisposable
             ]
         };
         var draft = new MapperProfileDraft(profile);
+        draft.Changed += OnDraftChanged;
         Profiles.Add(draft); SelectedProfile = draft;
+        MarkUnsaved();
         Status = "Add a target executable, review the starter rules, then save";
     }
     private void DeleteProfile()
     {
         if (SelectedProfile is null) return;
+        SelectedProfile.Changed -= OnDraftChanged;
         Profiles.Remove(SelectedProfile);
         SelectedProfile = Profiles.FirstOrDefault();
+        MarkUnsaved();
     }
     private void AddRule()
     {
@@ -217,11 +270,19 @@ public sealed class InputMapperViewModel : ObservableObject, IDisposable
         if (path is null) { Status = "No executable was selected"; return; }
         AddProcess(path);
     }
-    private async Task SaveAsync()
+    public async Task SaveChangesAsync()
     {
         var profiles = Profiles.Select(profile => profile.Build()).ToArray();
         await _service.SaveProfilesAsync(profiles);
         Status = "Profiles saved";
+        HasUnsavedChanges = false;
+        OnPropertyChanged(nameof(EditStatus));
+    }
+    private void OnDraftChanged(object? sender, EventArgs e) => MarkUnsaved();
+    private void MarkUnsaved()
+    {
+        HasUnsavedChanges = true;
+        OnPropertyChanged(nameof(EditStatus));
     }
     private void OnSnapshot(object? sender, InputMapperSnapshot snapshot)
     {

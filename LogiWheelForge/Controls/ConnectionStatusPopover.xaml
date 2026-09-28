@@ -86,7 +86,7 @@
                             Style="{StaticResource WheelStatusIconStyle}"
                             Template="{StaticResource WheelGlyphTemplate}" />
                         <StackPanel Grid.Column="1">
-                            <TextBlock FontWeight="SemiBold" Text="Wheel connection" />
+                            <TextBlock FontWeight="SemiBold" Text="LED wheel interface" />
                             <TextBlock
                                 Margin="0,2,0,0"
                                 FontSize="12"
