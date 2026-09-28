@@ -42,6 +42,7 @@
             <Setter Property="Width" Value="188"/>
             <Setter Property="Height" Value="46"/>
             <Setter Property="HorizontalContentAlignment" Value="Left"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
             <Setter Property="Margin" Value="0,3"/>
             <Setter Property="Padding" Value="16,9"/>
         </Style>
@@ -73,13 +74,49 @@
                     <DockPanel LastChildFill="True">
                         <TextBlock DockPanel.Dock="Bottom" Margin="16,0,0,10" FontSize="12"
                                    Foreground="{DynamicResource MutedBrush}" Text="LOGIWHEEL FORGE"/>
-                        <TabControl Style="{StaticResource ModuleNavigationStyle}" SelectedIndex="{Binding SelectedTab, Mode=TwoWay}"
-                                    ItemContainerStyle="{StaticResource ModuleNavigationItemStyle}">
-                            <TabItem Header="Dashboard"/>
-                            <TabItem Header="LED Indicator"/>
-                            <TabItem Header="Input Mapper"/>
-                            <TabItem Header="Settings"/>
-                        </TabControl>
+                        <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                            <TabControl Style="{StaticResource ModuleNavigationStyle}" SelectedIndex="{Binding SelectedTab, Mode=TwoWay}"
+                                        ItemContainerStyle="{StaticResource ModuleNavigationItemStyle}">
+                                <TabItem>
+                                    <TabItem.Header>
+                                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                            <Path Width="18" Height="18" Margin="0,0,12,0" Fill="{Binding RelativeSource={RelativeSource AncestorType=TabItem}, Path=Foreground}"
+                                                  Data="M2,2 H7 V7 H2 Z M9,2 H14 V7 H9 Z M2,9 H7 V14 H2 Z M9,9 H14 V14 H9 Z"/>
+                                            <TextBlock Text="Dashboard" VerticalAlignment="Center"/>
+                                        </StackPanel>
+                                    </TabItem.Header>
+                                </TabItem>
+                                <TabItem>
+                                    <TabItem.Header>
+                                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                            <Path Width="18" Height="18" Margin="0,0,12,0" Fill="{Binding RelativeSource={RelativeSource AncestorType=TabItem}, Path=Foreground}"
+                                                  Data="M8,1 A7,7 0 1 0 8,15 A7,7 0 1 0 8,1 Z M8,4 A4,4 0 1 1 8,12 A4,4 0 1 1 8,4 Z"/>
+                                            <TextBlock Text="LED Indicator" VerticalAlignment="Center"/>
+                                        </StackPanel>
+                                    </TabItem.Header>
+                                </TabItem>
+                                <TabItem>
+                                    <TabItem.Header>
+                                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                            <Path Width="18" Height="18" Margin="0,0,12,0" Stroke="{Binding RelativeSource={RelativeSource AncestorType=TabItem}, Path=Foreground}"
+                                                  StrokeThickness="1.6" StrokeStartLineCap="Round" StrokeEndLineCap="Round" StrokeLineJoin="Round"
+                                                  Data="M2,5 H14 M11,2 L14,5 L11,8 M14,11 H2 M5,8 L2,11 L5,14"/>
+                                            <TextBlock Text="Input Mapper" VerticalAlignment="Center"/>
+                                        </StackPanel>
+                                    </TabItem.Header>
+                                </TabItem>
+                                <TabItem>
+                                    <TabItem.Header>
+                                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                            <Path Width="18" Height="18" Margin="0,0,12,0" Stroke="{Binding RelativeSource={RelativeSource AncestorType=TabItem}, Path=Foreground}"
+                                                  StrokeThickness="1.6" StrokeStartLineCap="Round" StrokeEndLineCap="Round" StrokeLineJoin="Round"
+                                                  Data="M3,2 V14 M13,2 V14 M2,5 H4 M12,10 H14 M3,5 A1.5,1.5 0 1 0 3,8 A1.5,1.5 0 1 0 3,5 M13,7 A1.5,1.5 0 1 0 13,10 A1.5,1.5 0 1 0 13,7"/>
+                                            <TextBlock Text="Settings" VerticalAlignment="Center"/>
+                                        </StackPanel>
+                                    </TabItem.Header>
+                                </TabItem>
+                            </TabControl>
+                        </ScrollViewer>
                     </DockPanel>
                 </Border>
                 <ContentPresenter x:Name="PageTransitionPresenter" Grid.Column="1" Content="{Binding SelectedPage}" />
