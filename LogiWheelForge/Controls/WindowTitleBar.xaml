@@ -14,11 +14,14 @@
             <ColumnDefinition />
             <ColumnDefinition Width="Auto" />
         </Grid.ColumnDefinitions>
-        <StackPanel
-            Grid.Column="0"
-            Margin="16,0"
-            VerticalAlignment="Center"
-            Orientation="Horizontal">
+        <Button x:Name="NavigationToggleButton" Grid.Column="0" Margin="16,0"
+                Click="NavigationToggleButton_OnClick" Style="{StaticResource WindowButtonStyle}"
+                ToolTip="Collapse navigation" shell:WindowChrome.IsHitTestVisibleInChrome="True">
+            <fa:IconImage x:Name="NavigationToggleIcon" Width="14" Height="14"
+                          Foreground="{DynamicResource MutedBrush}" Icon="Bars"/>
+        </Button>
+        <StackPanel x:Name="BrandStack" Grid.Column="1" Margin="146,0,0,0"
+                    HorizontalAlignment="Left" VerticalAlignment="Center" Orientation="Horizontal">
             <ContentControl
                 Width="24"
                 Height="24"
@@ -29,8 +32,6 @@
                 FontWeight="SemiBold"
                 Text="LogiWheel Forge" />
         </StackPanel>
-        <TextBlock Grid.Column="1" VerticalAlignment="Center" HorizontalAlignment="Center"
-                   Foreground="{DynamicResource MutedBrush}" Text="Wheel tools"/>
         <StackPanel
             Grid.Column="2"
             Margin="0,0,8,0"

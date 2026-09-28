@@ -9,6 +9,12 @@ using Panel = System.Windows.Controls.Panel;
 
 namespace LogiWheelForge.Controls;
 
+public enum TransitionAxis
+{
+    Vertical,
+    Horizontal
+}
+
 public static class TransitionAnimator
 {
     private static readonly ConditionalWeakTable<ContentPresenter, PresenterState> States = new();
@@ -23,14 +29,34 @@ public static class TransitionAnimator
     public static readonly DependencyProperty IsActiveProperty = DependencyProperty.RegisterAttached(
         "IsActive", typeof(bool), typeof(TransitionAnimator), new PropertyMetadata(false, OnIsActiveChanged));
 
+    public static readonly DependencyProperty AxisProperty = DependencyProperty.RegisterAttached(
+        "Axis", typeof(TransitionAxis), typeof(TransitionAnimator), new PropertyMetadata(TransitionAxis.Vertical));
+
+    public static readonly DependencyProperty DurationProperty = DependencyProperty.RegisterAttached(
+        "Duration", typeof(double), typeof(TransitionAnimator), new PropertyMetadata(420d));
+
+    public static readonly DependencyProperty DistanceProperty = DependencyProperty.RegisterAttached(
+        "Distance", typeof(double), typeof(TransitionAnimator), new PropertyMetadata(28d));
+
     public static void SetIsEnabled(DependencyObject element, bool value) => element.SetValue(IsEnabledProperty, value);
     public static bool GetIsEnabled(DependencyObject element) => (bool)element.GetValue(IsEnabledProperty);
     public static void SetIndex(DependencyObject element, int value) => element.SetValue(IndexProperty, value);
     public static int GetIndex(DependencyObject element) => (int)element.GetValue(IndexProperty);
     public static void SetIsActive(DependencyObject element, bool value) => element.SetValue(IsActiveProperty, value);
     public static bool GetIsActive(DependencyObject element) => (bool)element.GetValue(IsActiveProperty);
+    public static void SetAxis(DependencyObject element, TransitionAxis value) => element.SetValue(AxisProperty, value);
+    public static TransitionAxis GetAxis(DependencyObject element) => (TransitionAxis)element.GetValue(AxisProperty);
+    public static void SetDuration(DependencyObject element, double value) => element.SetValue(DurationProperty, value);
+    public static double GetDuration(DependencyObject element) => (double)element.GetValue(DurationProperty);
+    public static void SetDistance(DependencyObject element, double value) => element.SetValue(DistanceProperty, value);
+    public static double GetDistance(DependencyObject element) => (double)element.GetValue(DistanceProperty);
 
-    public static void Play(FrameworkElement element, int direction) => Animate(element, Math.Sign(direction));
+    public static void Play(FrameworkElement element, int direction) =>
+        Play(element, direction, TransitionAxis.Vertical, 420);
+
+    public static void Play(FrameworkElement element, int direction, TransitionAxis axis,
+        double durationMilliseconds = 420, double distance = 28) =>
+        Animate(element, Math.Sign(direction), axis, durationMilliseconds, distance);
 
     private static void OnIsActiveChanged(DependencyObject element, DependencyPropertyChangedEventArgs args)
     {
@@ -62,7 +88,7 @@ public static class TransitionAnimator
             var state = ActivePanels.GetValue(parent, _ => new ActivePanelState());
             var currentIndex = GetIndex(element);
             if (state.LastIndex is int previousIndex && previousIndex != currentIndex)
-                Animate(element, Math.Sign(currentIndex - previousIndex));
+                Animate(element, Math.Sign(currentIndex - previousIndex), GetAxis(element), GetDuration(element), GetDistance(element));
             state.LastIndex = currentIndex;
         });
     }
@@ -130,31 +156,31 @@ public static class TransitionAnimator
                 ? 0
                 : Math.Sign(currentIndex - state.LastIndex);
             state.LastIndex = currentIndex;
-            Animate(presenter, direction);
+            Animate(presenter, direction, GetAxis(presenter), GetDuration(presenter), GetDistance(presenter));
         });
     }
 
-    private static void Animate(FrameworkElement element, int direction)
+    private static void Animate(FrameworkElement element, int direction, TransitionAxis axis,
+        double durationMilliseconds, double distance)
     {
-        const double slideDistance = 72;
-        var offset = direction == 0
-            ? new TranslateTransform(0, 9)
-            : new TranslateTransform(direction * slideDistance, 0);
+        var duration = TimeSpan.FromMilliseconds(Math.Clamp(durationMilliseconds, 180, 1200));
+        var offset = new TranslateTransform();
+        var offsetProperty = axis == TransitionAxis.Horizontal ? TranslateTransform.XProperty : TranslateTransform.YProperty;
+        var slideDistance = Math.Clamp(Math.Abs(distance), 0, 120);
+        var initialOffset = direction == 0 ? Math.Min(7, slideDistance) : direction * slideDistance;
         element.RenderTransform = offset;
         element.Opacity = 0;
 
-        var fade = new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(300))
+        var fade = new DoubleAnimation(0, 1, duration)
         {
             EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
         };
-        var slide = new DoubleAnimation(direction == 0 ? 9 : direction * slideDistance, 0,
-            TimeSpan.FromMilliseconds(420))
+        var slide = new DoubleAnimation(initialOffset, 0, duration)
         {
-            EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
+            EasingFunction = new QuarticEase { EasingMode = EasingMode.EaseOut }
         };
         element.BeginAnimation(UIElement.OpacityProperty, fade, HandoffBehavior.SnapshotAndReplace);
-        offset.BeginAnimation(direction == 0 ? TranslateTransform.YProperty : TranslateTransform.XProperty,
-            slide, HandoffBehavior.SnapshotAndReplace);
+        offset.BeginAnimation(offsetProperty, slide, HandoffBehavior.SnapshotAndReplace);
     }
 
     private sealed class PresenterState

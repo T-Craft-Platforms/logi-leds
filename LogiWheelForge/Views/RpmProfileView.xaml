@@ -105,7 +105,10 @@
                                 </Button>
                             </StackPanel>
                         </Grid>
-                        <Grid controls:TransitionAnimator.Index="0" controls:TransitionAnimator.IsActive="{Binding IsEasyMode}">
+                        <Grid ClipToBounds="True">
+                        <Grid controls:TransitionAnimator.Index="0" controls:TransitionAnimator.IsActive="{Binding IsEasyMode}"
+                              controls:TransitionAnimator.Axis="Vertical" controls:TransitionAnimator.Duration="420"
+                              controls:TransitionAnimator.Distance="24" Margin="0,8,0,24">
                             <Grid.Style>
                                 <Style TargetType="Grid">
                                     <Setter Property="Visibility" Value="Collapsed" />
@@ -160,7 +163,9 @@
                                 </Grid>
                             </StackPanel>
                         </Grid>
-                        <Grid controls:TransitionAnimator.Index="1" controls:TransitionAnimator.IsActive="{Binding IsAdvancedMode}">
+                        <Grid controls:TransitionAnimator.Index="1" controls:TransitionAnimator.IsActive="{Binding IsAdvancedMode}"
+                              controls:TransitionAnimator.Axis="Vertical" controls:TransitionAnimator.Duration="420"
+                              controls:TransitionAnimator.Distance="24" Margin="0,8,0,24">
                             <Grid.Style>
                                 <Style TargetType="Grid">
                                     <Setter Property="Visibility" Value="Collapsed" />
@@ -172,6 +177,7 @@
                                 </Style>
                             </Grid.Style>
                             <controls:RpmRangeEditor />
+                        </Grid>
                         </Grid>
                         <Border
                             Height="1"

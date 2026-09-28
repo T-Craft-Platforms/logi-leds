@@ -3,13 +3,14 @@
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:controls="clr-namespace:LogiWheelForge.Controls"
+    xmlns:fa="http://schemas.awesome.incremented/wpf/xaml/fontawesome.sharp"
     xmlns:shell="clr-namespace:System.Windows.Shell;assembly=PresentationFramework"
     xmlns:views="clr-namespace:LogiWheelForge.Views"
     xmlns:vm="clr-namespace:LogiWheelForge.ViewModels"
     Title="LogiWheel Forge"
     Width="1180"
     Height="760"
-    MinWidth="900"
+    MinWidth="720"
     MinHeight="620"
     Background="{DynamicResource WindowBrush}"
     Icon="Assets/LogiWheelForge.ico"
@@ -28,23 +29,36 @@
         <DataTemplate DataType="{x:Type vm:InputMapperViewModel}">
             <views:InputMapperView />
         </DataTemplate>
-        <Style x:Key="ModuleNavigationStyle" TargetType="TabControl">
-            <Setter Property="Background" Value="Transparent"/>
-            <Setter Property="BorderThickness" Value="0"/>
-            <Setter Property="TabStripPlacement" Value="Left"/>
-            <Setter Property="Template">
-                <Setter.Value><ControlTemplate TargetType="TabControl">
-                    <TabPanel IsItemsHost="True" VerticalAlignment="Top"/>
-                </ControlTemplate></Setter.Value>
-            </Setter>
-        </Style>
-        <Style x:Key="ModuleNavigationItemStyle" BasedOn="{StaticResource {x:Type TabItem}}" TargetType="TabItem">
-            <Setter Property="Width" Value="188"/>
+        <Style x:Key="ModuleNavigationItemStyle" TargetType="RadioButton">
             <Setter Property="Height" Value="46"/>
+            <Setter Property="MinHeight" Value="46"/>
+            <Setter Property="HorizontalAlignment" Value="Stretch"/>
             <Setter Property="HorizontalContentAlignment" Value="Left"/>
             <Setter Property="VerticalContentAlignment" Value="Center"/>
             <Setter Property="Margin" Value="0,3"/>
             <Setter Property="Padding" Value="16,9"/>
+            <Setter Property="Foreground" Value="{DynamicResource MutedBrush}"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="RadioButton">
+                        <Border x:Name="Root" Padding="{TemplateBinding Padding}" Background="{TemplateBinding Background}" CornerRadius="9">
+                            <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                              VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Root" Property="Background" Value="{DynamicResource ElevatedBrush}"/>
+                            </Trigger>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter Property="Foreground" Value="{DynamicResource TextBrush}"/>
+                                <Setter TargetName="Root" Property="Background" Value="{DynamicResource ElevatedBrush}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
         </Style>
     </Window.Resources>
     <shell:WindowChrome.WindowChrome>
@@ -66,60 +80,75 @@
                 <RowDefinition Height="54" />
                 <RowDefinition Height="*" />
             </Grid.RowDefinitions>
-            <controls:WindowTitleBar Grid.Row="0" />
-            <Grid Grid.Row="1">
-                <Grid.ColumnDefinitions><ColumnDefinition Width="216"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
-                <Border Grid.Column="0" Background="{DynamicResource SurfaceBrush}" BorderBrush="{DynamicResource BorderBrush}"
-                        BorderThickness="0,0,1,0" Padding="12,18">
-                    <DockPanel LastChildFill="True">
-                        <TextBlock DockPanel.Dock="Bottom" Margin="16,0,0,10" FontSize="12"
-                                   Foreground="{DynamicResource MutedBrush}" Text="LOGIWHEEL FORGE"/>
-                        <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
-                            <TabControl Style="{StaticResource ModuleNavigationStyle}" SelectedIndex="{Binding SelectedTab, Mode=TwoWay}"
-                                        ItemContainerStyle="{StaticResource ModuleNavigationItemStyle}">
-                                <TabItem>
-                                    <TabItem.Header>
-                                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                            <Path Width="18" Height="18" Margin="0,0,12,0" Fill="{Binding RelativeSource={RelativeSource AncestorType=TabItem}, Path=Foreground}"
-                                                  Data="M2,2 H7 V7 H2 Z M9,2 H14 V7 H9 Z M2,9 H7 V14 H2 Z M9,9 H14 V14 H9 Z"/>
-                                            <TextBlock Text="Dashboard" VerticalAlignment="Center"/>
-                                        </StackPanel>
-                                    </TabItem.Header>
-                                </TabItem>
-                                <TabItem>
-                                    <TabItem.Header>
-                                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                            <Path Width="18" Height="18" Margin="0,0,12,0" Fill="{Binding RelativeSource={RelativeSource AncestorType=TabItem}, Path=Foreground}"
-                                                  Data="M8,1 A7,7 0 1 0 8,15 A7,7 0 1 0 8,1 Z M8,4 A4,4 0 1 1 8,12 A4,4 0 1 1 8,4 Z"/>
-                                            <TextBlock Text="LED Indicator" VerticalAlignment="Center"/>
-                                        </StackPanel>
-                                    </TabItem.Header>
-                                </TabItem>
-                                <TabItem>
-                                    <TabItem.Header>
-                                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                            <Path Width="18" Height="18" Margin="0,0,12,0" Stroke="{Binding RelativeSource={RelativeSource AncestorType=TabItem}, Path=Foreground}"
-                                                  StrokeThickness="1.6" StrokeStartLineCap="Round" StrokeEndLineCap="Round" StrokeLineJoin="Round"
-                                                  Data="M2,5 H14 M11,2 L14,5 L11,8 M14,11 H2 M5,8 L2,11 L5,14"/>
-                                            <TextBlock Text="Input Mapper" VerticalAlignment="Center"/>
-                                        </StackPanel>
-                                    </TabItem.Header>
-                                </TabItem>
-                                <TabItem>
-                                    <TabItem.Header>
-                                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                            <Path Width="18" Height="18" Margin="0,0,12,0" Stroke="{Binding RelativeSource={RelativeSource AncestorType=TabItem}, Path=Foreground}"
-                                                  StrokeThickness="1.6" StrokeStartLineCap="Round" StrokeEndLineCap="Round" StrokeLineJoin="Round"
-                                                  Data="M3,2 V14 M13,2 V14 M2,5 H4 M12,10 H14 M3,5 A1.5,1.5 0 1 0 3,8 A1.5,1.5 0 1 0 3,5 M13,7 A1.5,1.5 0 1 0 13,10 A1.5,1.5 0 1 0 13,7"/>
-                                            <TextBlock Text="Settings" VerticalAlignment="Center"/>
-                                        </StackPanel>
-                                    </TabItem.Header>
-                                </TabItem>
-                            </TabControl>
+            <controls:WindowTitleBar x:Name="TitleBar" Grid.Row="0" />
+            <Border x:Name="TopBarDivider" Grid.Row="0" Margin="200,0,0,0" VerticalAlignment="Bottom" Height="1"
+                    Background="{DynamicResource BorderBrush}" IsHitTestVisible="False"/>
+            <Grid x:Name="MainContentLayout" Grid.Row="1" ClipToBounds="True">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition x:Name="SidebarColumn" Width="216"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <ContentPresenter x:Name="PageTransitionPresenter" Grid.Column="1" Content="{Binding SelectedPage}"
+                                  ClipToBounds="True" Panel.ZIndex="0"/>
+                <Border x:Name="NavigationBackdrop" Grid.ColumnSpan="2" Panel.ZIndex="1"
+                        Background="#99090D14" Opacity="0" Visibility="Collapsed"
+                        MouseLeftButtonDown="NavigationBackdrop_OnMouseLeftButtonDown"/>
+                <Border x:Name="SidebarPanel" Grid.Column="0" Grid.ColumnSpan="2" Panel.ZIndex="2"
+                        HorizontalAlignment="Left" Background="{DynamicResource SurfaceBrush}"
+                        BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,0,1,0"
+                        CornerRadius="0,16,0,0" Padding="12,18">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="*"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+                        <ScrollViewer Grid.Row="0" Padding="0,0,0,10" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                            <StackPanel>
+                                <RadioButton x:Name="DashboardNavigationButton" Tag="0" GroupName="MainNavigation"
+                                             Style="{StaticResource ModuleNavigationItemStyle}" IsChecked="True"
+                                             Click="NavigationButton_OnClick" ToolTip="Dashboard">
+                                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                        <Path x:Name="DashboardNavigationIcon" Width="18" Height="18" Margin="0,0,12,0"
+                                              Fill="{Binding RelativeSource={RelativeSource AncestorType=RadioButton}, Path=Foreground}"
+                                              Data="M2,2 H7 V7 H2 Z M9,2 H14 V7 H9 Z M2,9 H7 V14 H2 Z M9,9 H14 V14 H9 Z"/>
+                                        <TextBlock x:Name="DashboardNavigationLabel" Text="Dashboard" VerticalAlignment="Center"/>
+                                    </StackPanel>
+                                </RadioButton>
+                                <RadioButton x:Name="LedNavigationButton" Tag="1" GroupName="MainNavigation"
+                                             Style="{StaticResource ModuleNavigationItemStyle}" Click="NavigationButton_OnClick"
+                                             ToolTip="LED Indicator">
+                                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                        <Path x:Name="LedNavigationIcon" Width="18" Height="18" Margin="0,0,12,0"
+                                              Fill="{Binding RelativeSource={RelativeSource AncestorType=RadioButton}, Path=Foreground}"
+                                              Data="M8,1 A7,7 0 1 0 8,15 A7,7 0 1 0 8,1 Z M8,4 A4,4 0 1 1 8,12 A4,4 0 1 1 8,4 Z"/>
+                                        <TextBlock x:Name="LedNavigationLabel" Text="LED Indicator" VerticalAlignment="Center"/>
+                                    </StackPanel>
+                                </RadioButton>
+                                <RadioButton x:Name="MapperNavigationButton" Tag="2" GroupName="MainNavigation"
+                                             Style="{StaticResource ModuleNavigationItemStyle}" Click="NavigationButton_OnClick"
+                                             ToolTip="Input Mapper">
+                                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                        <Path x:Name="MapperNavigationIcon" Width="18" Height="18" Margin="0,0,12,0"
+                                              Stroke="{Binding RelativeSource={RelativeSource AncestorType=RadioButton}, Path=Foreground}"
+                                              StrokeThickness="1.6" StrokeStartLineCap="Round" StrokeEndLineCap="Round" StrokeLineJoin="Round"
+                                              Data="M2,5 H14 M11,2 L14,5 L11,8 M14,11 H2 M5,8 L2,11 L5,14"/>
+                                        <TextBlock x:Name="MapperNavigationLabel" Text="Input Mapper" VerticalAlignment="Center"/>
+                                    </StackPanel>
+                                </RadioButton>
+                            </StackPanel>
                         </ScrollViewer>
-                    </DockPanel>
+                        <RadioButton x:Name="SettingsNavigationButton" Grid.Row="1" Tag="3" GroupName="MainNavigation"
+                                     Margin="0,3,0,8" Style="{StaticResource ModuleNavigationItemStyle}" Click="NavigationButton_OnClick"
+                                     ToolTip="Settings">
+                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                <fa:IconImage x:Name="SettingsNavigationIcon" Width="18" Height="18" Margin="0,0,12,0"
+                                              Foreground="{Binding RelativeSource={RelativeSource AncestorType=RadioButton}, Path=Foreground}"
+                                              Icon="Cog"/>
+                                <TextBlock x:Name="SettingsNavigationLabel" Text="Settings" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </RadioButton>
+                    </Grid>
                 </Border>
-                <ContentPresenter x:Name="PageTransitionPresenter" Grid.Column="1" Content="{Binding SelectedPage}" />
             </Grid>
         </Grid>
     </Border>
