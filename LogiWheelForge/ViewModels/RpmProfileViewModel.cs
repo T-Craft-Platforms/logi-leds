@@ -15,6 +15,7 @@ public sealed class RpmProfileViewModel : ObservableObject, IDisposable
     private readonly SettingsDraft _draft;
     private readonly HashSet<ThresholdViewModel> _observedThresholds = [];
     private readonly AsyncRelayCommand _primaryProfileCommand;
+    private readonly AsyncRelayCommand _testLedsCommand;
     private readonly LedIndicatorService _service;
     private readonly Action<string> _setStatus;
     private WheelDefinition? _activeDefinition;
@@ -22,7 +23,9 @@ public sealed class RpmProfileViewModel : ObservableObject, IDisposable
     private bool? _learnPerCarShiftBeforeAdvanced;
     private double? _learnedRedlinePercent;
     private string? _loadedProfileWheelId;
+    private bool _isWheelConnected;
     private WheelProfile? _selectedSavedProfile;
+    private string _pageTitle = "LED Indicator";
 
     public RpmProfileViewModel(LedIndicatorService service, SettingsDraft draft, Action<string> setStatus)
     {
@@ -31,6 +34,8 @@ public sealed class RpmProfileViewModel : ObservableObject, IDisposable
         _setStatus = setStatus;
         _primaryProfileCommand = new AsyncRelayCommand(ExecutePrimaryProfileActionAsync,
             () => ShowSaveProfile || ShowLoadProfile, ex => _setStatus(ex.Message));
+        _testLedsCommand = new AsyncRelayCommand(() => _service.TestLedsAsync(), () => _isWheelConnected,
+            ex => _setStatus($"LED test failed: {ex.Message}"));
         ResetProfileCommand = new RelayCommand(ResetProfile);
         SaveProfileCommand = new AsyncRelayCommand(SaveSelectedProfileAsync, () => SelectedSavedProfile is not null,
             ex => _setStatus(ex.Message));
@@ -43,11 +48,13 @@ public sealed class RpmProfileViewModel : ObservableObject, IDisposable
     }
 
     public ObservableCollection<ThresholdViewModel> Thresholds { get; } = [];
+    public string PageTitle { get => _pageTitle; set => SetField(ref _pageTitle, value); }
     public ICommand ResetProfileCommand { get; }
     public ICommand SaveProfileCommand { get; }
     public ICommand LoadProfileCommand { get; }
     public ICommand DeleteProfileCommand { get; }
     public ICommand PrimaryProfileCommand => _primaryProfileCommand;
+    public ICommand TestLedsCommand => _testLedsCommand;
     public ObservableCollection<WheelProfile> SavedProfiles { get; } = [];
 
     public WheelProfile? SelectedSavedProfile
@@ -225,6 +232,8 @@ public sealed class RpmProfileViewModel : ObservableObject, IDisposable
 
     private void ApplySnapshot(AppSnapshot snapshot)
     {
+        _isWheelConnected = snapshot.IsWheelConnected;
+        _testLedsCommand.RaiseCanExecuteChanged();
         if (_learnedRedlinePercent != snapshot.LearnedRedlinePercent)
         {
             _learnedRedlinePercent = snapshot.LearnedRedlinePercent;

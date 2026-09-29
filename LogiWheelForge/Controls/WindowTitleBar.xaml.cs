@@ -34,9 +34,19 @@ public partial class WindowTitleBar : UserControl
             : isCompact ? "Expand navigation" : "Collapse navigation";
         var nextState = (isCompact, isOverlayOpen, isNarrow);
         if (_navigationIconState == nextState) return;
+        var animate = _navigationIconState.HasValue;
         _navigationIconState = nextState;
-        NavigationToggleIcon.Icon = isNarrow && isOverlayOpen ? IconChar.Xmark : IconChar.Bars;
-        NavigationIconAnimator.PlayWiggle(NavigationToggleIcon);
+        var nextIcon = isNarrow
+            ? isOverlayOpen ? IconChar.Xmark : IconChar.Bars
+            : isCompact ? IconChar.EllipsisVertical : IconChar.Bars;
+        if (!animate || NavigationToggleIcon.Icon == nextIcon)
+        {
+            NavigationToggleIcon.Icon = nextIcon;
+            NavigationToggleIcon.Opacity = 1;
+            return;
+        }
+
+        NavigationIconAnimator.PlayMenuToggle(NavigationToggleIcon, () => NavigationToggleIcon.Icon = nextIcon);
     }
 
     private void NavigationToggleButton_OnClick(object sender, RoutedEventArgs e)

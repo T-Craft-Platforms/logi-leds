@@ -3,6 +3,7 @@
         <TargetFramework>net10.0-windows</TargetFramework>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
+        <UseWPF>true</UseWPF>
         <IsPackable>false</IsPackable>
         <IsTestProject>true</IsTestProject>
         <PlatformTarget>x64</PlatformTarget>
@@ -13,6 +14,10 @@
         <PackageReference Include="MSTest.TestFramework" Version="3.9.3"/>
     </ItemGroup>
     <ItemGroup>
+        <Using Include="System.IO" />
+        <Content Include="..\LogiWheelForge\Themes\Dark.xaml" Link="RenderResources\Dark.xaml" CopyToOutputDirectory="PreserveNewest" />
+        <Content Include="..\LogiWheelForge\Themes\Light.xaml" Link="RenderResources\Light.xaml" CopyToOutputDirectory="PreserveNewest" />
+        <Content Include="..\LogiWheelForge\MainWindow.xaml" Link="RenderResources\MainWindow.xaml" CopyToOutputDirectory="PreserveNewest" />
         <ProjectReference Include="..\LogiWheelForge\LogiWheelForge.csproj" />
     </ItemGroup>
 </Project>

@@ -10,18 +10,19 @@
         MouseLeftButtonDown="TitleBar_OnMouseLeftButtonDown"
         MouseRightButtonUp="TitleBar_OnMouseRightButtonUp">
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="Auto" />
+            <ColumnDefinition Width="72" />
             <ColumnDefinition Width="Auto" />
             <ColumnDefinition Width="*" />
             <ColumnDefinition Width="Auto" />
         </Grid.ColumnDefinitions>
-        <Button x:Name="NavigationToggleButton" Grid.Column="0" Margin="12,0,0,0"
+        <Button x:Name="NavigationToggleButton" Grid.Column="0" Width="38" Height="38"
+                HorizontalAlignment="Center"
                 Click="NavigationToggleButton_OnClick" Style="{StaticResource WindowButtonStyle}"
                 ToolTip="Collapse navigation" shell:WindowChrome.IsHitTestVisibleInChrome="True">
-            <fa:IconImage x:Name="NavigationToggleIcon" Width="14" Height="14"
+            <fa:IconImage x:Name="NavigationToggleIcon" Width="18" Height="18"
                           Foreground="{DynamicResource MutedBrush}" Icon="Bars"/>
         </Button>
-        <StackPanel x:Name="BrandStack" Grid.Column="1" Margin="12,0,14,0"
+        <StackPanel x:Name="BrandStack" Grid.Column="1" Margin="0,0,14,0"
                     HorizontalAlignment="Left" VerticalAlignment="Center" Orientation="Horizontal">
             <ContentControl
                 Width="24"

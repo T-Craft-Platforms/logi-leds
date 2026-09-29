@@ -17,8 +17,7 @@ public sealed class SettingsViewModel : ObservableObject, IDisposable
     private readonly AsyncRelayCommand _startStopCommand;
     private readonly AsyncRelayCommand _testCommand;
     private WheelDefinition? _activeDefinition;
-    private bool _isRunning, _isWheelConnected;
-    private bool _inputMapperAutoStart;
+    private bool _isWheelConnected;
     private TelemetryWatchOption? _selectedWatch;
 
     public SettingsViewModel(LedIndicatorService service, SettingsDraft draft, Action<string> setStatus)
@@ -53,22 +52,6 @@ public sealed class SettingsViewModel : ObservableObject, IDisposable
 
     public TelemetryWatchMode WatchMode => SelectedWatch?.Mode ?? TelemetryWatchMode.Auto;
 
-    public bool AutoStartControl
-    {
-        get => _draft.AutoStartControl;
-        set => _draft.AutoStartControl = value;
-    }
-
-    public bool InputMapperAutoStart
-    {
-        get => _inputMapperAutoStart;
-        set
-        {
-            if (!SetField(ref _inputMapperAutoStart, value)) return;
-            TelemetryChanged?.Invoke(this, EventArgs.Empty);
-        }
-    }
-
     public bool CloseToTray
     {
         get => _draft.CloseToTray;
@@ -92,8 +75,6 @@ public sealed class SettingsViewModel : ObservableObject, IDisposable
         get => _draft.SelectedWheel;
         set => _draft.SelectedWheel = value;
     }
-
-    public string StartStopText => _isRunning ? "Stop LEDs" : "Start LEDs";
 
     public string WheelVerification => _activeDefinition is null ? "Waiting for detection" :
         _activeDefinition.HardwareVerified ? "Hardware verified" : "Protocol compatible — hardware validation pending";
@@ -172,7 +153,6 @@ public sealed class SettingsViewModel : ObservableObject, IDisposable
     {
         var name = e.PropertyName switch
         {
-            nameof(SettingsDraft.AutoStartControl) => nameof(AutoStartControl),
             nameof(SettingsDraft.CloseToTray) => nameof(CloseToTray),
             nameof(SettingsDraft.UsePointerCursors) => nameof(UsePointerCursors),
             nameof(SettingsDraft.Theme) => nameof(Theme),
@@ -197,9 +177,7 @@ public sealed class SettingsViewModel : ObservableObject, IDisposable
 
     private void ApplySnapshot(AppSnapshot snapshot)
     {
-        _isRunning = snapshot.IsRunning;
         _isWheelConnected = snapshot.IsWheelConnected;
-        OnPropertyChanged(nameof(StartStopText));
         _testCommand.RaiseCanExecuteChanged();
         if (snapshot.Wheel is null || snapshot.Wheel.Id == _activeDefinition?.Id) return;
         _activeDefinition = snapshot.Wheel;

@@ -4,7 +4,7 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:controls="clr-namespace:LogiWheelForge.Controls">
     <Grid Margin="20,14,20,20">
-        <ScrollViewer Padding="4,20,12,4" VerticalScrollBarVisibility="Auto">
+        <ScrollViewer Padding="4,4,12,4" VerticalScrollBarVisibility="Auto">
             <StackPanel>
                 <Grid Margin="0,0,0,16">
                     <Grid.ColumnDefinitions>
@@ -12,9 +12,19 @@
                         <ColumnDefinition Width="Auto" />
                     </Grid.ColumnDefinitions>
                     <TextBlock
+                        Grid.Column="0"
                         FontSize="30"
                         FontWeight="Bold"
-                        Text="RPM Profile" />
+                        Text="{Binding PageTitle}" />
+                    <StackPanel Grid.Column="1" VerticalAlignment="Center" Orientation="Horizontal">
+                        <Button Margin="0,0,14,0" Command="{Binding TestLedsCommand}"
+                                Content="Test LEDs" Style="{StaticResource SecondaryButton}" />
+                        <TextBlock Margin="0,0,10,0" VerticalAlignment="Center"
+                                   Foreground="{DynamicResource MutedBrush}" Text="MODULE" />
+                        <ToggleButton Style="{DynamicResource ModuleToggleStyle}"
+                                      IsChecked="{Binding DataContext.IsLedModuleEnabled, RelativeSource={RelativeSource AncestorType=Window}, Mode=TwoWay}"
+                                      ToolTip="Enable or disable the LED Indicator module" />
+                    </StackPanel>
                 </Grid>
                 <Border Style="{StaticResource CardStyle}">
                     <StackPanel>

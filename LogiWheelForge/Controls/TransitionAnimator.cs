@@ -24,7 +24,7 @@ public static class TransitionAnimator
         "IsEnabled", typeof(bool), typeof(TransitionAnimator), new PropertyMetadata(false, OnIsEnabledChanged));
 
     public static readonly DependencyProperty IndexProperty = DependencyProperty.RegisterAttached(
-        "Index", typeof(int), typeof(TransitionAnimator), new PropertyMetadata(-1));
+        "Index", typeof(int), typeof(TransitionAnimator), new PropertyMetadata(-1, OnIndexChanged));
 
     public static readonly DependencyProperty IsActiveProperty = DependencyProperty.RegisterAttached(
         "IsActive", typeof(bool), typeof(TransitionAnimator), new PropertyMetadata(false, OnIsActiveChanged));
@@ -156,6 +156,9 @@ public static class TransitionAnimator
     {
         if (ReferenceEquals(state.LastContent, presenter.Content)) return;
         state.LastContent = presenter.Content;
+        // Navigation presenters use Index as their source of direction. The index binding
+        // can update before or after Content, so let IndexChanged drive those transitions.
+        if (GetIndex(presenter) >= 0) return;
         var changeVersion = ++state.ChangeVersion;
         presenter.Dispatcher.BeginInvoke(DispatcherPriority.DataBind, () =>
         {
@@ -170,14 +173,42 @@ public static class TransitionAnimator
         });
     }
 
+    private static void OnIndexChanged(DependencyObject element, DependencyPropertyChangedEventArgs args)
+    {
+        if (element is not ContentPresenter presenter || !GetIsEnabled(presenter) || !presenter.IsLoaded ||
+            !States.TryGetValue(presenter, out var state) || !state.IsAttached) return;
+
+        var changeVersion = ++state.ChangeVersion;
+        presenter.Dispatcher.BeginInvoke(DispatcherPriority.Render, () =>
+        {
+            if (!state.IsAttached || changeVersion != state.ChangeVersion) return;
+            var currentIndex = GetIndex(presenter);
+            if (state.LastIndex >= 0 && currentIndex >= 0 && state.LastIndex != currentIndex)
+            {
+                var direction = Math.Sign(state.LastIndex - currentIndex);
+                state.LastIndex = currentIndex;
+                Animate(presenter, direction, GetAxis(presenter), GetDuration(presenter), GetDistance(presenter));
+                return;
+            }
+            state.LastIndex = currentIndex;
+        });
+    }
+
     private static void Animate(FrameworkElement element, int direction, TransitionAxis axis,
         double durationMilliseconds, double distance, bool reverseDirection = false)
     {
         if (reverseDirection) direction *= -1;
         var duration = TimeSpan.FromMilliseconds(Math.Clamp(durationMilliseconds, 180, 1200));
+        element.BeginAnimation(UIElement.OpacityProperty, null);
+        element.Opacity = 1;
+        if (element.RenderTransform is TranslateTransform previousOffset)
+        {
+            previousOffset.BeginAnimation(TranslateTransform.XProperty, null);
+            previousOffset.BeginAnimation(TranslateTransform.YProperty, null);
+        }
         var offset = new TranslateTransform();
         var offsetProperty = axis == TransitionAxis.Horizontal ? TranslateTransform.XProperty : TranslateTransform.YProperty;
-        var slideDistance = Math.Clamp(Math.Abs(distance), 0, 120);
+        var slideDistance = Math.Clamp(Math.Abs(distance), 0, 220);
         var initialOffset = direction == 0 ? Math.Min(7, slideDistance) : direction * slideDistance;
         element.RenderTransform = offset;
         element.Opacity = 0;
@@ -189,6 +220,14 @@ public static class TransitionAnimator
         var slide = new DoubleAnimation(initialOffset, 0, duration)
         {
             EasingFunction = new QuarticEase { EasingMode = EasingMode.EaseOut }
+        };
+        slide.Completed += (_, _) =>
+        {
+            if (!ReferenceEquals(element.RenderTransform, offset)) return;
+            offset.BeginAnimation(offsetProperty, null);
+            element.BeginAnimation(UIElement.OpacityProperty, null);
+            element.RenderTransform = Transform.Identity;
+            element.Opacity = 1;
         };
         element.BeginAnimation(UIElement.OpacityProperty, fade, HandoffBehavior.SnapshotAndReplace);
         offset.BeginAnimation(offsetProperty, slide, HandoffBehavior.SnapshotAndReplace);

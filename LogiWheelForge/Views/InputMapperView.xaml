@@ -2,16 +2,18 @@
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
     <UserControl.Resources><BooleanToVisibilityConverter x:Key="ShowWhenTrue"/></UserControl.Resources>
-    <Grid Margin="20,18,20,20">
+    <Grid Margin="20,14,20,20">
         <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions>
-        <Grid Margin="0,0,0,16">
+        <Grid Margin="4,4,0,16">
             <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
-            <StackPanel>
-                <TextBlock FontSize="30" FontWeight="Bold" Text="Input Mapper"/>
-                <TextBlock Margin="0,5,0,0" Foreground="{DynamicResource MutedBrush}" Text="Map wheel controls to the focused app"/>
+            <TextBlock FontSize="30" FontWeight="Bold" Text="{Binding PageTitle}"/>
+            <StackPanel Grid.Column="1" VerticalAlignment="Center" Orientation="Horizontal">
+                <TextBlock Margin="0,0,10,0" VerticalAlignment="Center"
+                           Foreground="{DynamicResource MutedBrush}" Text="MODULE"/>
+                <ToggleButton Style="{DynamicResource ModuleToggleStyle}"
+                              IsChecked="{Binding DataContext.IsInputMapperModuleEnabled, RelativeSource={RelativeSource AncestorType=Window}, Mode=TwoWay}"
+                              ToolTip="Enable or disable the Input Mapper module"/>
             </StackPanel>
-            <Button Grid.Column="1" Command="{Binding ToggleCommand}" Content="{Binding ToggleText}"
-                    Style="{StaticResource StartStopButtonStyle}"/>
         </Grid>
         <Grid Grid.Row="1">
             <Grid.ColumnDefinitions><ColumnDefinition Width="228"/><ColumnDefinition Width="14"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>

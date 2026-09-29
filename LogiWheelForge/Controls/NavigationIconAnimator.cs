@@ -1,6 +1,8 @@
 using System.Windows;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
+using System.Runtime.CompilerServices;
+using Point = System.Windows.Point;
 
 namespace LogiWheelForge.Controls;
 
@@ -12,9 +14,60 @@ public enum NavigationIconMotion
 
 public static class NavigationIconAnimator
 {
+    private static readonly ConditionalWeakTable<FrameworkElement, MenuAnimationState> MenuAnimationStates = new();
+
     public static void PlayWiggle(FrameworkElement icon) => Play(icon, NavigationIconMotion.Wiggle);
 
     public static void PlayFullTurn(FrameworkElement icon) => Play(icon, NavigationIconMotion.FullTurn);
+
+    public static void PlayMenuToggle(FrameworkElement icon, Action swapIcon)
+    {
+        var state = MenuAnimationStates.GetValue(icon, _ => new MenuAnimationState());
+        var version = ++state.Version;
+        var scale = new ScaleTransform(1, 1);
+        var rotation = new RotateTransform();
+        var transform = new TransformGroup();
+        transform.Children.Add(scale);
+        transform.Children.Add(rotation);
+        icon.RenderTransformOrigin = new Point(.5, .5);
+        icon.RenderTransform = transform;
+
+        var fadeOut = new DoubleAnimation(icon.Opacity, 0, TimeSpan.FromMilliseconds(70))
+        {
+            EasingFunction = new CubicEase { EasingMode = EasingMode.EaseIn }
+        };
+        fadeOut.Completed += (_, _) =>
+        {
+            if (version != state.Version) return;
+            swapIcon();
+            icon.BeginAnimation(UIElement.OpacityProperty,
+                new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(125))
+                {
+                    EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
+                }, HandoffBehavior.SnapshotAndReplace);
+            scale.BeginAnimation(ScaleTransform.ScaleXProperty,
+                new DoubleAnimation(.78, 1, TimeSpan.FromMilliseconds(150))
+                {
+                    EasingFunction = new BackEase { EasingMode = EasingMode.EaseOut, Amplitude = .2 }
+                }, HandoffBehavior.SnapshotAndReplace);
+            scale.BeginAnimation(ScaleTransform.ScaleYProperty,
+                new DoubleAnimation(.78, 1, TimeSpan.FromMilliseconds(150))
+                {
+                    EasingFunction = new BackEase { EasingMode = EasingMode.EaseOut, Amplitude = .2 }
+                }, HandoffBehavior.SnapshotAndReplace);
+            rotation.BeginAnimation(RotateTransform.AngleProperty,
+                new DoubleAnimation(-12, 0, TimeSpan.FromMilliseconds(150))
+                {
+                    EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
+                }, HandoffBehavior.SnapshotAndReplace);
+        };
+        icon.BeginAnimation(UIElement.OpacityProperty, fadeOut, HandoffBehavior.SnapshotAndReplace);
+    }
+
+    private sealed class MenuAnimationState
+    {
+        public int Version { get; set; }
+    }
 
     public static void Play(FrameworkElement icon, NavigationIconMotion motion)
     {

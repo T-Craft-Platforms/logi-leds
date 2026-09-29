@@ -1,6 +1,4 @@
 using System.Collections.ObjectModel;
-using System.Windows.Input;
-using LogiWheelForge.Commands;
 using LogiWheelForge.Models;
 using LogiWheelForge.Services;
 using Application = System.Windows.Application;
@@ -12,29 +10,23 @@ public sealed class DashboardViewModel : ObservableObject, IDisposable
     private readonly LedIndicatorService _service;
     private readonly InputMapperService _mapper;
     private readonly WheelSelectionService _selection;
-    private readonly Action<string> _setStatus;
-    private readonly AsyncRelayCommand _testCommand;
     private float _currentRpm, _maximumRpm;
     private string _currentVehicle = "No vehicle data", _wheelName = "No Logitech wheel", _telemetryFormat = "—";
     private string _mapperStatus = "Stopped";
-    private bool _isFlashing, _isWheelConnected;
+    private bool _isFlashing;
 
     public DashboardViewModel(LedIndicatorService service, InputMapperService mapper,
-        WheelSelectionService selection, Action<string> setStatus)
+        WheelSelectionService selection)
     {
         _service = service;
         _mapper = mapper;
         _selection = selection;
-        _setStatus = setStatus;
-        _testCommand = new AsyncRelayCommand(() => _service.TestLedsAsync(), () => _isWheelConnected,
-            ex => _setStatus($"LED test failed: {ex.Message}"));
         _service.SnapshotChanged += OnSnapshotChanged;
         _mapper.SnapshotChanged += OnMapperSnapshot;
         _selection.ActiveWheelChanged += OnActiveWheelChanged;
     }
 
     public ObservableCollection<LedIndicatorViewModel> Leds { get; } = [];
-    public ICommand TestCommand => _testCommand;
 
     public string WheelName
     {
@@ -103,8 +95,6 @@ public sealed class DashboardViewModel : ObservableObject, IDisposable
 
     private void ApplySnapshot(AppSnapshot snapshot)
     {
-        _isWheelConnected = snapshot.IsWheelConnected;
-        _testCommand.RaiseCanExecuteChanged();
         if (_selection.ActiveWheelId is null) WheelName = snapshot.WheelName;
         TelemetryFormat = snapshot.TelemetryFormat;
         CurrentVehicle = snapshot.CurrentVehicle;

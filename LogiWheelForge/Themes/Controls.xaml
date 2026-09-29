@@ -61,6 +61,7 @@
     </Style>
     <Style TargetType="MenuItem">
         <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
+        <Setter Property="Cursor" Value="{DynamicResource InteractiveCursor}" />
         <Setter Property="Padding" Value="10,7" />
         <Setter Property="Template">
             <Setter.Value>
@@ -477,6 +478,7 @@
     </Style>
     <Style TargetType="ComboBoxItem">
         <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
+        <Setter Property="Cursor" Value="{DynamicResource InteractiveCursor}" />
         <Setter Property="Background" Value="Transparent" />
         <Setter Property="HorizontalContentAlignment" Value="Left" />
         <Setter Property="Padding" Value="12,9" />
@@ -503,8 +505,12 @@
             </Setter.Value>
         </Setter>
     </Style>
+    <Style TargetType="ListBoxItem">
+        <Setter Property="Cursor" Value="{DynamicResource InteractiveCursor}" />
+    </Style>
     <Style TargetType="ComboBox">
         <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
+        <Setter Property="Cursor" Value="{DynamicResource InteractiveCursor}" />
         <Setter Property="Background" Value="{DynamicResource InputBrush}" />
         <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}" />
         <Setter Property="HorizontalContentAlignment" Value="Left" />
@@ -753,6 +759,7 @@
     </Style>
     <Style TargetType="TabItem">
         <Setter Property="Foreground" Value="{DynamicResource MutedBrush}" />
+        <Setter Property="Cursor" Value="{DynamicResource InteractiveCursor}" />
         <Setter Property="Background" Value="Transparent" />
         <Setter Property="MinHeight" Value="42" />
         <Setter Property="HorizontalContentAlignment" Value="Center" />
@@ -822,6 +829,35 @@
                         </Trigger>
                         <Trigger Property="IsMouseOver" Value="True">
                             <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+    <Style x:Key="ModuleToggleStyle" TargetType="ToggleButton">
+        <Setter Property="Width" Value="46" />
+        <Setter Property="Height" Value="26" />
+        <Setter Property="Cursor" Value="{DynamicResource InteractiveCursor}" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ToggleButton">
+                    <Grid>
+                        <Border x:Name="Track" Background="{DynamicResource BorderBrush}" CornerRadius="13" />
+                        <Ellipse x:Name="Thumb" Width="18" Height="18" Margin="4,0,0,0"
+                                 HorizontalAlignment="Left" Fill="White" />
+                    </Grid>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsChecked" Value="True">
+                            <Setter TargetName="Track" Property="Background" Value="{DynamicResource AccentBrush}" />
+                            <Setter TargetName="Thumb" Property="HorizontalAlignment" Value="Right" />
+                            <Setter TargetName="Thumb" Property="Margin" Value="0,0,4,0" />
+                        </Trigger>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Track" Property="Opacity" Value="0.82" />
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter TargetName="Track" Property="Opacity" Value="0.45" />
                         </Trigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>

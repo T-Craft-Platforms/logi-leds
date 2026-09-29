@@ -36,6 +36,7 @@
             <Setter Property="HorizontalContentAlignment" Value="Left"/>
             <Setter Property="VerticalContentAlignment" Value="Center"/>
             <Setter Property="Margin" Value="0,3"/>
+            <Setter Property="Cursor" Value="{DynamicResource InteractiveCursor}"/>
             <Setter Property="Padding" Value="16,9"/>
             <Setter Property="Foreground" Value="{DynamicResource MutedBrush}"/>
             <Setter Property="Background" Value="Transparent"/>
@@ -81,22 +82,24 @@
                 <RowDefinition Height="*" />
             </Grid.RowDefinitions>
             <controls:WindowTitleBar x:Name="TitleBar" Grid.Row="0" />
-            <Border x:Name="TopBarDivider" Grid.Row="0" Margin="200,0,0,0" VerticalAlignment="Bottom" Height="1"
-                    Background="{DynamicResource BorderBrush}" IsHitTestVisible="False"/>
             <Grid x:Name="MainContentLayout" Grid.Row="1" ClipToBounds="True">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition x:Name="SidebarColumn" Width="216"/>
                     <ColumnDefinition Width="*"/>
                 </Grid.ColumnDefinitions>
                 <ContentPresenter x:Name="PageTransitionPresenter" Grid.Column="1" Content="{Binding SelectedPage}"
-                                  ClipToBounds="True" Panel.ZIndex="0"/>
+                                  ClipToBounds="True" Panel.ZIndex="0"
+                                  controls:TransitionAnimator.IsEnabled="True"
+                                  controls:TransitionAnimator.Index="{Binding SelectedTab}"
+                                  controls:TransitionAnimator.Axis="Vertical"
+                                  controls:TransitionAnimator.Duration="480"
+                                  controls:TransitionAnimator.Distance="150"/>
                 <Border x:Name="NavigationBackdrop" Grid.ColumnSpan="2" Panel.ZIndex="1"
                         Background="#99090D14" Opacity="0" Visibility="Collapsed"
                         MouseLeftButtonDown="NavigationBackdrop_OnMouseLeftButtonDown"/>
-                <Border x:Name="SidebarPanel" Grid.Column="0" Grid.ColumnSpan="2" Panel.ZIndex="2"
-                        HorizontalAlignment="Left" Background="{DynamicResource SurfaceBrush}"
-                        BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,0,1,0"
-                        CornerRadius="0,16,0,0" Padding="12,18">
+                <Border x:Name="SidebarPanel" Grid.Column="0" Panel.ZIndex="2"
+                        HorizontalAlignment="Stretch" Background="{DynamicResource SurfaceBrush}"
+                        Padding="12">
                     <Grid>
                         <Grid.RowDefinitions>
                             <RowDefinition Height="*"/>
@@ -107,47 +110,75 @@
                                 <RadioButton x:Name="DashboardNavigationButton" Tag="0" GroupName="MainNavigation"
                                              Style="{StaticResource ModuleNavigationItemStyle}" IsChecked="True"
                                              Click="NavigationButton_OnClick" ToolTip="Dashboard">
-                                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                        <fa:IconImage x:Name="DashboardNavigationIcon" Width="18" Height="18" Margin="0,0,12,0"
+                                    <Grid ClipToBounds="True">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition x:Name="DashboardIconColumn" Width="48"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+                                        <fa:IconImage x:Name="DashboardNavigationIcon" Grid.Column="0" Width="18" Height="18"
+                                                      HorizontalAlignment="Center" VerticalAlignment="Center"
                                                       Foreground="{Binding RelativeSource={RelativeSource AncestorType=RadioButton}, Path=Foreground}"
                                                       Icon="Gauge"/>
-                                        <TextBlock x:Name="DashboardNavigationLabel" Text="Dashboard" VerticalAlignment="Center"/>
-                                    </StackPanel>
+                                        <TextBlock x:Name="DashboardNavigationLabel" Grid.Column="1" Margin="12,0,0,0"
+                                                   Text="Dashboard" VerticalAlignment="Center" TextWrapping="NoWrap"/>
+                                    </Grid>
                                 </RadioButton>
                                 <RadioButton x:Name="LedNavigationButton" Tag="1" GroupName="MainNavigation"
                                              Style="{StaticResource ModuleNavigationItemStyle}" Click="NavigationButton_OnClick"
                                              ToolTip="LED Indicator">
-                                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                        <fa:IconImage x:Name="LedNavigationIcon" Width="18" Height="18" Margin="0,0,12,0"
+                                    <Grid ClipToBounds="True">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition x:Name="LedIconColumn" Width="48"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+                                        <fa:IconImage x:Name="LedNavigationIcon" Grid.Column="0" Width="18" Height="18"
+                                                      HorizontalAlignment="Center" VerticalAlignment="Center"
                                                       Foreground="{Binding RelativeSource={RelativeSource AncestorType=RadioButton}, Path=Foreground}"
                                                       Icon="Lightbulb"/>
-                                        <TextBlock x:Name="LedNavigationLabel" Text="LED Indicator" VerticalAlignment="Center"/>
-                                    </StackPanel>
+                                        <TextBlock x:Name="LedNavigationLabel" Grid.Column="1" Margin="12,0,0,0"
+                                                   Text="LED Indicator" VerticalAlignment="Center" TextWrapping="NoWrap"/>
+                                    </Grid>
                                 </RadioButton>
                                 <RadioButton x:Name="MapperNavigationButton" Tag="2" GroupName="MainNavigation"
                                              Style="{StaticResource ModuleNavigationItemStyle}" Click="NavigationButton_OnClick"
                                              ToolTip="Input Mapper">
-                                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                        <fa:IconImage x:Name="MapperNavigationIcon" Width="18" Height="18" Margin="0,0,12,0"
+                                    <Grid ClipToBounds="True">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition x:Name="MapperIconColumn" Width="48"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+                                        <fa:IconImage x:Name="MapperNavigationIcon" Grid.Column="0" Width="18" Height="18"
+                                                      HorizontalAlignment="Center" VerticalAlignment="Center"
                                                       Foreground="{Binding RelativeSource={RelativeSource AncestorType=RadioButton}, Path=Foreground}"
                                                       Icon="ArrowsLeftRight"/>
-                                        <TextBlock x:Name="MapperNavigationLabel" Text="Input Mapper" VerticalAlignment="Center"/>
-                                    </StackPanel>
+                                        <TextBlock x:Name="MapperNavigationLabel" Grid.Column="1" Margin="12,0,0,0"
+                                                   Text="Input Mapper" VerticalAlignment="Center" TextWrapping="NoWrap"/>
+                                    </Grid>
                                 </RadioButton>
                             </StackPanel>
                         </ScrollViewer>
                         <RadioButton x:Name="SettingsNavigationButton" Grid.Row="1" Tag="3" GroupName="MainNavigation"
-                                     Margin="0,3,0,8" Style="{StaticResource ModuleNavigationItemStyle}" Click="NavigationButton_OnClick"
+                                     Margin="0,3,0,3" Style="{StaticResource ModuleNavigationItemStyle}" Click="NavigationButton_OnClick"
                                      ToolTip="Settings">
-                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                <fa:IconImage x:Name="SettingsNavigationIcon" Width="18" Height="18" Margin="0,0,12,0"
+                            <Grid ClipToBounds="True">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition x:Name="SettingsIconColumn" Width="48"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <fa:IconImage x:Name="SettingsNavigationIcon" Grid.Column="0" Width="18" Height="18"
+                                              HorizontalAlignment="Center" VerticalAlignment="Center"
                                               Foreground="{Binding RelativeSource={RelativeSource AncestorType=RadioButton}, Path=Foreground}"
                                               Icon="Cog"/>
-                                <TextBlock x:Name="SettingsNavigationLabel" Text="Settings" VerticalAlignment="Center"/>
-                            </StackPanel>
+                                <TextBlock x:Name="SettingsNavigationLabel" Grid.Column="1" Margin="12,0,0,0"
+                                           Text="Settings" VerticalAlignment="Center" TextWrapping="NoWrap"/>
+                            </Grid>
                         </RadioButton>
                     </Grid>
                 </Border>
+                <controls:NavigationJunction Grid.ColumnSpan="2" Panel.ZIndex="3" IsHitTestVisible="False"
+                                             SidebarWidth="{Binding ActualWidth, ElementName=SidebarPanel}"
+                                             Radius="16" SurfaceBrush="{DynamicResource SurfaceBrush}"
+                                             BorderBrush="{DynamicResource BorderBrush}"/>
             </Grid>
         </Grid>
     </Border>

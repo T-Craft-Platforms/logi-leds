@@ -11,6 +11,7 @@ using System.Windows.Threading;
 using LogiWheelForge.Controls;
 using LogiWheelForge.ViewModels;
 using Application = System.Windows.Application;
+using Control = System.Windows.Controls.Control;
 using Icon = System.Drawing.Icon;
 using RadioButton = System.Windows.Controls.RadioButton;
 
@@ -23,7 +24,7 @@ public partial class MainWindow : Window
     private const double CompactNavigationBreakpoint = 1000;
     private const double ExpandedNavigationWidth = 216;
     private const double CompactNavigationWidth = 72;
-    private const double NavigationCornerRadius = 16;
+    private static readonly TimeSpan NavigationResizeDuration = TimeSpan.FromMilliseconds(260);
     private readonly ToolStripMenuItem _startStopMenuItem;
     private readonly ToolStripMenuItem _mapperMenuItem;
     private readonly NotifyIcon _trayIcon;
@@ -31,13 +32,22 @@ public partial class MainWindow : Window
     private bool _allowClose, _shownTrayHint, _exiting, _trayDisposed, _startupComplete;
     private bool _userCollapsedNavigation, _isNarrowWindow, _isNavigationOverlayOpen;
     private double _navigationColumnTarget = ExpandedNavigationWidth;
+    private double? _navigationVisualWidth;
     private bool? _navigationLabelsVisible;
     private int _navigationLayoutVersion;
+    private int _sidebarWidthAnimationVersion;
+    private int _sidebarColumnAnimationVersion;
     private int _lastSelectedTab;
+    private bool _isOverlayClosing;
+    private bool _sidebarColumnAnimating;
+    private bool _overlayCloseSidebarWidthDone;
+    private double _overlayCloseTargetWidth;
 
     public MainWindow(MainViewModel viewModel)
     {
         InitializeComponent();
+        viewModel.RpmProfile.PageTitle = LedNavigationLabel.Text;
+        viewModel.Mapper.PageTitle = MapperNavigationLabel.Text;
         OwnedWindowDimmer.Attach(this);
         UpdateWindowChromeMetrics();
         _viewModel = viewModel;
@@ -46,7 +56,10 @@ public partial class MainWindow : Window
         TitleBar.NavigationToggleRequested += (_, _) => ToggleNavigation();
         _viewModel.ExitRequested += async (_, _) => await ExitAsync();
         _viewModel.PropertyChanged += OnMainViewModelPropertyChanged;
-        SizeChanged += (_, _) => UpdateNavigationLayout(animate: true);
+        SizeChanged += (_, _) =>
+        {
+            if (WindowState != WindowState.Minimized) UpdateNavigationLayout(animate: true);
+        };
         Loaded += (_, _) =>
         {
             SynchronizeNavigationSelection(_viewModel.SelectedTab);
@@ -135,6 +148,9 @@ public partial class MainWindow : Window
     private void OnStateChanged(object? sender, EventArgs e)
     {
         UpdateWindowChromeMetrics();
+        if (WindowState == WindowState.Minimized) return;
+        Dispatcher.BeginInvoke(DispatcherPriority.Loaded,
+            new Action(() => UpdateNavigationLayout(animate: false)));
     }
 
     private void OnMainViewModelPropertyChanged(object? sender, PropertyChangedEventArgs e)
@@ -146,10 +162,6 @@ public partial class MainWindow : Window
             _lastSelectedTab = selectedTab;
             SynchronizeNavigationSelection(selectedTab);
             if (direction != 0) PlaySelectedNavigationIcon(selectedTab);
-            if (direction != 0)
-                Dispatcher.BeginInvoke(DispatcherPriority.Render,
-                    new Action(() => TransitionAnimator.Play(PageTransitionPresenter, direction,
-                        TransitionAxis.Vertical, 420)));
         }
 
         if (e.PropertyName == nameof(MainViewModel.CloseToTray)) UpdateTrayIconVisibility();
@@ -183,38 +195,66 @@ public partial class MainWindow : Window
 
     private void OpenNavigationOverlay()
     {
+        _isOverlayClosing = false;
+        _overlayCloseSidebarWidthDone = false;
         _isNavigationOverlayOpen = true;
+        var fromWidth = SidebarPanel.ActualWidth;
+        SidebarPanel.SetValue(Grid.ColumnSpanProperty, 2);
+        SidebarPanel.HorizontalAlignment = System.Windows.HorizontalAlignment.Left;
         NavigationBackdrop.Visibility = Visibility.Visible;
-        NavigationBackdrop.BeginAnimation(OpacityProperty, new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(180))
+        NavigationBackdrop.BeginAnimation(OpacityProperty,
+            new DoubleAnimation(NavigationBackdrop.Opacity, 1, TimeSpan.FromMilliseconds(180))
         {
             EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
         }, HandoffBehavior.SnapshotAndReplace);
-        AnimateSidebarWidth(ExpandedNavigationWidth);
+        AnimateSidebarWidth(ExpandedNavigationWidth, fromWidth);
         UpdateNavigationVisuals();
     }
 
     private void CloseNavigationOverlay()
     {
         if (!_isNavigationOverlayOpen) return;
+        BeginOverlayClose(CompactNavigationWidth);
+        UpdateNavigationVisuals();
+    }
+
+    private void BeginOverlayClose(double targetWidth)
+    {
         _isNavigationOverlayOpen = false;
-        var fadeOut = new DoubleAnimation(0, TimeSpan.FromMilliseconds(180))
+        _isOverlayClosing = true;
+        _overlayCloseSidebarWidthDone = false;
+        _overlayCloseTargetWidth = targetWidth;
+        var fadeOut = new DoubleAnimation(NavigationBackdrop.Opacity, 0, TimeSpan.FromMilliseconds(180))
         {
             EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
         };
         fadeOut.Completed += (_, _) =>
         {
-            if (!_isNavigationOverlayOpen) NavigationBackdrop.Visibility = Visibility.Collapsed;
+            if (!_isNavigationOverlayOpen && NavigationBackdrop.Opacity < .01)
+                NavigationBackdrop.Visibility = Visibility.Collapsed;
         };
         NavigationBackdrop.BeginAnimation(OpacityProperty, fadeOut, HandoffBehavior.SnapshotAndReplace);
-        AnimateSidebarWidth(CompactNavigationWidth);
-        UpdateNavigationVisuals();
+        AnimateSidebarWidth(targetWidth, completed: CompleteOverlayClose);
+    }
+
+    private void CompleteOverlayClose()
+    {
+        if (!_isOverlayClosing || _isNavigationOverlayOpen) return;
+        _overlayCloseSidebarWidthDone = true;
+        TryCompleteOverlayClose();
+    }
+
+    private void TryCompleteOverlayClose()
+    {
+        if (!_isOverlayClosing || _isNavigationOverlayOpen || !_overlayCloseSidebarWidthDone ||
+            _sidebarColumnAnimating) return;
+        _isOverlayClosing = false;
+        UseColumnSidebar();
     }
 
     private void UpdateNavigationLayout(bool animate)
     {
         var isNarrow = ActualWidth < CompactNavigationBreakpoint;
-        if (isNarrow && !_isNarrowWindow) _isNavigationOverlayOpen = false;
-        var crossedCompactBreakpoint = isNarrow != _isNarrowWindow;
         _isNarrowWindow = isNarrow;
         var targetWidth = isNarrow || _userCollapsedNavigation
             ? CompactNavigationWidth
@@ -227,73 +267,126 @@ public partial class MainWindow : Window
 
         if (isNarrow)
         {
-            if (crossedCompactBreakpoint && animate)
-                AnimateSidebarWidth(_isNavigationOverlayOpen ? ExpandedNavigationWidth : CompactNavigationWidth);
-            else if (_isNavigationOverlayOpen) AnimateSidebarWidth(ExpandedNavigationWidth);
-            else SetSidebarWidth(CompactNavigationWidth);
-            NavigationBackdrop.Visibility = _isNavigationOverlayOpen ? Visibility.Visible : Visibility.Collapsed;
-            NavigationBackdrop.Opacity = _isNavigationOverlayOpen ? 1 : 0;
+            if (_isOverlayClosing)
+            {
+                if (Math.Abs(_overlayCloseTargetWidth - CompactNavigationWidth) > .5)
+                {
+                    _overlayCloseTargetWidth = CompactNavigationWidth;
+                    _overlayCloseSidebarWidthDone = false;
+                    AnimateSidebarWidth(CompactNavigationWidth, completed: CompleteOverlayClose);
+                }
+            }
+
+            if (_isNavigationOverlayOpen)
+            {
+                if ((int)SidebarPanel.GetValue(Grid.ColumnSpanProperty) != 2)
+                {
+                    var fromWidth = SidebarPanel.ActualWidth;
+                    SidebarPanel.SetValue(Grid.ColumnSpanProperty, 2);
+                    SidebarPanel.HorizontalAlignment = System.Windows.HorizontalAlignment.Left;
+                    AnimateSidebarWidth(ExpandedNavigationWidth, fromWidth);
+                }
+            }
+            else if (!_isOverlayClosing) UseColumnSidebar();
+            if (_isNavigationOverlayOpen)
+                NavigationBackdrop.Visibility = Visibility.Visible;
+            else if (!_isOverlayClosing)
+            {
+                NavigationBackdrop.BeginAnimation(OpacityProperty, null);
+                NavigationBackdrop.Visibility = Visibility.Collapsed;
+                NavigationBackdrop.Opacity = 0;
+            }
         }
         else
         {
-            _isNavigationOverlayOpen = false;
-            if (crossedCompactBreakpoint && animate) AnimateSidebarWidth(targetWidth);
-            else if (Math.Abs(SidebarPanel.Width - targetWidth) > .5 || double.IsNaN(SidebarPanel.Width))
+            if (_isNavigationOverlayOpen)
+                BeginOverlayClose(targetWidth);
+            else if (_isOverlayClosing)
             {
-                if (animate) AnimateSidebarWidth(targetWidth);
-                else SetSidebarWidth(targetWidth);
+                if (Math.Abs(_overlayCloseTargetWidth - targetWidth) > .5)
+                {
+                    _overlayCloseTargetWidth = targetWidth;
+                    _overlayCloseSidebarWidthDone = false;
+                    AnimateSidebarWidth(targetWidth, completed: CompleteOverlayClose);
+                }
             }
-            NavigationBackdrop.BeginAnimation(OpacityProperty, null);
-            NavigationBackdrop.Visibility = Visibility.Collapsed;
-            NavigationBackdrop.Opacity = 0;
+            else
+            {
+                UseColumnSidebar();
+                NavigationBackdrop.BeginAnimation(OpacityProperty, null);
+                NavigationBackdrop.Visibility = Visibility.Collapsed;
+                NavigationBackdrop.Opacity = 0;
+            }
         }
 
         UpdateNavigationVisuals();
+        TryCompleteOverlayClose();
     }
 
     private void AnimateSidebarColumn(double targetWidth, bool animate)
     {
         var fromWidth = SidebarColumn.ActualWidth;
+        var animationVersion = ++_sidebarColumnAnimationVersion;
         SidebarColumn.Width = new GridLength(targetWidth);
         if (!animate || Math.Abs(fromWidth - targetWidth) < .5)
         {
+            _sidebarColumnAnimating = false;
             SidebarColumn.BeginAnimation(ColumnDefinition.WidthProperty, null);
             return;
         }
 
+        _sidebarColumnAnimating = true;
         var animation = new GridLengthAnimation
         {
             From = new GridLength(fromWidth),
             To = new GridLength(targetWidth),
-            Duration = TimeSpan.FromMilliseconds(260),
+            Duration = NavigationResizeDuration,
             EasingFunction = new CubicEase { EasingMode = EasingMode.EaseInOut }
         };
-        animation.Completed += (_, _) => SidebarColumn.BeginAnimation(ColumnDefinition.WidthProperty, null);
+        animation.Completed += (_, _) =>
+        {
+            if (animationVersion == _sidebarColumnAnimationVersion)
+            {
+                _sidebarColumnAnimating = false;
+                SidebarColumn.BeginAnimation(ColumnDefinition.WidthProperty, null);
+                TryCompleteOverlayClose();
+            }
+        };
         SidebarColumn.BeginAnimation(ColumnDefinition.WidthProperty, animation, HandoffBehavior.SnapshotAndReplace);
     }
 
-    private void AnimateSidebarWidth(double targetWidth)
+    private void AnimateSidebarWidth(double targetWidth, double? fromWidth = null, Action? completed = null)
     {
-        var fromWidth = double.IsNaN(SidebarPanel.Width) ? SidebarPanel.ActualWidth : SidebarPanel.Width;
+        var startWidth = fromWidth ?? SidebarPanel.ActualWidth;
+        var animationVersion = ++_sidebarWidthAnimationVersion;
         SidebarPanel.Width = targetWidth;
-        if (Math.Abs(fromWidth - targetWidth) < .5)
+        if (Math.Abs(startWidth - targetWidth) < .5)
         {
             SidebarPanel.BeginAnimation(FrameworkElement.WidthProperty, null);
+            completed?.Invoke();
             return;
         }
 
-        var animation = new DoubleAnimation(fromWidth, targetWidth, TimeSpan.FromMilliseconds(240))
+        var animation = new DoubleAnimation(startWidth, targetWidth, NavigationResizeDuration)
         {
             EasingFunction = new CubicEase { EasingMode = EasingMode.EaseInOut }
         };
-        animation.Completed += (_, _) => SidebarPanel.BeginAnimation(FrameworkElement.WidthProperty, null);
+        animation.Completed += (_, _) =>
+        {
+            if (animationVersion != _sidebarWidthAnimationVersion) return;
+            SidebarPanel.BeginAnimation(FrameworkElement.WidthProperty, null);
+            completed?.Invoke();
+        };
         SidebarPanel.BeginAnimation(FrameworkElement.WidthProperty, animation, HandoffBehavior.SnapshotAndReplace);
     }
 
-    private void SetSidebarWidth(double width)
+    private void UseColumnSidebar()
     {
+        ++_sidebarWidthAnimationVersion;
         SidebarPanel.BeginAnimation(FrameworkElement.WidthProperty, null);
-        SidebarPanel.Width = width;
+        SidebarPanel.ClearValue(FrameworkElement.WidthProperty);
+        SidebarPanel.SetValue(Grid.ColumnSpanProperty, 1);
+        SidebarPanel.HorizontalAlignment = System.Windows.HorizontalAlignment.Stretch;
     }
 
     private void UpdateNavigationVisuals()
@@ -301,58 +394,72 @@ public partial class MainWindow : Window
         var isCompact = _isNarrowWindow || _userCollapsedNavigation;
         var showLabels = !isCompact || _isNavigationOverlayOpen;
         var animateLabels = _navigationLabelsVisible is bool wasVisible && wasVisible != showLabels;
-        _navigationLabelsVisible = showLabels;
-        var layoutVersion = ++_navigationLayoutVersion;
         var visibleSidebarWidth = _isNavigationOverlayOpen
             ? ExpandedNavigationWidth
             : isCompact ? CompactNavigationWidth : ExpandedNavigationWidth;
-        var targetDividerMargin = new Thickness(Math.Max(0, visibleSidebarWidth - NavigationCornerRadius), 0, 0, 0);
-        SidebarPanel.BeginAnimation(Border.PaddingProperty, null);
-        SidebarPanel.Padding = new Thickness(12, 18, 12, 18);
-        if (animateLabels)
+        var layoutChanged = _navigationLabelsVisible != showLabels || _navigationVisualWidth != visibleSidebarWidth;
+        _navigationLabelsVisible = showLabels;
+        _navigationVisualWidth = visibleSidebarWidth;
+        if (!layoutChanged)
         {
-            TopBarDivider.BeginAnimation(FrameworkElement.MarginProperty,
-                new ThicknessAnimation(TopBarDivider.Margin, targetDividerMargin, TimeSpan.FromMilliseconds(240))
-                {
-                    EasingFunction = new CubicEase { EasingMode = EasingMode.EaseInOut }
-                }, HandoffBehavior.SnapshotAndReplace);
-        }
-        else
-        {
-            TopBarDivider.BeginAnimation(FrameworkElement.MarginProperty, null);
-            TopBarDivider.Margin = targetDividerMargin;
+            TitleBar.SetNavigationIconState(isCompact && !_isNavigationOverlayOpen,
+                _isNavigationOverlayOpen, _isNarrowWindow);
+            return;
         }
 
-        SetNavigationItemLayout(DashboardNavigationButton, DashboardNavigationLabel, DashboardNavigationIcon, showLabels, animateLabels, layoutVersion);
-        SetNavigationItemLayout(LedNavigationButton, LedNavigationLabel, LedNavigationIcon, showLabels, animateLabels, layoutVersion);
-        SetNavigationItemLayout(MapperNavigationButton, MapperNavigationLabel, MapperNavigationIcon, showLabels, animateLabels, layoutVersion);
-        SetNavigationItemLayout(SettingsNavigationButton, SettingsNavigationLabel, SettingsNavigationIcon, showLabels, animateLabels, layoutVersion);
+        var layoutVersion = ++_navigationLayoutVersion;
+        SidebarPanel.BeginAnimation(Border.PaddingProperty, null);
+        SidebarPanel.Padding = new Thickness(12);
+
+        SetNavigationItemLayout(DashboardNavigationButton, DashboardNavigationLabel,
+            DashboardIconColumn, showLabels, animateLabels, layoutVersion);
+        SetNavigationItemLayout(LedNavigationButton, LedNavigationLabel,
+            LedIconColumn, showLabels, animateLabels, layoutVersion);
+        SetNavigationItemLayout(MapperNavigationButton, MapperNavigationLabel,
+            MapperIconColumn, showLabels, animateLabels, layoutVersion);
+        SetNavigationItemLayout(SettingsNavigationButton, SettingsNavigationLabel,
+            SettingsIconColumn, showLabels, animateLabels, layoutVersion);
         TitleBar.SetNavigationIconState(isCompact && !_isNavigationOverlayOpen,
             _isNavigationOverlayOpen, _isNarrowWindow);
     }
 
-    private void SetNavigationItemLayout(RadioButton button, TextBlock label, FrameworkElement icon,
-        bool showLabel, bool animate, int layoutVersion)
+    private void SetNavigationItemLayout(RadioButton button, TextBlock label,
+        ColumnDefinition iconColumn, bool showLabel, bool animate, int layoutVersion)
     {
-        button.Width = showLabel ? 188 : 47;
-        button.HorizontalAlignment = System.Windows.HorizontalAlignment.Left;
-        button.Padding = showLabel ? new Thickness(16, 9, 16, 9) : new Thickness(0);
-        button.HorizontalContentAlignment = showLabel
-            ? System.Windows.HorizontalAlignment.Left
-            : System.Windows.HorizontalAlignment.Center;
-        var targetIconMargin = showLabel ? new Thickness(0, 0, 12, 0) : new Thickness(0);
+        button.ClearValue(FrameworkElement.WidthProperty);
+        button.HorizontalAlignment = System.Windows.HorizontalAlignment.Stretch;
+        button.HorizontalContentAlignment = System.Windows.HorizontalAlignment.Stretch;
+        var targetPadding = showLabel ? new Thickness(16, 9, 16, 9) : new Thickness(0);
+        var targetIconColumnWidth = showLabel ? 18 : 48;
         if (animate)
         {
-            var iconMargin = new ThicknessAnimation(icon.Margin, targetIconMargin, TimeSpan.FromMilliseconds(220))
+            button.BeginAnimation(Control.PaddingProperty,
+                new ThicknessAnimation(button.Padding, targetPadding, NavigationResizeDuration)
+                {
+                    EasingFunction = new CubicEase { EasingMode = EasingMode.EaseInOut }
+                }, HandoffBehavior.SnapshotAndReplace);
+            var columnAnimation = new GridLengthAnimation
             {
+                From = new GridLength(iconColumn.ActualWidth),
+                To = new GridLength(targetIconColumnWidth),
+                Duration = NavigationResizeDuration,
                 EasingFunction = new CubicEase { EasingMode = EasingMode.EaseInOut }
             };
-            icon.BeginAnimation(FrameworkElement.MarginProperty, iconMargin, HandoffBehavior.SnapshotAndReplace);
+            columnAnimation.Completed += (_, _) =>
+            {
+                if (layoutVersion == _navigationLayoutVersion)
+                    iconColumn.BeginAnimation(ColumnDefinition.WidthProperty, null);
+            };
+            iconColumn.Width = new GridLength(targetIconColumnWidth);
+            iconColumn.BeginAnimation(ColumnDefinition.WidthProperty, columnAnimation,
+                HandoffBehavior.SnapshotAndReplace);
         }
         else
         {
-            icon.BeginAnimation(FrameworkElement.MarginProperty, null);
-            icon.Margin = targetIconMargin;
+            button.BeginAnimation(Control.PaddingProperty, null);
+            button.Padding = targetPadding;
+            iconColumn.BeginAnimation(ColumnDefinition.WidthProperty, null);
+            iconColumn.Width = new GridLength(targetIconColumnWidth);
         }
 
         if (showLabel)
@@ -367,14 +474,16 @@ public partial class MainWindow : Window
             }
 
             label.Opacity = 0;
-            var slideIn = new TranslateTransform(-8, 0);
+            var slideIn = new TranslateTransform(0, 4);
             label.RenderTransform = slideIn;
-            label.BeginAnimation(OpacityProperty, new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(200))
+            label.BeginAnimation(OpacityProperty, new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(110))
             {
+                BeginTime = TimeSpan.FromMilliseconds(130),
                 EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
             }, HandoffBehavior.SnapshotAndReplace);
-            slideIn.BeginAnimation(TranslateTransform.XProperty, new DoubleAnimation(-8, 0, TimeSpan.FromMilliseconds(220))
+            slideIn.BeginAnimation(TranslateTransform.YProperty, new DoubleAnimation(4, 0, TimeSpan.FromMilliseconds(140))
             {
+                BeginTime = TimeSpan.FromMilliseconds(110),
                 EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
             }, HandoffBehavior.SnapshotAndReplace);
         }
@@ -382,7 +491,7 @@ public partial class MainWindow : Window
         {
             var slideOut = new TranslateTransform();
             label.RenderTransform = slideOut;
-            var fadeOut = new DoubleAnimation(0, TimeSpan.FromMilliseconds(150));
+            var fadeOut = new DoubleAnimation(0, TimeSpan.FromMilliseconds(85));
             fadeOut.Completed += (_, _) =>
             {
                 if (layoutVersion != _navigationLayoutVersion || _navigationLabelsVisible == true) return;
@@ -392,8 +501,8 @@ public partial class MainWindow : Window
                 label.RenderTransform = Transform.Identity;
             };
             label.BeginAnimation(OpacityProperty, fadeOut, HandoffBehavior.SnapshotAndReplace);
-            slideOut.BeginAnimation(TranslateTransform.XProperty,
-                new DoubleAnimation(0, -8, TimeSpan.FromMilliseconds(170))
+            slideOut.BeginAnimation(TranslateTransform.YProperty,
+                new DoubleAnimation(0, -3, TimeSpan.FromMilliseconds(100))
                 {
                     EasingFunction = new CubicEase { EasingMode = EasingMode.EaseIn }
                 }, HandoffBehavior.SnapshotAndReplace);
@@ -401,6 +510,7 @@ public partial class MainWindow : Window
         else
         {
             label.Visibility = Visibility.Collapsed;
+            label.BeginAnimation(OpacityProperty, null);
             label.Opacity = 1;
             label.RenderTransform = Transform.Identity;
         }

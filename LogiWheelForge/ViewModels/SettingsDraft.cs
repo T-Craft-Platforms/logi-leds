@@ -6,7 +6,7 @@ namespace LogiWheelForge.ViewModels;
 /// <summary>Shared editable settings so Save on either configuration page applies the complete draft.</summary>
 public sealed class SettingsDraft : ObservableObject
 {
-    private bool _blinkAtRedline = true, _learnPerCarShift = true, _autoStartControl = true, _closeToTray = true;
+    private bool _blinkAtRedline = true, _learnPerCarShift = true, _closeToTray = true;
     private double _firstLedPercent = LedProfileSettings.DefaultFirstLedPercent;
     private RpmProfileMode _profileMode;
     private double _redlinePercent = LedProfileSettings.DefaultRedlinePercent;
@@ -36,12 +36,6 @@ public sealed class SettingsDraft : ObservableObject
     {
         get => _learnPerCarShift;
         set => SetField(ref _learnPerCarShift, value);
-    }
-
-    public bool AutoStartControl
-    {
-        get => _autoStartControl;
-        set => SetField(ref _autoStartControl, value);
     }
 
     public bool CloseToTray

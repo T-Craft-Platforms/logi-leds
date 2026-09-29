@@ -124,6 +124,7 @@ public sealed class InputMapperViewModel : ObservableObject, IDisposable
     private string? _selectedProcessPath;
     private bool _isRunning;
     private bool _hasUnsavedChanges;
+    private string _pageTitle = "Input Mapper";
 
     public InputMapperViewModel(InputMapperService service)
     {
@@ -146,6 +147,7 @@ public sealed class InputMapperViewModel : ObservableObject, IDisposable
     }
 
     public ObservableCollection<MapperProfileDraft> Profiles { get; } = [];
+    public string PageTitle { get => _pageTitle; set => SetField(ref _pageTitle, value); }
     public ObservableCollection<string> Controls { get; } = [];
     public IReadOnlyList<MapperTriggerKind> Triggers { get; } = Enum.GetValues<MapperTriggerKind>();
     public IReadOnlyList<MapperStepMode> StepModes { get; } = Enum.GetValues<MapperStepMode>();

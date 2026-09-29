@@ -32,6 +32,8 @@ public sealed record LedProfileSettings
     public bool BlinkAtRedline { get; init; } = true;
     public bool LearnPerCarShift { get; init; } = true;
     public bool AutoStartControl { get; init; } = true;
+    public bool LedModuleEnabled { get; init; } = true;
+    public bool InputMapperModuleEnabled { get; init; } = true;
     public bool MinimizeToTray { get; init; } = true;
     public bool CloseToTray { get; init; } = true;
     public bool UsePointerCursors { get; init; } = true;
