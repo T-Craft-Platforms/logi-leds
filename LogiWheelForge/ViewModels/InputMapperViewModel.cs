@@ -4,6 +4,7 @@ using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Windows.Input;
 using LogiWheelForge.Commands;
+using LogiWheelForge.Controls;
 using LogiWheelForge.Models;
 using LogiWheelForge.Services;
 using LogiWheelForge.Views;
@@ -42,7 +43,33 @@ public sealed class MapperRuleDraft : ObservableObject
     public bool IsForceAction => Action is MapperActionKind.HoldTarget or MapperActionKind.ReleaseTarget;
     public bool IsTapAction => IsKeyOrButtonAction && Mode == MapperActionMode.Tap;
     public bool UsesOutput => IsKeyOrButtonAction || Action == MapperActionKind.MouseMove;
-    public string Summary => $"{Control} · {Trigger} → {Action} {Output}";
+    public bool HasFineTuning => IsAxisTrigger || IsTapAction;
+    public string TriggerLabel => Label(Trigger);
+    public string ActionLabel => Label(Action);
+    public string OutputSummary => UsesOutput ? Output : Action == MapperActionKind.MouseScroll
+        ? $"Scale {OutputScale:0.##}" : IsHoldTargetAction ? $"Position {TargetPercent:0.#}%" : "Release hold";
+    public string OutputLabel => Action switch
+    {
+        MapperActionKind.MouseButton => "Mouse button",
+        MapperActionKind.MouseMove => "Movement axis",
+        _ => "Key or shortcut"
+    };
+    public string OutputHint => Action switch
+    {
+        MapperActionKind.MouseButton => "Choose Left, Right, Middle, X1 or X2.",
+        MapperActionKind.MouseMove => "X moves horizontally; Y moves vertically.",
+        _ => "Type a key name or shortcut, such as Space or LeftCtrl+A."
+    };
+    public IReadOnlyList<string> OutputChoices => Action switch
+    {
+        MapperActionKind.MouseButton => ["Left", "Right", "Middle", "X1", "X2"],
+        MapperActionKind.MouseMove => ["X", "Y"],
+        _ => ["W", "A", "S", "D", "Space", "Enter", "Escape", "Left", "Right", "Up", "Down"]
+    };
+    public string ValidationMessage => _value.TryValidate(out var error) ? string.Empty : error;
+    private static string Label(object value) => (string)new MapperChoiceLabelConverter().Convert(
+        value, typeof(string), null!, System.Globalization.CultureInfo.CurrentCulture);
+    public string Summary => $"{Control} · {TriggerLabel} → {ActionLabel} {OutputSummary}";
     public MapperRule Build() => _value;
     private void Change(MapperRule value)
     {
@@ -125,6 +152,7 @@ public sealed class InputMapperViewModel : ObservableObject, IDisposable
     private bool _isRunning;
     private bool _hasUnsavedChanges;
     private string _pageTitle = "Input Mapper";
+    private int _editorTabIndex;
 
     public InputMapperViewModel(InputMapperService service)
     {
@@ -132,12 +160,12 @@ public sealed class InputMapperViewModel : ObservableObject, IDisposable
         _service.SnapshotChanged += OnSnapshot;
         _service.InputPreview += OnInputPreview;
         AddProfileCommand = new RelayCommand(AddProfile);
-        DeleteProfileCommand = new RelayCommand(DeleteProfile);
-        AddRuleCommand = new RelayCommand(AddRule);
-        DeleteRuleCommand = new RelayCommand(DeleteRule);
-        AddProcessCommand = new RelayCommand(AddManualProcess);
-        RemoveProcessCommand = new RelayCommand(RemoveProcess);
-        PickWindowCommand = new RelayCommand(PickWindow);
+        DeleteProfileCommand = new RelayCommand(DeleteProfile, () => SelectedProfile is not null);
+        AddRuleCommand = new RelayCommand(AddRule, () => SelectedProfile is not null);
+        DeleteRuleCommand = new RelayCommand(DeleteRule, () => SelectedRule is not null);
+        AddProcessCommand = new RelayCommand(AddManualProcess, () => SelectedProfile is not null && !string.IsNullOrWhiteSpace(ManualProcessPath));
+        RemoveProcessCommand = new RelayCommand(RemoveProcess, () => SelectedProcessPath is not null);
+        PickWindowCommand = new RelayCommand(PickWindow, () => SelectedProfile is not null);
         SaveCommand = new AsyncRelayCommand(SaveChangesAsync, onError: ex => Status = $"Could not save: {ex.Message}");
         ToggleCommand = new RelayCommand(() =>
         {
@@ -148,7 +176,8 @@ public sealed class InputMapperViewModel : ObservableObject, IDisposable
 
     public ObservableCollection<MapperProfileDraft> Profiles { get; } = [];
     public string PageTitle { get => _pageTitle; set => SetField(ref _pageTitle, value); }
-    public ObservableCollection<string> Controls { get; } = [];
+    public ObservableCollection<string> Controls { get; } = ["Steering", "Accelerator", "Brake", "Clutch"];
+    public int EditorTabIndex { get => _editorTabIndex; set => SetField(ref _editorTabIndex, value); }
     public IReadOnlyList<MapperTriggerKind> Triggers { get; } = Enum.GetValues<MapperTriggerKind>();
     public IReadOnlyList<MapperStepMode> StepModes { get; } = Enum.GetValues<MapperStepMode>();
     public IReadOnlyList<MapperActionKind> Actions { get; } = Enum.GetValues<MapperActionKind>();
@@ -167,11 +196,18 @@ public sealed class InputMapperViewModel : ObservableObject, IDisposable
     public MapperProfileDraft? SelectedProfile
     {
         get => _selectedProfile;
-        set { if (SetField(ref _selectedProfile, value)) SelectedRule = value?.Rules.FirstOrDefault(); }
+        set
+        {
+            if (!SetField(ref _selectedProfile, value)) return;
+            SelectedRule = value?.Rules.FirstOrDefault();
+            SelectedProcessPath = null;
+            ManualProcessPath = string.Empty;
+            RefreshCommands();
+        }
     }
-    public MapperRuleDraft? SelectedRule { get => _selectedRule; set => SetField(ref _selectedRule, value); }
-    public string? SelectedProcessPath { get => _selectedProcessPath; set => SetField(ref _selectedProcessPath, value); }
-    public string ManualProcessPath { get => _manualProcessPath; set => SetField(ref _manualProcessPath, value); }
+    public MapperRuleDraft? SelectedRule { get => _selectedRule; set { if (SetField(ref _selectedRule, value)) RefreshCommands(); } }
+    public string? SelectedProcessPath { get => _selectedProcessPath; set { if (SetField(ref _selectedProcessPath, value)) RefreshCommands(); } }
+    public string ManualProcessPath { get => _manualProcessPath; set { if (SetField(ref _manualProcessPath, value)) RefreshCommands(); } }
     public string Status { get => _status; private set => SetField(ref _status, value); }
     public string InputPreview { get => _inputPreview; private set => SetField(ref _inputPreview, value); }
     public string ToggleText => _isRunning ? "Stop mapper" : "Start mapper";
@@ -221,6 +257,7 @@ public sealed class InputMapperViewModel : ObservableObject, IDisposable
         var draft = new MapperProfileDraft(profile);
         draft.Changed += OnDraftChanged;
         Profiles.Add(draft); SelectedProfile = draft;
+        EditorTabIndex = 1;
         MarkUnsaved();
         Status = "Add a target executable, review the starter rules, then save";
     }
@@ -237,6 +274,7 @@ public sealed class InputMapperViewModel : ObservableObject, IDisposable
         if (SelectedProfile is null) return;
         var rule = new MapperRuleDraft(new MapperRule());
         SelectedProfile.Rules.Add(rule); SelectedRule = rule;
+        EditorTabIndex = 0;
     }
     private void DeleteRule()
     {
@@ -281,6 +319,12 @@ public sealed class InputMapperViewModel : ObservableObject, IDisposable
         OnPropertyChanged(nameof(EditStatus));
     }
     private void OnDraftChanged(object? sender, EventArgs e) => MarkUnsaved();
+    private void RefreshCommands()
+    {
+        foreach (var command in new[] { DeleteProfileCommand, AddRuleCommand, DeleteRuleCommand,
+                     AddProcessCommand, RemoveProcessCommand, PickWindowCommand })
+            (command as RelayCommand)?.RaiseCanExecuteChanged();
+    }
     private void MarkUnsaved()
     {
         HasUnsavedChanges = true;

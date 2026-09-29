@@ -43,6 +43,13 @@ public sealed class NavigationJunctionTests
                         new XAttribute("VerticalAlignment", "Center"), new XAttribute("FontWeight", "SemiBold"))));
             foreach (var element in frame.Descendants())
             {
+                foreach (var attribute in element.Attributes().Where(a =>
+                             a.Name.NamespaceName == "clr-namespace:LogiWheelForge.Controls").ToArray())
+                {
+                    element.SetAttributeValue(XName.Get(attribute.Name.LocalName,
+                        "clr-namespace:LogiWheelForge.Controls;assembly=LogiWheelForge"), attribute.Value);
+                    attribute.Remove();
+                }
                 if (element.Name.NamespaceName == "clr-namespace:LogiWheelForge.Controls")
                     element.Name = XName.Get(element.Name.LocalName, "clr-namespace:LogiWheelForge.Controls;assembly=LogiWheelForge");
                 else if (element.Name.NamespaceName == "http://schemas.awesome.incremented/wpf/xaml/fontawesome.sharp")
